@@ -1,0 +1,1 @@
+ALTER TABLE `georeference` ADD `transform` text;

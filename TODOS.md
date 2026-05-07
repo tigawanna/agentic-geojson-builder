@@ -53,6 +53,102 @@ This file tracks what has been cleaned up, what is active now, and what should c
   - `pnpm --filter web check-types`
   - `pnpm --filter web build`
 - Restarted the dev server at `http://localhost:3040/`.
+- Added the first real GeoJSON Builder persistence schema:
+  - `map_project`
+  - `source_asset`
+  - `control_point`
+  - `georeference`
+  - `geo_feature`
+  - `agent_run`
+  - `project_revision`
+- Generated the next Drizzle migration through `pnpm --filter web db:generate`.
+  - It creates the GeoJSON Builder tables.
+  - It also drops the old resume tables because those schemas are no longer active.
+  - It was applied locally with `pnpm --filter web db:migrate` against the file-backed dev DB.
+- Added map project server/data access files:
+  - list projects for the signed-in user
+  - create projects for the signed-in user
+  - update projects for the signed-in user
+  - delete projects for the signed-in user
+  - TanStack Query `queryOptions`
+- Reworked `/map-projects` from a static schema demo into a real project list with:
+  - empty state
+  - TanStack Form creation dialog
+  - Zod-backed create validation
+  - live project cards with source asset and feature counts
+  - project edit dialog for name, description, location hint, and base map
+  - confirmed project deletion with source asset file cleanup
+- Added the first map project workspace route:
+  - `/map-projects/$projectId`
+  - source asset panel
+  - map canvas placeholder
+  - georeferencing placeholder
+  - workspace metrics
+  - feature review panel
+  - accepted/draft/rejected feature status breakdown
+  - selected source asset context for georeferencing
+- Added the first source asset upload path:
+  - multipart API route at `/api/map-projects/$projectId/source-assets/upload`
+  - local dev file storage under `apps/web/uploads/source-assets/...`
+  - DB metadata row creation for uploaded PDFs/images
+  - source asset query invalidation after upload
+- Added authenticated source asset file serving:
+  - `/api/map-projects/$projectId/source-assets/$sourceAssetId/file`
+  - verifies the signed-in user owns the project
+  - bounds file reads to local upload storage
+  - returns the stored PDF/image with an inline content disposition
+- Added richer in-app source asset preview inside the workspace:
+  - selected image/PDF assets render inline in the map canvas panel
+  - uploaded image dimensions appear in the source asset list and georeferencing panel
+  - image control points render as numbered markers over the preview when dimensions are known
+- Added source asset metadata editing in the workspace:
+  - file display name
+  - image width/height
+  - PDF page count
+  - blank optional metadata clears stored values
+- Added upload progress feedback for source asset uploads:
+  - selected file name and size are shown before submit
+  - upload requests now report browser upload progress
+  - the upload form clears after a successful attachment
+- Added the first manual georeferencing write flow:
+  - source asset selector in the workspace
+  - TanStack Form control point entry for image pixel coordinates and longitude/latitude
+  - server function with project ownership and source-asset ownership checks
+  - workspace control point table
+  - control point edit dialog with stale transform clearing
+  - transform readiness hint once at least three control points exist
+- Added the first manual feature draft flow:
+  - TanStack Form point-feature entry in the workspace
+  - source asset association
+  - path kind, name, notes, and coordinate fields
+  - server function writes `geo_feature` rows as `manual-trace`/`draft`
+  - feature review table and status counts update from real DB rows
+- Added affine georeference estimation:
+  - generated and applied Drizzle migration `0003_fixed_whirlwind.sql`
+  - added a JSON `transform` column on `georeference`
+  - estimates pixel-to-lon/lat affine coefficients from at least three control points
+  - stores RMS residual error in meters
+  - clears stale georeferences when control points change
+  - replaces a selected source asset's previous transform estimate instead of stacking duplicates
+  - shows selected asset transform status in the workspace
+- Added cleanup actions for early editor data:
+  - delete source assets from the workspace with ownership checks
+  - remove uploaded local files after source asset deletion
+  - delete control points with ownership checks
+  - refresh project/workspace queries after cleanup
+- Added `uploads` to `apps/web/.gitignore`.
+- Re-verified after the data layer work:
+  - `pnpm --filter web check-types`
+  - `pnpm --filter @repo/isomorphic check-types`
+  - `pnpm --filter web build`
+  - `pnpm lint`
+  - unauthenticated source asset file route returns `401`
+- Re-verified after affine/delete work:
+  - `pnpm --filter web check-types`
+  - `pnpm lint`
+  - `pnpm --filter web build`
+  - unauthenticated workspace route redirects to `/auth`
+  - unauthenticated source asset upload route returns `401`
 
 ## Current State
 
@@ -65,17 +161,28 @@ This file tracks what has been cleaned up, what is active now, and what should c
   - `/settings`
   - Better Auth API route
 - `/map-projects` is protected and redirects unauthenticated users to auth.
+- `/map-projects/$projectId` is protected and redirects unauthenticated users to auth.
 - `/api/mcp` returns `404`, which is intentional until the GeoJSON MCP bridge is rebuilt.
+- `/api/map-projects/$projectId/source-assets/upload` returns `401` for unauthenticated requests.
+- `/api/map-projects/$projectId/source-assets/$sourceAssetId/file` returns `401` for unauthenticated requests.
+- The workspace can estimate an affine transform for a selected source asset once it has three or more control points.
+- The workspace shows an inline preview for the selected source asset, with image control point markers when image dimensions are available.
+- Source asset display metadata and control points can be edited from the workspace.
+- Source asset uploads now show file size and progress while the browser is sending the file.
+- Map project details can be edited from the project list.
+- Source assets and control points can now be removed from the workspace.
+- Map projects can be deleted from the project list, with owned source asset files cleaned up from local storage.
 - Old copied code is preserved under `legacy/` but outside active type checking and Vite+ checks.
-- The repo still is not a git repository, so there is no commit history safety net yet.
+- The repo is now inside a git worktree, but current changes are uncommitted.
+- Generated Drizzle migrations exist for the new data layer and affine transform column, and both have been run locally against the file-backed dev DB.
 
 ## Next Runs
 
 ### 3. Add Real Map Project Data Layer
 
-The schemas exist, but the app does not persist map projects yet.
+Mostly complete for the first slice.
 
-Suggested work:
+Done:
 
 - create Drizzle schema for map projects, source assets, control points, features, agent runs, and revisions
 - generate migrations through Drizzle commands only
@@ -83,29 +190,50 @@ Suggested work:
 - add TanStack Query `queryOptions`
 - wire `/map-projects` to real data instead of the static schema demo
 
+Remaining:
+
+- add archive behavior after create/update/delete are stable
+
 ### 4. Build The First Upload Flow
 
-Add the first useful workflow: create a project and attach a source map.
+First source asset upload slice is in place.
 
-Suggested work:
+Done:
 
-- project creation form with TanStack Form and Zod validation
 - source asset upload UI
 - store original PDF/image metadata
-- decide storage target: local dev filesystem, S3-compatible bucket, or database blob only for early prototype
+- decide storage target: local dev filesystem for early prototype
+
+Remaining:
+
+- read PDF page counts and preview dimensions
+- decide production storage target: S3-compatible bucket or hosted volume
+- add PDF raster/page preview controls beyond the current inline browser PDF embed
 
 ### 5. Build The Map Workspace Route
 
-Create the route that will eventually host the actual editor.
+First workspace route is in place.
 
-Suggested work:
+Done:
 
 - route structure: `/map-projects/$projectId`
 - route-specific components in `-components`
 - placeholder map canvas with project details
 - source asset panel
-- feature list panel
 - georeferencing panel
+- source asset selection for georeferencing
+- manual control point creation form
+- control point table
+- source asset metadata edit dialogs
+- control point edit dialogs
+- manual point feature draft form
+- estimate/store the first affine transform from control points
+- remove source assets and control points from the workspace
+
+Remaining:
+
+- add transform history UI if keeping older estimates becomes useful
+- add line/polygon manual draft creation once map drawing exists
 
 ### 6. Choose Map Editing Libraries
 

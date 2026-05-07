@@ -19,6 +19,9 @@ import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dash
 import { Route as DashboardSettingsIndexRouteImport } from './routes/_dashboard/settings/index'
 import { Route as DashboardMapProjectsIndexRouteImport } from './routes/_dashboard/map-projects/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as DashboardMapProjectsProjectIdIndexRouteImport } from './routes/_dashboard/map-projects/$projectId/index'
+import { Route as ApiMapProjectsProjectIdSourceAssetsUploadRouteImport } from './routes/api/map-projects/$projectId/source-assets/upload'
+import { Route as ApiMapProjectsProjectIdSourceAssetsSourceAssetIdFileRouteImport } from './routes/api/map-projects/$projectId/source-assets/$sourceAssetId/file'
 
 const AuthLayoutRoute = AuthLayoutRouteImport.update({
   id: '/auth',
@@ -70,6 +73,24 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardMapProjectsProjectIdIndexRoute =
+  DashboardMapProjectsProjectIdIndexRouteImport.update({
+    id: '/map-projects/$projectId/',
+    path: '/map-projects/$projectId/',
+    getParentRoute: () => DashboardLayoutRoute,
+  } as any)
+const ApiMapProjectsProjectIdSourceAssetsUploadRoute =
+  ApiMapProjectsProjectIdSourceAssetsUploadRouteImport.update({
+    id: '/api/map-projects/$projectId/source-assets/upload',
+    path: '/api/map-projects/$projectId/source-assets/upload',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiMapProjectsProjectIdSourceAssetsSourceAssetIdFileRoute =
+  ApiMapProjectsProjectIdSourceAssetsSourceAssetIdFileRouteImport.update({
+    id: '/api/map-projects/$projectId/source-assets/$sourceAssetId/file',
+    path: '/api/map-projects/$projectId/source-assets/$sourceAssetId/file',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -81,6 +102,9 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/map-projects/': typeof DashboardMapProjectsIndexRoute
   '/settings/': typeof DashboardSettingsIndexRoute
+  '/map-projects/$projectId/': typeof DashboardMapProjectsProjectIdIndexRoute
+  '/api/map-projects/$projectId/source-assets/upload': typeof ApiMapProjectsProjectIdSourceAssetsUploadRoute
+  '/api/map-projects/$projectId/source-assets/$sourceAssetId/file': typeof ApiMapProjectsProjectIdSourceAssetsSourceAssetIdFileRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -91,6 +115,9 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/map-projects': typeof DashboardMapProjectsIndexRoute
   '/settings': typeof DashboardSettingsIndexRoute
+  '/map-projects/$projectId': typeof DashboardMapProjectsProjectIdIndexRoute
+  '/api/map-projects/$projectId/source-assets/upload': typeof ApiMapProjectsProjectIdSourceAssetsUploadRoute
+  '/api/map-projects/$projectId/source-assets/$sourceAssetId/file': typeof ApiMapProjectsProjectIdSourceAssetsSourceAssetIdFileRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -104,6 +131,9 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_dashboard/map-projects/': typeof DashboardMapProjectsIndexRoute
   '/_dashboard/settings/': typeof DashboardSettingsIndexRoute
+  '/_dashboard/map-projects/$projectId/': typeof DashboardMapProjectsProjectIdIndexRoute
+  '/api/map-projects/$projectId/source-assets/upload': typeof ApiMapProjectsProjectIdSourceAssetsUploadRoute
+  '/api/map-projects/$projectId/source-assets/$sourceAssetId/file': typeof ApiMapProjectsProjectIdSourceAssetsSourceAssetIdFileRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -117,6 +147,9 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/map-projects/'
     | '/settings/'
+    | '/map-projects/$projectId/'
+    | '/api/map-projects/$projectId/source-assets/upload'
+    | '/api/map-projects/$projectId/source-assets/$sourceAssetId/file'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -127,6 +160,9 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/map-projects'
     | '/settings'
+    | '/map-projects/$projectId'
+    | '/api/map-projects/$projectId/source-assets/upload'
+    | '/api/map-projects/$projectId/source-assets/$sourceAssetId/file'
   id:
     | '__root__'
     | '/'
@@ -139,6 +175,9 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/_dashboard/map-projects/'
     | '/_dashboard/settings/'
+    | '/_dashboard/map-projects/$projectId/'
+    | '/api/map-projects/$projectId/source-assets/upload'
+    | '/api/map-projects/$projectId/source-assets/$sourceAssetId/file'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -146,6 +185,8 @@ export interface RootRouteChildren {
   DashboardLayoutRoute: typeof DashboardLayoutRouteWithChildren
   AuthLayoutRoute: typeof AuthLayoutRouteWithChildren
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiMapProjectsProjectIdSourceAssetsUploadRoute: typeof ApiMapProjectsProjectIdSourceAssetsUploadRoute
+  ApiMapProjectsProjectIdSourceAssetsSourceAssetIdFileRoute: typeof ApiMapProjectsProjectIdSourceAssetsSourceAssetIdFileRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -220,6 +261,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_dashboard/map-projects/$projectId/': {
+      id: '/_dashboard/map-projects/$projectId/'
+      path: '/map-projects/$projectId'
+      fullPath: '/map-projects/$projectId/'
+      preLoaderRoute: typeof DashboardMapProjectsProjectIdIndexRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
+    '/api/map-projects/$projectId/source-assets/upload': {
+      id: '/api/map-projects/$projectId/source-assets/upload'
+      path: '/api/map-projects/$projectId/source-assets/upload'
+      fullPath: '/api/map-projects/$projectId/source-assets/upload'
+      preLoaderRoute: typeof ApiMapProjectsProjectIdSourceAssetsUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/map-projects/$projectId/source-assets/$sourceAssetId/file': {
+      id: '/api/map-projects/$projectId/source-assets/$sourceAssetId/file'
+      path: '/api/map-projects/$projectId/source-assets/$sourceAssetId/file'
+      fullPath: '/api/map-projects/$projectId/source-assets/$sourceAssetId/file'
+      preLoaderRoute: typeof ApiMapProjectsProjectIdSourceAssetsSourceAssetIdFileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -227,12 +289,15 @@ interface DashboardLayoutRouteChildren {
   DashboardDashboardRoute: typeof DashboardDashboardRoute
   DashboardMapProjectsIndexRoute: typeof DashboardMapProjectsIndexRoute
   DashboardSettingsIndexRoute: typeof DashboardSettingsIndexRoute
+  DashboardMapProjectsProjectIdIndexRoute: typeof DashboardMapProjectsProjectIdIndexRoute
 }
 
 const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
   DashboardDashboardRoute: DashboardDashboardRoute,
   DashboardMapProjectsIndexRoute: DashboardMapProjectsIndexRoute,
   DashboardSettingsIndexRoute: DashboardSettingsIndexRoute,
+  DashboardMapProjectsProjectIdIndexRoute:
+    DashboardMapProjectsProjectIdIndexRoute,
 }
 
 const DashboardLayoutRouteWithChildren = DashboardLayoutRoute._addFileChildren(
@@ -260,6 +325,10 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardLayoutRoute: DashboardLayoutRouteWithChildren,
   AuthLayoutRoute: AuthLayoutRouteWithChildren,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiMapProjectsProjectIdSourceAssetsUploadRoute:
+    ApiMapProjectsProjectIdSourceAssetsUploadRoute,
+  ApiMapProjectsProjectIdSourceAssetsSourceAssetIdFileRoute:
+    ApiMapProjectsProjectIdSourceAssetsSourceAssetIdFileRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
