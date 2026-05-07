@@ -1,0 +1,15 @@
+export const queryKeyPrefixes = {
+  viewer: "viewer",
+  users: "users",
+  mapProjects: "map-projects",
+  sourceAssets: "source-assets",
+  geoFeatures: "geo-features",
+  agentRuns: "agent-runs",
+  exports: "exports",
+  deviceSessions: "deviceSessions",
+  ghAccessToken: "ghAccessToken",
+  github: "github",
+  apiKeys: "api-keys",
+  githubAccessToken: "github-access-token",
+  experiments: "experiments",
+} as const;

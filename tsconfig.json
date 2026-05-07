@@ -1,0 +1,13 @@
+{
+  "include": [
+    "apps/web/**/*.ts",
+    "apps/web/**/*.tsx",
+    "packages/**/*.ts",
+    "packages/**/*.tsx",
+    "vite.config.ts"
+  ],
+  "exclude": ["legacy/**", "node_modules", "**/dist/**", "**/.turbo/**"],
+  "compilerOptions": {
+    "noEmit": true
+  }
+}

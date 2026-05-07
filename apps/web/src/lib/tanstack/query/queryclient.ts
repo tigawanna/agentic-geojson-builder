@@ -1,0 +1,41 @@
+import { queryKeyPrefixes } from "@/data-access-layer/query-keys";
+import { MutationCache, QueryClient } from "@tanstack/react-query";
+
+type QueryKey = [(typeof queryKeyPrefixes)[keyof typeof queryKeyPrefixes], ...(readonly unknown[])];
+
+interface MyMeta extends Record<string, unknown> {
+  invalidates?: [QueryKey[0], ...(readonly unknown[])][];
+}
+
+declare module "@tanstack/react-query" {
+  interface Register {
+    queryKey: QueryKey;
+    mutationKey: QueryKey;
+    mutationMeta: MyMeta;
+  }
+}
+
+// Do NOT import this directly inot components fro query invalidatio use useQueryClient instead
+export const queryClient = new QueryClient({
+  mutationCache: new MutationCache({
+    onSuccess: async (_, __, ___, mutation) => {
+      console.log("mutation success", mutation.meta?.invalidates);
+      if (Array.isArray(mutation.meta?.invalidates)) {
+        console.log("invalidating queries", mutation.meta?.invalidates);
+        mutation.meta?.invalidates.forEach((queryKey) => {
+          return queryClient.invalidateQueries({
+            queryKey,
+          });
+        });
+      }
+    },
+  }),
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 60,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      gcTime: 1000 * 60 * 60 * 24, // 24 hours
+    },
+  },
+});

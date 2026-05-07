@@ -1,0 +1,405 @@
+@import url("https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&display=swap");
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@import "./view-transition/angled-transition.css";
+@import "./view-transition/wipe-transition.css";
+@import "./view-transition/slides-transition.css";
+@import "./view-transition/flip-transition.css";
+@import "./view-transition/vertical-transition.css";
+
+/* DaisyUI */
+/* @plugin "daisyui" {
+  themes: light --default, dark --prefersdark;
+  logs: false;
+} */
+
+@plugin "daisyui" {
+  themes: false;
+  logs: false;
+}
+
+@plugin "daisyui/theme" {
+  name: "light";
+  default: true;
+  color-scheme: light;
+
+  /* Base surfaces - warm, airy light theme for real estate */
+  --color-base-100: oklch(from #fbfbf9 l c h); /* background */
+  --color-base-200: oklch(from #ffffff l c h); /* card */
+  --color-base-300: oklch(from #ffffff l c h); /* popover */
+  --color-base-content: oklch(from #1b1d1a l c h); /* foreground */
+
+  /* Brand colors using earth green palette */
+  --color-primary: oklch(from #267d42 l c h); /* earth-green-600 */
+  --color-primary-content: oklch(from #ffffff l c h);
+
+  --color-secondary: oklch(from #f3efe7 l c h);
+  --color-secondary-content: oklch(from #1b1d1a l c h);
+
+  --color-accent: oklch(from #ffedd5 l c h); /* earth-orange-100 */
+  --color-accent-content: oklch(from #fb923c l c h); /* lighter earth-orange-400 */
+
+  --color-neutral: oklch(from #f5f5f4 l c h); /* muted */
+  --color-neutral-content: oklch(from #6b7280 l c h); /* muted-foreground */
+
+  /* Status colors */
+  --color-info: oklch(from #f97316 l c h); /* chart-2 */
+  --color-info-content: oklch(from #1b1d1a l c h);
+  --color-success: oklch(from #2f8f4f l c h); /* chart-1 */
+  --color-success-content: oklch(from #ffffff l c h);
+  --color-warning: oklch(from #56bc7d l c h); /* chart-4 */
+  --color-warning-content: oklch(from #1b1d1a l c h);
+  --color-error: oklch(from #c2410c l c h); /* destructive */
+  --color-error-content: oklch(from #ffffff l c h);
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+@plugin "daisyui/theme" {
+  name: "dark";
+  prefersdark: true;
+  color-scheme: dark;
+
+  /* Base surfaces - sophisticated dark with forest undertones */
+  --color-base-100: oklch(from #121613 l c h); /* background */
+  --color-base-200: oklch(from #171c18 l c h); /* card */
+  --color-base-300: oklch(from #171c18 l c h); /* popover */
+  --color-base-content: oklch(from #e8ede9 l c h); /* foreground */
+
+  /* Brand colors using earth green palette - brighter for dark mode */
+  --color-primary: oklch(from #56bc7d l c h); /* earth-green-400 brighter for dark */
+  --color-primary-content: oklch(from #0b0f0d l c h);
+
+  --color-secondary: oklch(from #1a201c l c h);
+  --color-secondary-content: oklch(from #e8ede9 l c h);
+
+  --color-accent: oklch(50% 0.15 25); /* Darker, more readable earth-orange */
+  --color-accent-content: oklch(90% 0.08 25); /* Softer but still readable content color */
+
+  --color-neutral: oklch(from #1a201c l c h); /* muted */
+  --color-neutral-content: oklch(from #b6c2ba l c h); /* muted-foreground */
+
+  /* Status colors */
+  --color-info: oklch(from #f59e0b l c h); /* chart-2 */
+  --color-info-content: oklch(from #e8ede9 l c h);
+  --color-success: oklch(from #56bc7d l c h); /* chart-1 */
+  --color-success-content: oklch(from #0b0f0d l c h);
+  --color-warning: oklch(from #fb923c l c h); /* chart-4 */
+  --color-warning-content: oklch(from #e8ede9 l c h);
+  --color-error: oklch(from #f04438 l c h); /* destructive */
+  --color-error-content: oklch(from #0b0f0d l c h);
+
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-serif: "DM Serif Display", Georgia, serif;
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-fade-in: fade-in 0.6s ease-out;
+  --animate-scale-in: scale-in 0.3s ease-out;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-float-delayed: float-delayed 8s ease-in-out infinite;
+  --animate-float-slow: float-slow 10s ease-in-out infinite;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+  @keyframes fade-in {
+    0% {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes scale-in {
+    0% {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-20px) rotate(180deg);
+    }
+  }
+  @keyframes float-delayed {
+    0%,
+    100% {
+      transform: translateY(0px) rotate(0deg);
+    }
+    50% {
+      transform: translateY(-15px) rotate(-180deg);
+    }
+  }
+  @keyframes float-slow {
+    0%,
+    100% {
+      transform: translateY(0px) scale(1);
+    }
+    50% {
+      transform: translateY(-10px) scale(1.1);
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentColor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-border, currentColor);
+  }
+  .dark *,
+  .dark ::after,
+  .dark ::before,
+  .dark ::backdrop,
+  .dark ::file-selector-button {
+    border-color: transparent !important;
+  }
+}
+
+/* Responsive centered container utility */
+@utility container {
+  margin-inline: auto;
+  padding-inline: 2rem;
+  @media (width >= --theme(--breakpoint-sm)) {
+    max-width: none;
+  }
+  @media (width >= 1400px) {
+    max-width: 1400px;
+  }
+}
+
+@theme inline {
+  /* Shadcn/ui semantic color bridges → DaisyUI variables (no circular references) */
+  --color-background: var(--color-base-100);
+  --color-foreground: var(--color-base-content);
+  --color-card: color-mix(in oklch, var(--color-base-content) 3%, transparent);
+  --color-card-foreground: var(--color-base-content);
+  --color-popover: var(--color-base-200);
+  --color-popover-foreground: var(--color-base-content);
+
+  /* DaisyUI owns --color-primary/secondary/accent — only add the -foreground aliases */
+  --color-primary-foreground: var(--color-primary-content);
+  --color-secondary-foreground: var(--color-secondary-content);
+  --color-accent-foreground: var(--color-accent-content);
+
+  --color-muted: var(--color-neutral);
+  --color-muted-foreground: var(--color-neutral-content);
+  --color-destructive: var(--color-error);
+  --color-destructive-foreground: var(--color-error-content);
+
+  /* Avoid --border name: DaisyUI uses --border for border-width (1px) */
+  --color-border: color-mix(in oklch, var(--color-base-content) 20%, transparent);
+  --color-input: color-mix(in oklch, var(--color-base-content) 20%, transparent);
+  --color-ring: var(--color-primary);
+
+  --color-chart-1: var(--color-success);
+  --color-chart-2: var(--color-info);
+  --color-chart-3: var(--color-warning);
+  --color-chart-4: var(--color-accent);
+  --color-chart-5: var(--color-error);
+
+  --radius-sm: calc(var(--radius-box) - 4px);
+  --radius-md: calc(var(--radius-box) - 2px);
+  --radius-lg: var(--radius-box);
+  --radius-xl: calc(var(--radius-box) + 4px);
+
+  /* Earth brand palette */
+  --color-earth-green-50: oklch(from #f0f9f4 l c h);
+  --color-earth-green-100: oklch(from #dcf2e4 l c h);
+  --color-earth-green-200: oklch(from #bce5cc l c h);
+  --color-earth-green-300: oklch(from #8dd3a8 l c h);
+  --color-earth-green-400: oklch(from #56bc7d l c h);
+  --color-earth-green-500: oklch(from #2f8f4f l c h);
+  --color-earth-green-600: oklch(from #267d42 l c h);
+  --color-earth-green-700: oklch(from #1e6635 l c h);
+  --color-earth-green-800: oklch(from #1a512c l c h);
+  --color-earth-green-900: oklch(from #164324 l c h);
+
+  --color-earth-orange-50: oklch(from #fff7ed l c h);
+  --color-earth-orange-100: oklch(from #ffedd5 l c h);
+  --color-earth-orange-200: oklch(from #fed7aa l c h);
+  --color-earth-orange-300: oklch(from #fdba74 l c h);
+  --color-earth-orange-400: oklch(from #fb923c l c h);
+  --color-earth-orange-500: oklch(from #f97316 l c h);
+  --color-earth-orange-600: oklch(from #ea580c l c h);
+  --color-earth-orange-700: oklch(from #c2410c l c h);
+  --color-earth-orange-800: oklch(from #9a3412 l c h);
+  --color-earth-orange-900: oklch(from #7c2d12 l c h);
+
+  --color-warm-cream: oklch(from #faf5ee l c h);
+  --color-terracotta: oklch(from #c45b3c l c h);
+
+  /* Sidebar — direct DaisyUI var references */
+  --color-sidebar: var(--color-base-100);
+  --color-sidebar-foreground: var(--color-base-content);
+  --color-sidebar-primary: var(--color-primary);
+  --color-sidebar-primary-foreground: var(--color-primary-content);
+  --color-sidebar-accent: color-mix(in oklch, var(--color-primary) 40%, transparent);
+  --color-sidebar-accent-foreground: var(--color-sidebar-foreground);
+  --color-sidebar-border: color-mix(in oklch, var(--color-base-content) 20%, transparent);
+  --color-sidebar-ring: var(--color-neutral);
+}
+
+::-webkit-scrollbar {
+  width: 0.7vw;
+  height: 3.3vh;
+}
+
+::-webkit-scrollbar-track {
+  background-color: var(--color-base-200);
+  box-shadow: inset 0 0 6px var(--color-base-300);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-accent);
+  background-image: -webkit-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.2) 25%,
+    transparent 25%,
+    transparent 50%,
+    rgba(255, 255, 255, 0.2) 50%,
+    rgba(255, 255, 255, 0.2) 75%,
+    transparent 75%,
+    transparent
+  );
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-accent);
+}
+
+::-webkit-scrollbar:vertical {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar:horizontal {
+  width: 10px;
+  height: 10px;
+}
+
+/* Glass effect */
+.glass-card {
+  @apply bg-base-100/50 border-base-content/10 border backdrop-blur-md;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@utility animate-fade-in {
+  animation: fade-in 0.6s ease-out both;
+}
+
+/* Subtle dot-grid background for the landing page */
+@utility bg-grid {
+  background-image: radial-gradient(circle, var(--color-base-content) 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+  background-position: 0 0;
+  opacity: 1;
+  &::before {
+    content: none;
+  }
+}
+.bg-grid {
+  position: relative;
+}
+.bg-grid::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, var(--color-base-content) 0.5px, transparent 0.5px);
+  background-size: 24px 24px;
+  opacity: 0.07;
+  z-index: 0;
+}
+.bg-grid > * {
+  position: relative;
+  z-index: 1;
+}
+
+@theme inline {
+  --animate-cell-ripple: cell-ripple var(--duration, 200ms) ease-out none 1 var(--delay, 0ms);
+
+  @keyframes cell-ripple {
+    0% {
+      opacity: 0.4;
+    }
+    50% {
+      opacity: 0.8;
+    }
+    100% {
+      opacity: 0.4;
+    }
+  }
+}
+
+@utility btn {
+  @apply rounded-xl hover:brightness-125;
+}
+@utility btn-outline {
+  @apply border-border hover:bg-primary/10 hover:text-primary;
+}
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
