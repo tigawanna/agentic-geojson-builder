@@ -1,18 +1,62 @@
 # Agentic GeoJSON Builder - Running TODOs
 
-Last updated: May 7, 2026
+This file tracks what has been cleaned up, what is active now, and what should come next. Treat it as the handoff note between runs.
 
-This is the handoff note between runs. It tracks the project shape, the cleanup already done, and the highest-value next steps.
+## Covered Ground
 
-## Current Snapshot
+- Renamed the root package from `agentic-json-resume` to `agentic-geojson-builder`.
+- Rewrote the main docs around the image/PDF-to-GeoJSON product direction:
+  - `README.md`
+  - `VISION.md`
+  - `ARCHITECTURE.md`
+  - `GAMEPLAN.md`
+- Updated active app branding through `apps/web/src/utils/system.tsx`.
+- Reworked the landing page copy and mock visuals around:
+  - source map upload
+  - overlay alignment
+  - manual tracing
+  - agent draft review
+  - GeoJSON export
+- Replaced the old dashboard landing content with a GeoJSON workspace overview.
+- Added the first active map-project route:
+  - `/map-projects`
+  - `apps/web/src/routes/_dashboard/map-projects/index.tsx`
+  - `apps/web/src/routes/_dashboard/map-projects/-components/MapProjectsPage.tsx`
+- Added shared Zod schemas for the new product contract:
+  - `packages/isomorphic/src/geojson-builder.ts`
+  - GeoJSON geometry and FeatureCollection schemas
+  - map project schema
+  - source asset schema
+  - georeference and control point schemas
+  - agent run/tool schemas
+- Added `zod` to `@repo/isomorphic`.
+- Removed old copied resume routes from the active router surface.
+- Removed old active MCP/API routes that still exposed resume tooling.
+- Moved copied resume app code out of active compilation to:
+  - `legacy/apps-web-copied-resume-app`
+- Moved the copied kitchen API and starter SPA out of the active workspace to:
+  - `legacy/apps-api-copied-kitchen-app`
+  - `legacy/apps-spa-copied-shell`
+- Narrowed `pnpm-workspace.yaml` to `apps/web` and `packages/*`.
+- Added a root `tsconfig.json` boundary and Vite+ ignore patterns so `legacy/**` is ignored by TypeScript, `vp fmt`, and `vp lint`.
+- Added `**/routeTree.gen.ts` to the Vite+ ignore patterns so generated TanStack Router output does not block clean checks.
+- Moved old resume Drizzle schema files out of the active web app and left the active schema barrel exporting Better Auth tables only.
+- Replaced old kitchen/menu organization permission names with GeoJSON project-oriented role statements in `packages/isomorphic/src/auth-roles.ts`.
+- Updated API key permissions and visible settings copy from resume language to map-project language.
+- Removed the active `octokit` dependency after moving the only Octokit helper into the legacy archive.
+- Updated active auth/settings/toolbar copy away from resume language.
+- Replaced the old MCP settings flow with a disabled GeoJSON MCP bridge placeholder.
+- Verified:
+  - `vp check`
+  - `pnpm check-types`
+  - `pnpm --filter @repo/isomorphic check-types`
+  - `pnpm --filter web check-types`
+  - `pnpm --filter web build`
+- Restarted the dev server at `http://localhost:3040/`.
 
-- Active workspace packages are now only:
-  - `apps/web`
-  - `packages/isomorphic`
-  - `packages/ui`
-  - `packages/typescript-config`
-- Archived copied code lives under `legacy/` and is excluded from active TypeScript and Vite+ checks.
-- `apps/web` is the TanStack Start app and currently exposes:
+## Current State
+
+- The active `apps/web/src` app now has a much smaller route surface:
   - landing page
   - auth routes
   - dashboard shell
@@ -21,125 +65,66 @@ This is the handoff note between runs. It tracks the project shape, the cleanup 
   - `/settings`
   - Better Auth API route
 - `/map-projects` is protected and redirects unauthenticated users to auth.
-- `/api/mcp` intentionally returns `404` until the GeoJSON MCP bridge is rebuilt.
-- Dev server is reachable at `http://localhost:3040/`.
-- The repo is still not initialized as git, so there is no commit history safety net yet.
-
-## Verification Status
-
-Clean as of this update:
-
-```bash
-vp check
-pnpm check-types
-pnpm --filter @repo/isomorphic check-types
-pnpm --filter web check-types
-pnpm --filter web build
-```
-
-Known non-blocking build note:
-
-- Production build still warns about large chunks. This is not failing, but should be revisited once routes and map/editor dependencies grow.
-
-## Covered Ground
-
-- Renamed the root package from `agentic-json-resume` to `agentic-geojson-builder`.
-- Rewrote `README.md`, `VISION.md`, `ARCHITECTURE.md`, and `GAMEPLAN.md` around the image/PDF-to-GeoJSON product direction.
-- Updated active app branding through `apps/web/src/utils/system.tsx`.
-- Reworked the landing page around source-map upload, overlay alignment, manual tracing, agent draft review, and GeoJSON export.
-- Replaced the old dashboard landing content with a GeoJSON workspace overview.
-- Added the first active map-project route and page:
-  - `apps/web/src/routes/_dashboard/map-projects/index.tsx`
-  - `apps/web/src/routes/_dashboard/map-projects/-components/MapProjectsPage.tsx`
-- Added shared Zod schemas in `packages/isomorphic/src/geojson-builder.ts` for:
-  - GeoJSON geometry and FeatureCollection
-  - map project metadata
-  - source assets
-  - georeference and control points
-  - agent run/tool contracts
-- Added `zod` to `@repo/isomorphic`.
-- Removed old copied resume routes from the active router surface.
-- Removed old active MCP/API routes that exposed copied resume tooling.
-- Moved copied app/code archives out of the active workspace:
-  - `legacy/apps-web-copied-resume-app`
-  - `legacy/apps-api-copied-kitchen-app`
-  - `legacy/apps-spa-copied-shell`
-- Narrowed `pnpm-workspace.yaml` to `apps/web` and `packages/*`.
-- Added root `tsconfig.json` and Vite+ ignore patterns for:
-  - `legacy/**`
-  - `**/routeTree.gen.ts`
-- Moved old resume Drizzle schema files out of the active web app.
-- Left the active Drizzle schema barrel exporting Better Auth tables only.
-- Replaced old kitchen/menu organization permission names with GeoJSON project-oriented role statements.
-- Updated API key permissions and visible settings copy from resume language to map-project language.
-- Removed the active `octokit` dependency after archiving the only Octokit helper.
-- Replaced the old MCP settings flow with a disabled GeoJSON MCP bridge placeholder.
+- `/api/mcp` returns `404`, which is intentional until the GeoJSON MCP bridge is rebuilt.
+- Old copied code is preserved under `legacy/` but outside active type checking and Vite+ checks.
+- The repo still is not a git repository, so there is no commit history safety net yet.
 
 ## Next Runs
 
-### 1. Initialize Repo Safety
+### 3. Add Real Map Project Data Layer
 
-This should happen before more schema/editor work.
+The schemas exist, but the app does not persist map projects yet.
 
-- Run `git init`.
-- Review the current file set.
-- Make a first checkpoint commit.
-- Keep `.env` and local database files out of any public history.
+Suggested work:
 
-### 2. Decide Legacy Archive Fate
+- create Drizzle schema for map projects, source assets, control points, features, agent runs, and revisions
+- generate migrations through Drizzle commands only
+- add server functions for listing/creating map projects
+- add TanStack Query `queryOptions`
+- wire `/map-projects` to real data instead of the static schema demo
 
-The archive is useful for reference, but it should not ship with a public repo.
+### 4. Build The First Upload Flow
 
-- Decide whether `legacy/` is still useful.
-- Delete it before public push, or move it to a separate private reference repo.
-- Rebuild useful patterns as GeoJSON-specific modules instead of reactivating copied code wholesale.
+Add the first useful workflow: create a project and attach a source map.
 
-### 3. Add Real Map Project Persistence
+Suggested work:
 
-The shared schemas exist, but `/map-projects` still uses static/demo data.
+- project creation form with TanStack Form and Zod validation
+- source asset upload UI
+- store original PDF/image metadata
+- decide storage target: local dev filesystem, S3-compatible bucket, or database blob only for early prototype
 
-- Create Drizzle schema for map projects, source assets, control points, features, agent runs, and revisions.
-- Generate migrations through Drizzle commands only.
-- Add server functions for listing/creating map projects.
-- Add TanStack Query `queryOptions`.
-- Wire `/map-projects` to real persisted data.
+### 5. Build The Map Workspace Route
 
-### 4. Build First Upload Flow
+Create the route that will eventually host the actual editor.
 
-The first valuable workflow is project creation plus source-map attachment.
+Suggested work:
 
-- Add project creation form with TanStack Form and Zod validation.
-- Add source PDF/image upload UI.
-- Store original file metadata and rendered page metadata.
-- Pick early storage: local filesystem, S3-compatible storage, or database blob for prototype only.
+- route structure: `/map-projects/$projectId`
+- route-specific components in `-components`
+- placeholder map canvas with project details
+- source asset panel
+- feature list panel
+- georeferencing panel
 
-### 5. Build Map Workspace Route
+### 6. Choose Map Editing Libraries
 
-Create the route that will host the editor.
+Pick the first real GIS UI stack.
 
-- Add `/map-projects/$projectId`.
-- Put route-specific components under `-components`.
-- Add placeholder map canvas.
-- Add source asset panel.
-- Add feature list panel.
-- Add georeferencing panel.
+Likely starting point:
 
-### 6. Choose GIS UI Libraries
-
-Likely starting stack:
-
-- Leaflet for map display.
-- Leaflet-Geoman for drawing/editing.
-- Turf modules for validation, measurements, simplification, and geometry sanity checks.
-- PDF.js or server-side Poppler for PDF rasterization.
+- Leaflet for map display
+- Leaflet-Geoman for drawing/editing
+- Turf modules for geometry validation and measurements
+- PDF.js or server-side Poppler for source PDF rasterization
 
 Open question:
 
-- Whether Google Maps should be a secondary tab/provider when OSM imagery or labels are insufficient.
+- whether Google Maps is a secondary tab/provider only when OSM imagery or labels are insufficient
 
-### 7. Rebuild Agent And MCP Boundary
+### 7. Design The Agent Tool Boundary
 
-Agent output should create reviewable drafts, not silently mutate accepted GeoJSON.
+Rebuild MCP and in-app AI around GeoJSON tools, not resume tools.
 
 Suggested tools:
 
@@ -149,10 +134,15 @@ Suggested tools:
 - `validate_geojson_features`
 - `apply_feature_patch`
 - `explain_feature`
+- `draw_shape`
+
+Important constraint:
+
+- agent output should create reviewable drafts, not silently mutate accepted GeoJSON.
 
 ## Known Cleanup Debt
 
 - `apps/web/.env` contains local secrets; move real secrets out before any public push.
-- `legacy/` is ignored by checks but still present on disk.
-- Some generic UI/wrapper components have copied names or rough edges; they are not blocking the GeoJSON product direction yet.
-- Better Auth organization roles are GeoJSON-shaped, but the custom access-control builder is not passed into the plugin until the real permission layer is designed.
+- `legacy/` still contains copied project code by design; it is ignored by active checks but should not ship with a public repo.
+- Some generic UI/wrapper components have typos or copied names, but they are not blocking the new product direction yet.
+- The Better Auth organization plugin is using the GeoJSON role definitions without passing the custom access-control builder until the real permission layer is designed.
