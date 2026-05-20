@@ -9,7 +9,7 @@ import {
   dashboard_admin_routes,
   getDashboardPrimaryRoutes,
 } from "./-components/dashoboard-sidebar/dashboard_routes";
-import { viewerMiddleware } from "@/data-access-layer/auth/viewer";
+import { viewerMiddleware } from "@/data-access-layer/auth/viewer.server";
 
 export const Route = createFileRoute("/_dashboard")({
   pendingComponent: () => <RouterPendingComponent />,
@@ -19,8 +19,8 @@ export const Route = createFileRoute("/_dashboard")({
     middleware: [viewerMiddleware],
   },
   component: DashboardShell,
-  beforeLoad: async ({ context, serverContext }) => {
-    if (!serverContext?.isServer && !context.viewer?.user) {
+  beforeLoad: async ({ context, location }) => {
+    if (!context.viewer?.user) {
       throw redirect({ to: "/auth", search: { returnTo: location.pathname } });
     }
   },

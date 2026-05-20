@@ -1,3 +1,5 @@
+import "@tanstack/react-start/server-only";
+
 import { drizzle } from "drizzle-orm/libsql/node";
 import { serverEnv } from "../server-env";
 import * as tablesSchema from "./scheam/index";

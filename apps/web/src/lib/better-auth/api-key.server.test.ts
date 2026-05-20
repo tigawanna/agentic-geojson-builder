@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@tanstack/react-start/server-only", () => ({}));
 
 const mockVerifyApiKey = vi.fn();
-vi.mock("@/lib/auth", () => ({
+vi.mock("@/lib/auth.server", () => ({
   auth: {
     api: {
       verifyApiKey: (...args: unknown[]) => mockVerifyApiKey(...args),

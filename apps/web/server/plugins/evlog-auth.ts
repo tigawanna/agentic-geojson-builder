@@ -1,7 +1,7 @@
 import { definePlugin } from "nitro";
 import { identifyUser } from "evlog/better-auth";
 import { useLogger } from "evlog/nitro/v3";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth.server";
 
 const AUTH_PATH_PREFIX = "/api/auth/";
 
@@ -11,9 +11,13 @@ export default definePlugin((nitroApp) => {
     if (pathname.startsWith(AUTH_PATH_PREFIX)) return;
 
     const log = useLogger(event);
-    const session = await auth.api.getSession({ headers: event.req.headers });
-    if (session) {
-      identifyUser(log, session);
+    try {
+      const session = await auth.api.getSession({ headers: event.req.headers });
+      if (session) {
+        identifyUser(log, session);
+      }
+    } catch {
+      return;
     }
   });
 });

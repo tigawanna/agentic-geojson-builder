@@ -29,8 +29,12 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     middleware: [createMiddleware().server(evlogErrorHandler)],
   },
   beforeLoad: async ({ context }) => {
-    const viewer = await context.queryClient.ensureQueryData(viewerqueryOptions);
-    return { viewer: viewer.data };
+    try {
+      const viewer = await context.queryClient.ensureQueryData(viewerqueryOptions);
+      return { viewer: viewer.data ?? undefined };
+    } catch {
+      return { viewer: undefined };
+    }
   },
   head: () => ({
     meta: [

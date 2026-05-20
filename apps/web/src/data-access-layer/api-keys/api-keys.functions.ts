@@ -1,6 +1,6 @@
-import { auth } from "@/lib/auth";
-import { viewerMiddleware } from "@/data-access-layer/auth/viewer";
-import { createServerFn } from "@tanstack/react-start";
+import { safeStringToUrl } from "@/utils/url";
+import { redirect } from "@tanstack/react-router";
+import { createMiddleware, createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
 const permissionLevelSchema = z.enum(["read", "write"]);
@@ -17,10 +17,25 @@ const PERMISSION_MAP: Record<z.infer<typeof permissionLevelSchema>, Record<strin
   write: { mapProject: ["list", "view", "create", "update", "delete", "export"] },
 };
 
+const requireViewerMiddleware = createMiddleware().server(async ({ next, request }) => {
+  const { readSessionFromHeaders } = await import("@/lib/auth.session.server");
+  const session = await readSessionFromHeaders(request.headers);
+  if (!session) {
+    const returnTo = safeStringToUrl(request.url)?.pathname ?? "/";
+    throw redirect({ to: "/auth", search: { returnTo } });
+  }
+  return await next({
+    context: {
+      viewer: { user: session.user, session: session.session },
+    },
+  });
+});
+
 export const createApiKeyFn = createServerFn({ method: "POST" })
-  .middleware([viewerMiddleware])
+  .middleware([requireViewerMiddleware])
   .inputValidator((input: CreateApiKeyInput) => createApiKeyInputSchema.parse(input))
   .handler(async ({ data, context }) => {
+    const { auth } = await import("@/lib/auth.server");
     const { name, permission } = data;
     const userId = context.viewer.user.id;
 

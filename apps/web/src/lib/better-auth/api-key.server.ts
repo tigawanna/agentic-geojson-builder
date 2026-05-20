@@ -1,6 +1,6 @@
 import "@tanstack/react-start/server-only";
 
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth.server";
 
 export type ApiKeyPermissionCheck = Record<string, string[]>;
 
