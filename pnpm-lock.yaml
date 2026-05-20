@@ -67,12 +67,18 @@ importers:
       '@electric-sql/pglite':
         specifier: ^0.4.5
         version: 0.4.5
+      '@electric-sql/pglite-postgis':
+        specifier: ^0.0.7
+        version: 0.0.7(@electric-sql/pglite@0.4.5)
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.71.2(react@19.2.5))
       '@libsql/client':
         specifier: ^0.17.2
         version: 0.17.2
+      '@proj-airi/drizzle-orm-browser-migrator':
+        specifier: ^0.1.6
+        version: 0.1.6(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@opentelemetry/api@1.9.1)(@types/pg@8.16.0)(kysely@0.28.16)(pg@8.19.0))
       '@repo/isomorphic':
         specifier: workspace:*
         version: link:../../packages/isomorphic
@@ -159,7 +165,7 @@ importers:
         version: 8.6.0(react@19.2.5)
       evlog:
         specifier: ^2.16.0
-        version: 2.16.0(@tanstack/start-client-core@1.170.0)(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3))(elysia@1.4.28(@sinclair/typebox@0.34.49)(exact-mirror@1.0.0)(file-type@22.0.1)(openapi-types@12.1.3)(typescript@6.0.3))(express@5.2.1)(hono@4.12.21)(nitro@3.0.260415-beta(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3))(chokidar@5.0.0)(dotenv@17.4.2)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@opentelemetry/api@1.9.1)(@types/pg@8.16.0)(kysely@0.28.16)(pg@8.19.0))(jiti@2.7.0)(lru-cache@11.2.6))(ofetch@2.0.0-alpha.3)(react@19.2.5)
+        version: 2.16.0(@tanstack/start-client-core@1.170.0)(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3))(elysia@1.4.28(@sinclair/typebox@0.34.49)(exact-mirror@1.0.0)(file-type@22.0.1)(openapi-types@12.1.3)(typescript@6.0.3))(express@5.2.1)(hono@4.12.21)(nitro@3.0.260415-beta(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3))(chokidar@5.0.0)(dotenv@17.4.2)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@opentelemetry/api@1.9.1)(@types/pg@8.16.0)(kysely@0.28.16)(pg@8.19.0))(giget@3.2.0)(jiti@2.7.0)(lru-cache@11.2.6))(ofetch@2.0.0-alpha.3)(react@19.2.5)
       hono:
         specifier: ^4.12.18
         version: 4.12.21
@@ -174,7 +180,7 @@ importers:
         version: 0.4.6(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       nitro:
         specifier: 3.0.260415-beta
-        version: 3.0.260415-beta(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3))(chokidar@5.0.0)(dotenv@17.4.2)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@opentelemetry/api@1.9.1)(@types/pg@8.16.0)(kysely@0.28.16)(pg@8.19.0))(jiti@2.7.0)(lru-cache@11.2.6)
+        version: 3.0.260415-beta(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3))(chokidar@5.0.0)(dotenv@17.4.2)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@opentelemetry/api@1.9.1)(@types/pg@8.16.0)(kysely@0.28.16)(pg@8.19.0))(giget@3.2.0)(jiti@2.7.0)(lru-cache@11.2.6)
       radix-ui:
         specifier: ^1.4.3
         version: 1.4.3(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -224,6 +230,9 @@ importers:
       '@playwright/test':
         specifier: ^1.60.0
         version: 1.60.0
+      '@proj-airi/unplugin-drizzle-orm-migrations':
+        specifier: ^0.1.6
+        version: 0.1.6(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3))
       '@tanstack/devtools-vite':
         specifier: ^0.5.0
         version: 0.5.2(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3))
@@ -604,6 +613,11 @@ packages:
   '@drizzle-team/brocli@0.10.2':
     resolution: {integrity: sha512-z33Il7l5dKjUgGULTqBsQBQwckHh5AbIuxhdsIxDDiZAzBOrZO6q9ogcWC65kU382AfynTfgNumVcNIjuIua6w==}
 
+  '@electric-sql/pglite-postgis@0.0.7':
+    resolution: {integrity: sha512-qWbWD3WG+PL0gBQ2YzvK0RI7C0i+VPxEpGWb8cT99x1x7kujCtfTCL2gRxFWmh5rqjoZTyY69HkcXphQH4bTNA==}
+    peerDependencies:
+      '@electric-sql/pglite': 0.4.5
+
   '@electric-sql/pglite@0.4.5':
     resolution: {integrity: sha512-aGG2zGEyZzGWKy8P+9ZoNUV0jxt1+hgbeTf+bVAYyxVZZLXg3/9aFlfLxb08AYZVAfAkQlQIysmWjhc5hwDG8g==}
 
@@ -803,6 +817,9 @@ packages:
 
   '@floating-ui/utils@0.2.10':
     resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
+
+  '@guiiai/logg@1.2.11':
+    resolution: {integrity: sha512-OE4tpTa3NCw/A0YC6TcRD09fLeatpyQ22625syiW7amygCAnHpswIjQRMDLkZnxFTHvleKomBpaXyIsk0qDk3g==}
 
   '@hookform/resolvers@5.2.2':
     resolution: {integrity: sha512-A/IxlMLShx3KjV/HeTcTfaMxdwy690+L/ZADoeaTltLx+CVuzkeVIPuybK3jrRfw7YZnmdKsVVHAlEPIAEUNlA==}
@@ -1212,6 +1229,19 @@ packages:
 
   '@polka/url@1.0.0-next.29':
     resolution: {integrity: sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==}
+
+  '@proj-airi/drizzle-orm-browser-migrator@0.1.6':
+    resolution: {integrity: sha512-7A7Ay5vSLBer2P+Ydbrl9AktE7geIlh396zB/3a9odwI/1GT89Pljzvjz5SVxG0e17+wMOPLRKnTnCzukL1B9Q==}
+    peerDependencies:
+      drizzle-orm: '>=0.44.0'
+
+  '@proj-airi/unplugin-drizzle-orm-migrations@0.1.6':
+    resolution: {integrity: sha512-YBlxafvxFLZJxlUm1QDSLdY7Hy1K71OAkg29bzeuzau/VZc1csUp75b9Fdb/RhtZtP2G3WQh8riMho4/gDoWMQ==}
+    peerDependencies:
+      vite: ^2.9.0 || ^3.0.0-0 || ^4.0.0 || ^5.0.0-0 || ^6.0.0-0
+    peerDependenciesMeta:
+      vite:
+        optional: true
 
   '@radix-ui/number@1.1.1':
     resolution: {integrity: sha512-MkKCwxlXTgz6CFoJx3pCwn07GKp36+aZyu/u2Ln2VrA5DcdyCZkASEDBTd8x5whTQQL5CiYf4prXKLcgQdv29g==}
@@ -3390,6 +3420,14 @@ packages:
     resolution: {integrity: sha512-/Nf7TyzTx6S3yRJObOAV7956r8cr2+Oj8AC5dt8wSP3BQAoeX58NoHyCU8P8zGkNXStjTSi6fzO6F0pBdcYbEg==}
     engines: {node: '>= 0.8'}
 
+  c12@3.3.4:
+    resolution: {integrity: sha512-cM0ApFQSBXuourJejzwv/AuPRvAxordTyParRVcHjjtXirtkzM0uK2L9TTn9s0cXZbG7E55jCivRQzoxYmRAlA==}
+    peerDependencies:
+      magicast: '*'
+    peerDependenciesMeta:
+      magicast:
+        optional: true
+
   cache-base@1.0.1:
     resolution: {integrity: sha512-AKcdTnFSWATd5/GCPRxr2ChwIJ85CeyrEyjRHlKxQ56d4XJMGym0uAiKn0xbLOGOl3+yRpOTi484dVCEc5AUzQ==}
     engines: {node: '>=0.10.0'}
@@ -3473,6 +3511,9 @@ packages:
 
   concat-map@0.0.1:
     resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
+
+  confbox@0.2.4:
+    resolution: {integrity: sha512-ysOGlgTFbN2/Y6Cg3Iye8YKulHw+R2fNXHrgSmXISQdMnomY6eNDprVdW9R5xBguEqI954+S6709UyiO7B+6OQ==}
 
   consola@3.4.2:
     resolution: {integrity: sha512-5IKcdX0nnYavi6G7TtOhwkYzyjfJlatbjMjuLSfE2kYT5pMDOilZ4OvMhi637CcDICTmz3wARPoyhqyX1Y+XvA==}
@@ -3647,6 +3688,9 @@ packages:
   dequal@2.0.3:
     resolution: {integrity: sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA==}
     engines: {node: '>=6'}
+
+  destr@2.0.5:
+    resolution: {integrity: sha512-ugFTXCtDZunbzasqBxrK93Ik/DRYsO6S/fedkWEMKqt04xZ4csmnmwGDBAb07QWNaGMAmnTIemsYZCksjATwsA==}
 
   detect-indent@4.0.0:
     resolution: {integrity: sha512-BDKtmHlOzwI7iRuEkhzsnPoi5ypEhWAJB5RvHWe1kMr06js3uK5B3734i3ui5Yd+wOJV1cpE4JnivPD283GU/A==}
@@ -3876,6 +3920,9 @@ packages:
         optional: true
       miniflare:
         optional: true
+
+  error-stack-parser@2.1.4:
+    resolution: {integrity: sha512-Sk5V6wVazPhq5MhpO+AUxJn5x7XSXGl1R93Vn7i+zS15KDVxQijejNCrz8340/2bgLBjR9GtEG8ZVKONDjcqGQ==}
 
   es-define-property@1.0.1:
     resolution: {integrity: sha512-e3nRfgfUZ4rNGL232gUgX06QNyyez04KdjFrF+LTRoOXmrOgFKDg4BCdsjW8EnT69eqdYGmRpJwiPVYNrCaW3g==}
@@ -4176,6 +4223,10 @@ packages:
 
   getpass@0.1.7:
     resolution: {integrity: sha512-0fzj9JxOLfJ+XGLhR8ze3unN0KZCgZwiSSDz168VERjK8Wl8kVSdcu2kspd4s4wtAa1y/qrVRiAA0WclVsu0ng==}
+
+  giget@3.2.0:
+    resolution: {integrity: sha512-GvHTWcykIR/fP8cj8dMpuMMkvaeJfPvYnhq0oW+chSeIr+ldX21ifU2Ms6KBoyKZQZmVaUAAhQ2EZ68KJF8a7A==}
+    hasBin: true
 
   glob-base@0.3.0:
     resolution: {integrity: sha512-ab1S1g1EbO7YzauaJLkgLp7DZVAqj9M/dvKlTt8DkXA2tiOIcSMrlVI2J1RZyB5iJVccEscjGn+kpOG9788MHA==}
@@ -4981,6 +5032,9 @@ packages:
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
 
+  perfect-debounce@2.1.0:
+    resolution: {integrity: sha512-LjgdTytVFXeUgtHZr9WYViYSM/g8MkcTPYDlPa3cDqMirHjKiSZPYd6DoL7pK8AJQr+uWkQvCjHNdiMqsrJs+g==}
+
   performance-now@2.1.0:
     resolution: {integrity: sha512-7EAHlyLHI56VEIdK57uwHdHKIaAGbnXPiw0yWbarQZOKaKpvUIgW0jWRVLiatnM+XXlSwsanIBH/hzGMJulMow==}
 
@@ -5028,6 +5082,9 @@ packages:
   pixelmatch@7.1.0:
     resolution: {integrity: sha512-1wrVzJ2STrpmONHKBy228LM1b84msXDUoAzVEl0R8Mz4Ce6EPr+IVtxm8+yvrqLYMHswREkjYFaMxnyGnaY3Ng==}
     hasBin: true
+
+  pkg-types@2.3.1:
+    resolution: {integrity: sha512-y+ichcgc2LrADuhLNAx8DFjVfgz91pRxfZdI3UDhxHvcVEZsenLO+7XaU5vOp0u/7V/wZ+plyuQxtrDlZJ+yeg==}
 
   pkginfo@0.4.1:
     resolution: {integrity: sha512-8xCNE/aT/EXKenuMDZ+xTVwkT8gsoHN2z/Q29l80u0ppGEXVvsKRzNMbtKhg8LS8k1tJLAHHylf6p4VFmP6XUQ==}
@@ -5143,6 +5200,9 @@ packages:
   raw-body@3.0.2:
     resolution: {integrity: sha512-K5zQjDllxWkf7Z5xJdV0/B0WTNqx6vxG70zJE4N0kBs4LovmEYWJzQGxC9bS9RAKu3bgM40lrd5zoLJ12MQ5BA==}
     engines: {node: '>= 0.10'}
+
+  rc9@3.0.1:
+    resolution: {integrity: sha512-gMDyleLWVE+i6Sgtc0QbbY6pEKqYs97NGi6isHQPqYlLemPoO8dxQ3uGi0f4NiP98c+jMW6cG1Kx9dDwfvqARQ==}
 
   react-day-picker@9.14.0:
     resolution: {integrity: sha512-tBaoDWjPwe0M5pGrum4H0SR6Lyk+BO9oHnp9JbKpGKW2mlraNPgP9BMfsg5pWpwrssARmeqk7YBl2oXutZTaHA==}
@@ -5502,6 +5562,9 @@ packages:
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
 
+  stackframe@1.3.4:
+    resolution: {integrity: sha512-oeVtt7eWQS+Na6F//S4kJ2K2VbRlS9D43mAlMyVpVWovy9o+jfgH8O9agzANzaiLjclA0oYzUXEM4PurhSUChw==}
+
   static-extend@0.1.2:
     resolution: {integrity: sha512-72E9+uLc27Mt718pMHt9VMNiAL4LMsmDbBva8mxWUCkT07fSzEGMYUCk0XWY6lp0j6RBAG4cJ3mWuZv2OE3s0g==}
     engines: {node: '>=0.10.0'}
@@ -5711,6 +5774,9 @@ packages:
     resolution: {integrity: sha512-rvKSBiC5zqCCiDZ9kAOszZcDvdAHwwIKJG33Ykj43OKcWsnmcBRL09YTU4nOeHZ8Y2a7l1MgTd08SBe9A8Qj6A==}
     engines: {node: '>=18'}
 
+  uncrypto@0.1.3:
+    resolution: {integrity: sha512-Ql87qFHB3s/De2ClA9e0gsnS6zXG27SkTiSJwjCc9MebbfapQfuPzumMIUMi38ezPZVNFcHI9sUIepeQfw8J8Q==}
+
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
@@ -5731,6 +5797,10 @@ packages:
   unpipe@1.0.0:
     resolution: {integrity: sha512-pjy2bYhSsufwWlKwPc+l3cN7+wuJlK6uz0YdJEOlQDbl6jo/YlPi4mb8agUkVC8BF7V8NuzeyPNqRksA3hztKQ==}
     engines: {node: '>= 0.8'}
+
+  unplugin@2.3.11:
+    resolution: {integrity: sha512-5uKD0nqiYVzlmCRs01Fhs2BdkEgBS3SAVP6ndrBsuK42iC2+JHyxM05Rm9G8+5mkmRtzMZGY8Ct5+mliZxU/Ww==}
+    engines: {node: '>=18.12.0'}
 
   unplugin@3.0.0:
     resolution: {integrity: sha512-0Mqk3AT2TZCXWKdcoaufeXNukv2mTrEZExeXlHIOZXdqYoHHr4n51pymnwV8x2BOVxwXbK2HLlI7usrqMpycdg==}
@@ -6364,6 +6434,10 @@ snapshots:
 
   '@drizzle-team/brocli@0.10.2': {}
 
+  '@electric-sql/pglite-postgis@0.0.7(@electric-sql/pglite@0.4.5)':
+    dependencies:
+      '@electric-sql/pglite': 0.4.5
+
   '@electric-sql/pglite@0.4.5': {}
 
   '@emnapi/core@1.10.0':
@@ -6490,6 +6564,11 @@ snapshots:
       react-dom: 19.2.5(react@19.2.5)
 
   '@floating-ui/utils@0.2.10': {}
+
+  '@guiiai/logg@1.2.11':
+    dependencies:
+      error-stack-parser: 2.1.4
+      pathe: 2.0.3
 
   '@hookform/resolvers@5.2.2(react-hook-form@7.71.2(react@19.2.5))':
     dependencies:
@@ -6767,6 +6846,21 @@ snapshots:
       playwright: 1.60.0
 
   '@polka/url@1.0.0-next.29': {}
+
+  '@proj-airi/drizzle-orm-browser-migrator@0.1.6(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@opentelemetry/api@1.9.1)(@types/pg@8.16.0)(kysely@0.28.16)(pg@8.19.0))':
+    dependencies:
+      '@guiiai/logg': 1.2.11
+      drizzle-orm: 0.45.2(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@opentelemetry/api@1.9.1)(@types/pg@8.16.0)(kysely@0.28.16)(pg@8.19.0)
+
+  '@proj-airi/unplugin-drizzle-orm-migrations@0.1.6(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3))':
+    dependencies:
+      c12: 3.3.4
+      uncrypto: 0.1.3
+      unplugin: 2.3.11
+    optionalDependencies:
+      vite: '@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3)'
+    transitivePeerDependencies:
+      - magicast
 
   '@radix-ui/number@1.1.1': {}
 
@@ -9141,6 +9235,21 @@ snapshots:
   bytes@3.1.2:
     optional: true
 
+  c12@3.3.4:
+    dependencies:
+      chokidar: 5.0.0
+      confbox: 0.2.4
+      defu: 6.1.7
+      dotenv: 17.4.2
+      exsolve: 1.0.8
+      giget: 3.2.0
+      jiti: 2.7.0
+      ohash: 2.0.11
+      pathe: 2.0.3
+      perfect-debounce: 2.1.0
+      pkg-types: 2.3.1
+      rc9: 3.0.1
+
   cache-base@1.0.1:
     dependencies:
       collection-visit: 1.0.0
@@ -9271,6 +9380,8 @@ snapshots:
 
   concat-map@0.0.1: {}
 
+  confbox@0.2.4: {}
+
   consola@3.4.2: {}
 
   content-disposition@1.1.0:
@@ -9400,6 +9511,8 @@ snapshots:
     optional: true
 
   dequal@2.0.3: {}
+
+  destr@2.0.5: {}
 
   detect-indent@4.0.0:
     dependencies:
@@ -9541,6 +9654,10 @@ snapshots:
       httpxy: 0.5.1
       srvx: 0.11.15
 
+  error-stack-parser@2.1.4:
+    dependencies:
+      stackframe: 1.3.4
+
   es-define-property@1.0.1:
     optional: true
 
@@ -9609,13 +9726,13 @@ snapshots:
   etag@1.8.1:
     optional: true
 
-  evlog@2.16.0(@tanstack/start-client-core@1.170.0)(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3))(elysia@1.4.28(@sinclair/typebox@0.34.49)(exact-mirror@1.0.0)(file-type@22.0.1)(openapi-types@12.1.3)(typescript@6.0.3))(express@5.2.1)(hono@4.12.21)(nitro@3.0.260415-beta(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3))(chokidar@5.0.0)(dotenv@17.4.2)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@opentelemetry/api@1.9.1)(@types/pg@8.16.0)(kysely@0.28.16)(pg@8.19.0))(jiti@2.7.0)(lru-cache@11.2.6))(ofetch@2.0.0-alpha.3)(react@19.2.5):
+  evlog@2.16.0(@tanstack/start-client-core@1.170.0)(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3))(elysia@1.4.28(@sinclair/typebox@0.34.49)(exact-mirror@1.0.0)(file-type@22.0.1)(openapi-types@12.1.3)(typescript@6.0.3))(express@5.2.1)(hono@4.12.21)(nitro@3.0.260415-beta(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3))(chokidar@5.0.0)(dotenv@17.4.2)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@opentelemetry/api@1.9.1)(@types/pg@8.16.0)(kysely@0.28.16)(pg@8.19.0))(giget@3.2.0)(jiti@2.7.0)(lru-cache@11.2.6))(ofetch@2.0.0-alpha.3)(react@19.2.5):
     optionalDependencies:
       '@tanstack/start-client-core': 1.170.0
       elysia: 1.4.28(@sinclair/typebox@0.34.49)(exact-mirror@1.0.0)(file-type@22.0.1)(openapi-types@12.1.3)(typescript@6.0.3)
       express: 5.2.1
       hono: 4.12.21
-      nitro: 3.0.260415-beta(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3))(chokidar@5.0.0)(dotenv@17.4.2)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@opentelemetry/api@1.9.1)(@types/pg@8.16.0)(kysely@0.28.16)(pg@8.19.0))(jiti@2.7.0)(lru-cache@11.2.6)
+      nitro: 3.0.260415-beta(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3))(chokidar@5.0.0)(dotenv@17.4.2)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@opentelemetry/api@1.9.1)(@types/pg@8.16.0)(kysely@0.28.16)(pg@8.19.0))(giget@3.2.0)(jiti@2.7.0)(lru-cache@11.2.6)
       ofetch: 2.0.0-alpha.3
       react: 19.2.5
       vite: '@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3)'
@@ -9871,6 +9988,8 @@ snapshots:
   getpass@0.1.7:
     dependencies:
       assert-plus: 1.0.0
+
+  giget@3.2.0: {}
 
   glob-base@0.3.0:
     dependencies:
@@ -10517,7 +10636,7 @@ snapshots:
 
   nf3@0.3.16: {}
 
-  nitro@3.0.260415-beta(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3))(chokidar@5.0.0)(dotenv@17.4.2)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@opentelemetry/api@1.9.1)(@types/pg@8.16.0)(kysely@0.28.16)(pg@8.19.0))(jiti@2.7.0)(lru-cache@11.2.6):
+  nitro@3.0.260415-beta(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3))(chokidar@5.0.0)(dotenv@17.4.2)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@opentelemetry/api@1.9.1)(@types/pg@8.16.0)(kysely@0.28.16)(pg@8.19.0))(giget@3.2.0)(jiti@2.7.0)(lru-cache@11.2.6):
     dependencies:
       consola: 3.4.2
       crossws: 0.4.5(srvx@0.11.15)
@@ -10535,6 +10654,7 @@ snapshots:
       unstorage: 2.0.0-alpha.7(chokidar@5.0.0)(db0@0.3.4(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(drizzle-orm@0.45.2(@electric-sql/pglite@0.4.5)(@libsql/client@0.17.2)(@opentelemetry/api@1.9.1)(@types/pg@8.16.0)(kysely@0.28.16)(pg@8.19.0)))(lru-cache@11.2.6)(ofetch@2.0.0-alpha.3)
     optionalDependencies:
       dotenv: 17.4.2
+      giget: 3.2.0
       jiti: 2.7.0
       vite: '@voidzero-dev/vite-plus-core@0.1.22(@types/node@25.3.2)(esbuild@0.27.7)(jiti@2.7.0)(terser@5.46.0)(tsx@4.21.0)(typescript@6.0.3)'
     transitivePeerDependencies:
@@ -10749,6 +10869,8 @@ snapshots:
 
   pathe@2.0.3: {}
 
+  perfect-debounce@2.1.0: {}
+
   performance-now@2.1.0: {}
 
   pg-cloudflare@1.3.0:
@@ -10797,6 +10919,12 @@ snapshots:
   pixelmatch@7.1.0:
     dependencies:
       pngjs: 7.0.0
+
+  pkg-types@2.3.1:
+    dependencies:
+      confbox: 0.2.4
+      exsolve: 1.0.8
+      pathe: 2.0.3
 
   pkginfo@0.4.1: {}
 
@@ -10954,6 +11082,11 @@ snapshots:
       iconv-lite: 0.7.2
       unpipe: 1.0.0
     optional: true
+
+  rc9@3.0.1:
+    dependencies:
+      defu: 6.1.7
+      destr: 2.0.5
 
   react-day-picker@9.14.0(react@19.2.5):
     dependencies:
@@ -11429,6 +11562,8 @@ snapshots:
   stackback@0.0.2:
     optional: true
 
+  stackframe@1.3.4: {}
+
   static-extend@0.1.2:
     dependencies:
       define-property: 0.2.5
@@ -11619,6 +11754,8 @@ snapshots:
   uint8array-extras@1.5.0:
     optional: true
 
+  uncrypto@0.1.3: {}
+
   undici-types@6.21.0: {}
 
   undici-types@7.18.2: {}
@@ -11639,6 +11776,13 @@ snapshots:
 
   unpipe@1.0.0:
     optional: true
+
+  unplugin@2.3.11:
+    dependencies:
+      '@jridgewell/remapping': 2.3.5
+      acorn: 8.16.0
+      picomatch: 4.0.4
+      webpack-virtual-modules: 0.6.2
 
   unplugin@3.0.0:
     dependencies:
