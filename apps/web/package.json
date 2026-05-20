@@ -16,12 +16,18 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "db:pglite:generate": "drizzle-kit generate --config drizzle.pglite.config.ts",
+    "db:pglite:migrate": "drizzle-kit migrate --config drizzle.pglite.config.ts",
+    "db:pglite:push": "drizzle-kit push --config drizzle.pglite.config.ts",
+    "db:pglite:studio": "drizzle-kit studio --config drizzle.pglite.config.ts",
+    "db:pglite:custom-migrations": "pnpm drizzle-kit generate --custom --name=extensions --config drizzle.pglite.config.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.1.0",
     "@better-auth/api-key": "^1.6.9",
     "@better-auth/oauth-provider": "^1.6.9",
+    "@electric-sql/pglite": "^0.4.5",
     "@hookform/resolvers": "^5.2.2",
     "@libsql/client": "^0.17.2",
     "@repo/isomorphic": "workspace:*",
@@ -49,6 +55,7 @@
     "cmdk": "^1.1.1",
     "daisyui": "^5.5.14",
     "date-fns": "^4.1.0",
+    "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "embla-carousel-react": "^8.6.0",
     "evlog": "^2.16.0",
