@@ -4,4 +4,5 @@ export const queryKeyPrefixes = {
   deviceSessions: "deviceSessions",
   apiKeys: "api-keys",
   experiments: "experiments",
+  maps: "maps",
 } as const;

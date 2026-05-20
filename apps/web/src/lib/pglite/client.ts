@@ -7,7 +7,7 @@ import migrations from "virtual:drizzle-migrations.sql";
 import * as schema from "./schema/index.schema";
 
 export const pgliteClient = new PGlite({
-  database: "idb://my-pgdata",
+  dataDir: "idb://my-pgdata",
   extensions: { postgis, live },
 });
 
