@@ -17,7 +17,9 @@ import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthGithubRouteImport } from './routes/auth/github'
 import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dashboard'
+import { Route as DashboardPgliteLayoutRouteImport } from './routes/_dashboard/pglite/layout'
 import { Route as DashboardSettingsIndexRouteImport } from './routes/_dashboard/settings/index'
+import { Route as DashboardPgliteIndexRouteImport } from './routes/_dashboard/pglite/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const AuthLayoutRoute = AuthLayoutRouteImport.update({
@@ -59,10 +61,20 @@ const DashboardDashboardRoute = DashboardDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
+const DashboardPgliteLayoutRoute = DashboardPgliteLayoutRouteImport.update({
+  id: '/pglite',
+  path: '/pglite',
+  getParentRoute: () => DashboardLayoutRoute,
+} as any)
 const DashboardSettingsIndexRoute = DashboardSettingsIndexRouteImport.update({
   id: '/settings/',
   path: '/settings/',
   getParentRoute: () => DashboardLayoutRoute,
+} as any)
+const DashboardPgliteIndexRoute = DashboardPgliteIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardPgliteLayoutRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -73,12 +85,14 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthLayoutRouteWithChildren
+  '/pglite': typeof DashboardPgliteLayoutRouteWithChildren
   '/dashboard': typeof DashboardDashboardRoute
   '/auth/github': typeof AuthGithubRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
   '/test/': typeof TestIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/pglite/': typeof DashboardPgliteIndexRoute
   '/settings/': typeof DashboardSettingsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -89,6 +103,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthIndexRoute
   '/test': typeof TestIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/pglite': typeof DashboardPgliteIndexRoute
   '/settings': typeof DashboardSettingsIndexRoute
 }
 export interface FileRoutesById {
@@ -96,12 +111,14 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_dashboard': typeof DashboardLayoutRouteWithChildren
   '/auth': typeof AuthLayoutRouteWithChildren
+  '/_dashboard/pglite': typeof DashboardPgliteLayoutRouteWithChildren
   '/_dashboard/dashboard': typeof DashboardDashboardRoute
   '/auth/github': typeof AuthGithubRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
   '/test/': typeof TestIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_dashboard/pglite/': typeof DashboardPgliteIndexRoute
   '/_dashboard/settings/': typeof DashboardSettingsIndexRoute
 }
 export interface FileRouteTypes {
@@ -109,12 +126,14 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/pglite'
     | '/dashboard'
     | '/auth/github'
     | '/auth/signup'
     | '/auth/'
     | '/test/'
     | '/api/auth/$'
+    | '/pglite/'
     | '/settings/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -125,18 +144,21 @@ export interface FileRouteTypes {
     | '/auth'
     | '/test'
     | '/api/auth/$'
+    | '/pglite'
     | '/settings'
   id:
     | '__root__'
     | '/'
     | '/_dashboard'
     | '/auth'
+    | '/_dashboard/pglite'
     | '/_dashboard/dashboard'
     | '/auth/github'
     | '/auth/signup'
     | '/auth/'
     | '/test/'
     | '/api/auth/$'
+    | '/_dashboard/pglite/'
     | '/_dashboard/settings/'
   fileRoutesById: FileRoutesById
 }
@@ -206,12 +228,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDashboardRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
+    '/_dashboard/pglite': {
+      id: '/_dashboard/pglite'
+      path: '/pglite'
+      fullPath: '/pglite'
+      preLoaderRoute: typeof DashboardPgliteLayoutRouteImport
+      parentRoute: typeof DashboardLayoutRoute
+    }
     '/_dashboard/settings/': {
       id: '/_dashboard/settings/'
       path: '/settings'
       fullPath: '/settings/'
       preLoaderRoute: typeof DashboardSettingsIndexRouteImport
       parentRoute: typeof DashboardLayoutRoute
+    }
+    '/_dashboard/pglite/': {
+      id: '/_dashboard/pglite/'
+      path: '/'
+      fullPath: '/pglite/'
+      preLoaderRoute: typeof DashboardPgliteIndexRouteImport
+      parentRoute: typeof DashboardPgliteLayoutRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -223,12 +259,27 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DashboardPgliteLayoutRouteChildren {
+  DashboardPgliteIndexRoute: typeof DashboardPgliteIndexRoute
+}
+
+const DashboardPgliteLayoutRouteChildren: DashboardPgliteLayoutRouteChildren = {
+  DashboardPgliteIndexRoute: DashboardPgliteIndexRoute,
+}
+
+const DashboardPgliteLayoutRouteWithChildren =
+  DashboardPgliteLayoutRoute._addFileChildren(
+    DashboardPgliteLayoutRouteChildren,
+  )
+
 interface DashboardLayoutRouteChildren {
+  DashboardPgliteLayoutRoute: typeof DashboardPgliteLayoutRouteWithChildren
   DashboardDashboardRoute: typeof DashboardDashboardRoute
   DashboardSettingsIndexRoute: typeof DashboardSettingsIndexRoute
 }
 
 const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
+  DashboardPgliteLayoutRoute: DashboardPgliteLayoutRouteWithChildren,
   DashboardDashboardRoute: DashboardDashboardRoute,
   DashboardSettingsIndexRoute: DashboardSettingsIndexRoute,
 }

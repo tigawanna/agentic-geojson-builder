@@ -9,7 +9,7 @@ type PgliteContextValue = {
 
 const PgliteContext = createContext<PgliteContextValue | null>(null);
 
-export function PglteProvider({ children }: { children: ReactNode }) {
+export function PgliteProvider({ children }: { children: ReactNode }) {
   use(initPgliteDb());
 
   return <PgliteContext value={{ db, client: pgliteClient }}>{children}</PgliteContext>;
