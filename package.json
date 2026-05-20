@@ -8,15 +8,19 @@
     "lint:fix": "vp lint --fix .",
     "format": "vp fmt .",
     "format:fix": "vp fmt .",
+    "test": "turbo run test",
+    "test:e2e": "turbo run test:e2e",
+    "test:all": "turbo run test test:e2e",
     "check-types": "turbo run check-types",
     "quality": "turbo run //#lint //#format",
     "quality:fix": "turbo run //#lint:fix //#format:fix",
     "prepare": "vp config"
   },
   "devDependencies": {
+    "@typescript/native-preview": "catalog:",
     "site": "^2.60.4",
     "turbo": "^2.7.3",
-    "typescript": "5.9.2",
+    "typescript": "catalog:",
     "vite-plus": "catalog:"
   },
   "engines": {
@@ -26,7 +30,14 @@
   "pnpm": {
     "overrides": {
       "@types/react": "^19.2.14",
-      "@types/react-dom": "^19.2.3"
+      "@types/react-dom": "^19.2.3",
+      "defu": "^6.1.5",
+      "esbuild": "^0.27.7",
+      "fast-uri": "^3.1.2",
+      "ip-address": "^10.1.1",
+      "lodash": "^4.18.0",
+      "picomatch": "^4.0.4",
+      "postcss": "^8.5.10"
     },
     "onlyBuiltDependencies": [
       "@openrouter/sdk",
