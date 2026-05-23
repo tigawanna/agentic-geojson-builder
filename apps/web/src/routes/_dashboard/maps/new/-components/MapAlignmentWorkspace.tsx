@@ -8,9 +8,17 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  createControlPointMutationOptions,
+  ensureDraftMap,
+  listControlPointsQueryOptions,
+  type ControlPointViewModel,
+} from "@/data-access-layer/pglite/control-points-query-options";
+import { usePglite } from "@/lib/pglite/components/PgliteProvider";
 import { cn } from "@/lib/utils";
 import { unwrapUnknownError } from "@/utils/errors";
-import { RotateCcw, Search, Settings2, Upload } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Crosshair, RotateCcw, Search, Settings2, Upload, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentLoadingTask, RenderTask } from "pdfjs-dist";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
@@ -20,12 +28,24 @@ import type * as Leaflet from "leaflet";
 type PdfViewTransform = {
   scale: number;
   rotation: number;
+  panX: number;
+  panY: number;
+};
+
+type PendingMapPoint = {
+  latitude: number;
+  longitude: number;
 };
 
 const DEFAULT_TRANSFORM: PdfViewTransform = {
   scale: 1,
   rotation: 0,
+  panX: 0,
+  panY: 0,
 };
+
+const MIN_PDF_SCALE = 0.25;
+const MAX_PDF_SCALE = 5;
 
 type BaseMapStyle = "outline" | "standard";
 
@@ -102,17 +122,63 @@ async function geocodePlace(query: string): Promise<GeocodeResult> {
   return { lat, lng, bounds };
 }
 
+function clampPdfScale(scale: number) {
+  return Math.min(MAX_PDF_SCALE, Math.max(MIN_PDF_SCALE, scale));
+}
+
+function getImageCoordinatesFromClick(
+  canvas: HTMLCanvasElement,
+  event: React.MouseEvent<HTMLCanvasElement>,
+) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+
+  return {
+    imageX: (event.clientX - rect.left) * scaleX,
+    imageY: (event.clientY - rect.top) * scaleY,
+  };
+}
+
 export function MapAlignmentWorkspace() {
+  const { db } = usePglite();
+  const [mapId, setMapId] = useState<number | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [transform, setTransform] = useState<PdfViewTransform>(DEFAULT_TRANSFORM);
-  const [baseMapStyle, setBaseMapStyle] = useState<BaseMapStyle>("outline");
+  const [baseMapStyle, setBaseMapStyle] = useState<BaseMapStyle>("standard");
   const [locationQuery, setLocationQuery] = useState("");
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [referenceMode, setReferenceMode] = useState(false);
+  const [pendingMapPoint, setPendingMapPoint] = useState<PendingMapPoint | null>(null);
   const mapHandleRef = useRef<MapHandle | null>(null);
+
+  const controlPointsQuery = useQuery({
+    ...listControlPointsQueryOptions(db, mapId),
+  });
+  const createControlPointMutation = useMutation({
+    ...createControlPointMutationOptions(db),
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function createDraftMap() {
+      const draftMap = await ensureDraftMap(db);
+      if (!cancelled) {
+        setMapId(draftMap.id);
+      }
+    }
+
+    void createDraftMap();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [db]);
 
   function registerMapHandle(handle: MapHandle) {
     mapHandleRef.current = handle;
@@ -138,8 +204,42 @@ export function MapAlignmentWorkspace() {
     setTransform(DEFAULT_TRANSFORM);
   }
 
-  function updateTransform(key: keyof PdfViewTransform, value: number) {
-    setTransform((current) => ({ ...current, [key]: value }));
+  function updateTransform(patch: Partial<PdfViewTransform>) {
+    setTransform((current) => ({ ...current, ...patch }));
+  }
+
+  function stopReferenceMode() {
+    setReferenceMode(false);
+    setPendingMapPoint(null);
+  }
+
+  function handleMapLocationPick(latitude: number, longitude: number) {
+    if (!referenceMode) {
+      return;
+    }
+
+    setPendingMapPoint({ latitude, longitude });
+  }
+
+  function handlePdfLocationPick(imageX: number, imageY: number) {
+    if (!referenceMode || !pendingMapPoint || mapId === null) {
+      return;
+    }
+
+    createControlPointMutation.mutate(
+      {
+        mapId,
+        imageX,
+        imageY,
+        longitude: pendingMapPoint.longitude,
+        latitude: pendingMapPoint.latitude,
+      },
+      {
+        onSuccess: () => {
+          setPendingMapPoint(null);
+        },
+      },
+    );
   }
 
   async function handleLocationSearch(event: React.FormEvent<HTMLFormElement>) {
@@ -165,6 +265,12 @@ export function MapAlignmentWorkspace() {
 
     setIsSearchingLocation(false);
   }
+
+  const referenceHint = !referenceMode
+    ? null
+    : pendingMapPoint
+      ? "Click the same spot on the PDF."
+      : "Click a known spot on the base map.";
 
   return (
     <div className="flex h-[calc(100vh-4rem)] w-full flex-col bg-base-100 text-base-content">
@@ -195,6 +301,24 @@ export function MapAlignmentWorkspace() {
           />
           <Button
             type="button"
+            size="sm"
+            variant={referenceMode ? "default" : "outline"}
+            disabled={!pdfFile || mapId === null}
+            onClick={() => {
+              if (referenceMode) {
+                stopReferenceMode();
+                return;
+              }
+              setReferenceMode(true);
+              setPendingMapPoint(null);
+            }}
+            data-test="reference-mode-toggle"
+          >
+            <Crosshair className="size-4" />
+            Add reference
+          </Button>
+          <Button
+            type="button"
             variant="outline"
             size="sm"
             onClick={() => setControlsOpen(true)}
@@ -206,6 +330,38 @@ export function MapAlignmentWorkspace() {
         </div>
       </header>
 
+      {referenceHint ? (
+        <div
+          className="flex shrink-0 items-center justify-between gap-3 border-b border-primary/20 bg-primary/10 px-4 py-2 text-sm"
+          data-test="reference-mode-hint"
+        >
+          <span>{referenceHint}</span>
+          <div className="flex items-center gap-2">
+            {pendingMapPoint ? (
+              <Button
+                type="button"
+                size="xs"
+                variant="outline"
+                onClick={() => setPendingMapPoint(null)}
+                data-test="reference-pending-cancel"
+              >
+                Pick map point again
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              size="xs"
+              variant="ghost"
+              onClick={stopReferenceMode}
+              data-test="reference-mode-cancel"
+            >
+              <X className="size-3.5" />
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       <div
         className="grid min-h-0 flex-1 grid-cols-1 divide-y divide-base-content/10 lg:grid-cols-2 lg:divide-x lg:divide-y-0"
         data-test="map-alignment-stage"
@@ -215,8 +371,13 @@ export function MapAlignmentWorkspace() {
           <PdfPreviewPane
             file={pdfFile}
             transform={transform}
+            controlPoints={controlPointsQuery.data ?? []}
+            referenceMode={referenceMode}
+            canPickPdfPoint={referenceMode && pendingMapPoint !== null}
             onError={setPdfError}
             onPageCountChange={setPageCount}
+            onPdfLocationPick={handlePdfLocationPick}
+            onTransformChange={updateTransform}
           />
           {!pdfFile ? (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
@@ -229,7 +390,15 @@ export function MapAlignmentWorkspace() {
 
         <section className="relative min-h-0 bg-base-200">
           <PanelLabel>Base map</PanelLabel>
-          <LeafletMapPane baseMapStyle={baseMapStyle} onReady={registerMapHandle} />
+          <LeafletMapPane
+            baseMapStyle={baseMapStyle}
+            controlPoints={controlPointsQuery.data ?? []}
+            pendingMapPoint={pendingMapPoint}
+            referenceMode={referenceMode}
+            canPickMapPoint={referenceMode && pendingMapPoint === null}
+            onReady={registerMapHandle}
+            onMapLocationPick={handleMapLocationPick}
+          />
         </section>
       </div>
 
@@ -247,12 +416,42 @@ export function MapAlignmentWorkspace() {
           <DialogHeader>
             <DialogTitle>Alignment controls</DialogTitle>
             <DialogDescription>
-              Search for the map area, pick a base style, and adjust how the PDF is displayed.
+              Search for the map area, pick a base style, and review saved reference points.
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-5">
             <div className="space-y-3">
+              <div className="space-y-1">
+                <h2 className="text-sm font-semibold">Reference points</h2>
+                <p className="text-sm text-base-content/70">
+                  Saved links between PDF pixels and map coordinates in PGLite.
+                </p>
+              </div>
+              {controlPointsQuery.data && controlPointsQuery.data.length > 0 ? (
+                <ul className="space-y-2" data-test="control-point-list">
+                  {controlPointsQuery.data.map((point, index) => (
+                    <li
+                      key={point.id}
+                      className="rounded-md border border-base-content/10 bg-base-200 px-3 py-2 text-sm"
+                      data-test={`control-point-${point.id}`}
+                    >
+                      <div className="font-medium">Point {index + 1}</div>
+                      <div className="font-mono text-xs text-base-content/70">
+                        PDF ({point.imageX.toFixed(1)}, {point.imageY.toFixed(1)}) → map (
+                        {point.latitude.toFixed(5)}, {point.longitude.toFixed(5)})
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-base-content/60" data-test="control-point-empty">
+                  No reference points saved yet.
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-3 border-t border-base-content/10 pt-5">
               <div className="space-y-1">
                 <h2 className="text-sm font-semibold">Map area</h2>
                 <p className="text-sm text-base-content/70">
@@ -312,11 +511,11 @@ export function MapAlignmentWorkspace() {
               <RangeControl
                 label="PDF scale"
                 value={transform.scale}
-                min={0.25}
-                max={3}
+                min={MIN_PDF_SCALE}
+                max={MAX_PDF_SCALE}
                 step={0.01}
                 displayValue={`${transform.scale.toFixed(2)}x`}
-                onChange={(value) => updateTransform("scale", value)}
+                onChange={(value) => updateTransform({ scale: value })}
                 dataTest="pdf-scale"
               />
               <RangeControl
@@ -326,7 +525,7 @@ export function MapAlignmentWorkspace() {
                 max={180}
                 step={0.25}
                 displayValue={`${transform.rotation.toFixed(2)}deg`}
-                onChange={(value) => updateTransform("rotation", value)}
+                onChange={(value) => updateTransform({ rotation: value })}
                 dataTest="pdf-rotation"
               />
             </div>
@@ -402,7 +601,12 @@ function RangeControl({
 
 type LeafletMapPaneProps = {
   baseMapStyle: BaseMapStyle;
+  controlPoints: ControlPointViewModel[];
+  pendingMapPoint: PendingMapPoint | null;
+  referenceMode: boolean;
+  canPickMapPoint: boolean;
   onReady: (handle: MapHandle) => void;
+  onMapLocationPick: (latitude: number, longitude: number) => void;
 };
 
 function createBaseLayer(L: typeof Leaflet, style: BaseMapStyle) {
@@ -413,15 +617,26 @@ function createBaseLayer(L: typeof Leaflet, style: BaseMapStyle) {
   });
 }
 
-function LeafletMapPane({ baseMapStyle, onReady }: LeafletMapPaneProps) {
+function LeafletMapPane({
+  baseMapStyle,
+  controlPoints,
+  pendingMapPoint,
+  referenceMode,
+  canPickMapPoint,
+  onReady,
+  onMapLocationPick,
+}: LeafletMapPaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Leaflet.Map | null>(null);
   const leafletRef = useRef<typeof Leaflet | null>(null);
   const baseLayerRef = useRef<Leaflet.TileLayer | null>(null);
+  const markersLayerRef = useRef<Leaflet.LayerGroup | null>(null);
   const onReadyRef = useRef(onReady);
+  const onMapLocationPickRef = useRef(onMapLocationPick);
   const hasAppliedInitialStyleRef = useRef(false);
 
   onReadyRef.current = onReady;
+  onMapLocationPickRef.current = onMapLocationPick;
 
   useEffect(() => {
     let cancelled = false;
@@ -444,6 +659,7 @@ function LeafletMapPane({ baseMapStyle, onReady }: LeafletMapPaneProps) {
       });
 
       baseLayerRef.current = createBaseLayer(L, baseMapStyle).addTo(map);
+      markersLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
       hasAppliedInitialStyleRef.current = true;
 
@@ -487,6 +703,7 @@ function LeafletMapPane({ baseMapStyle, onReady }: LeafletMapPaneProps) {
       mapRef.current?.remove();
       mapRef.current = null;
       baseLayerRef.current = null;
+      markersLayerRef.current = null;
       leafletRef.current = null;
     };
   }, []);
@@ -508,19 +725,201 @@ function LeafletMapPane({ baseMapStyle, onReady }: LeafletMapPaneProps) {
     baseLayerRef.current = createBaseLayer(L, baseMapStyle).addTo(map);
   }, [baseMapStyle]);
 
+  useEffect(() => {
+    const map = mapRef.current;
+    const L = leafletRef.current;
+    const markersLayer = markersLayerRef.current;
+
+    if (!map || !L || !markersLayer) {
+      return;
+    }
+
+    markersLayer.clearLayers();
+
+    controlPoints.forEach((point, index) => {
+      L.circleMarker([point.latitude, point.longitude], {
+        radius: 8,
+        color: "#ffffff",
+        weight: 2,
+        fillColor: "#16a34a",
+        fillOpacity: 1,
+      })
+        .bindTooltip(`Reference ${index + 1}`, { permanent: false })
+        .addTo(markersLayer);
+
+      L.marker([point.latitude, point.longitude], {
+        icon: L.divIcon({
+          className: "",
+          html: `<div style="margin-left:-8px;margin-top:-8px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;">${index + 1}</div>`,
+          iconSize: [16, 16],
+        }),
+        interactive: false,
+      }).addTo(markersLayer);
+    });
+
+    if (pendingMapPoint) {
+      L.circleMarker([pendingMapPoint.latitude, pendingMapPoint.longitude], {
+        radius: 9,
+        color: "#ffffff",
+        weight: 2,
+        fillColor: "#f59e0b",
+        fillOpacity: 1,
+      }).addTo(markersLayer);
+    }
+  }, [controlPoints, pendingMapPoint]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) {
+      return;
+    }
+
+    function handleClick(event: Leaflet.LeafletMouseEvent) {
+      if (!canPickMapPoint) {
+        return;
+      }
+
+      onMapLocationPickRef.current(event.latlng.lat, event.latlng.lng);
+    }
+
+    map.on("click", handleClick);
+
+    if (containerRef.current) {
+      containerRef.current.style.cursor = canPickMapPoint
+        ? "crosshair"
+        : referenceMode
+          ? "default"
+          : "";
+    }
+
+    return () => {
+      map.off("click", handleClick);
+      if (containerRef.current) {
+        containerRef.current.style.cursor = "";
+      }
+    };
+  }, [canPickMapPoint, referenceMode]);
+
   return <div ref={containerRef} className="absolute inset-0 z-0" data-test="leaflet-map" />;
 }
 
 type PdfPreviewPaneProps = {
   file: File | null;
   transform: PdfViewTransform;
+  controlPoints: ControlPointViewModel[];
+  referenceMode: boolean;
+  canPickPdfPoint: boolean;
   onError: (message: string | null) => void;
   onPageCountChange: (count: number | null) => void;
+  onPdfLocationPick: (imageX: number, imageY: number) => void;
+  onTransformChange: (patch: Partial<PdfViewTransform>) => void;
 };
 
-function PdfPreviewPane({ file, transform, onError, onPageCountChange }: PdfPreviewPaneProps) {
+function PdfPreviewPane({
+  file,
+  transform,
+  controlPoints,
+  referenceMode,
+  canPickPdfPoint,
+  onError,
+  onPageCountChange,
+  onPdfLocationPick,
+  onTransformChange,
+}: PdfPreviewPaneProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const viewportRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef<{
+    pointerId: number;
+    startX: number;
+    startY: number;
+    panX: number;
+    panY: number;
+  } | null>(null);
+  const transformRef = useRef(transform);
+  const onTransformChangeRef = useRef(onTransformChange);
+  const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  transformRef.current = transform;
+  onTransformChangeRef.current = onTransformChange;
+
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    if (!viewport || !file) {
+      return;
+    }
+
+    function handleWheel(event: WheelEvent) {
+      const viewportEl = viewportRef.current;
+      if (!viewportEl) {
+        return;
+      }
+
+      event.preventDefault();
+
+      const current = transformRef.current;
+      const rect = viewportEl.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const pointerX = event.clientX - centerX;
+      const pointerY = event.clientY - centerY;
+      const nextScale = clampPdfScale(current.scale * (1 - event.deltaY * 0.0015));
+      const scaleFactor = nextScale / current.scale;
+
+      onTransformChangeRef.current({
+        scale: nextScale,
+        panX: pointerX - (pointerX - current.panX) * scaleFactor,
+        panY: pointerY - (pointerY - current.panY) * scaleFactor,
+      });
+    }
+
+    viewport.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => {
+      viewport.removeEventListener("wheel", handleWheel);
+    };
+  }, [file]);
+
+  function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    if (canPickPdfPoint || !file || event.button !== 0) {
+      return;
+    }
+
+    dragStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      panX: transform.panX,
+      panY: transform.panY,
+    };
+    setIsDragging(true);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handlePointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    const dragState = dragStateRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    onTransformChange({
+      panX: dragState.panX + (event.clientX - dragState.startX),
+      panY: dragState.panY + (event.clientY - dragState.startY),
+    });
+  }
+
+  function handlePointerUp(event: React.PointerEvent<HTMLDivElement>) {
+    const dragState = dragStateRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    dragStateRef.current = null;
+    setIsDragging(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }
 
   useEffect(() => {
     const canvasElement = canvasRef.current;
@@ -595,21 +994,71 @@ function PdfPreviewPane({ file, transform, onError, onPageCountChange }: PdfPrev
   }, [file, onError, onPageCountChange]);
 
   return (
-    <div className="absolute inset-0 overflow-auto p-4" data-test="pdf-preview-pane">
-      <div className="flex min-h-full min-w-full items-center justify-center">
-        <canvas
-          ref={canvasRef}
-          className={cn(
-            "max-w-none shadow-[0_0_0_1px_rgba(0,0,0,0.12),0_12px_40px_rgba(0,0,0,0.18)]",
-            !file && "hidden",
-          )}
+    <div
+      ref={viewportRef}
+      className={cn(
+        "absolute inset-0 overflow-hidden touch-none select-none",
+        canPickPdfPoint
+          ? "cursor-crosshair"
+          : isDragging
+            ? "cursor-grabbing"
+            : file
+              ? "cursor-grab"
+              : "",
+      )}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      data-test="pdf-preview-pane"
+    >
+      <div className="absolute left-1/2 top-1/2">
+        <div
+          className="relative inline-block"
           style={{
-            transform: `scale(${transform.scale}) rotate(${transform.rotation}deg)`,
+            transform: `translate(calc(-50% + ${transform.panX}px), calc(-50% + ${transform.panY}px)) scale(${transform.scale}) rotate(${transform.rotation}deg)`,
             transformOrigin: "center center",
           }}
-          data-test="pdf-preview-canvas"
-        />
+        >
+          <canvas
+            ref={canvasRef}
+            className={cn(
+              "max-w-none shadow-[0_0_0_1px_rgba(0,0,0,0.12),0_12px_40px_rgba(0,0,0,0.18)]",
+              !file && "hidden",
+            )}
+            onClick={(event) => {
+              if (!canPickPdfPoint || !canvasRef.current) {
+                return;
+              }
+
+              event.stopPropagation();
+              const coords = getImageCoordinatesFromClick(canvasRef.current, event);
+              onPdfLocationPick(coords.imageX, coords.imageY);
+            }}
+            data-test="pdf-preview-canvas"
+          />
+          {controlPoints.map((point, index) => (
+            <div
+              key={point.id}
+              className="pointer-events-none absolute flex size-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-primary text-[10px] font-bold text-white"
+              style={{ left: point.imageX, top: point.imageY }}
+              data-test={`pdf-control-point-${point.id}`}
+            >
+              {index + 1}
+            </div>
+          ))}
+        </div>
       </div>
+      {file ? (
+        <div className="pointer-events-none absolute bottom-4 left-4 rounded-md border border-base-content/10 bg-base-100/90 px-2 py-1 text-xs text-base-content/70 shadow-sm backdrop-blur">
+          Scroll to zoom · drag to pan
+        </div>
+      ) : null}
+      {referenceMode && !canPickPdfPoint ? (
+        <div className="pointer-events-none absolute inset-x-4 bottom-12 rounded-md border border-base-content/10 bg-base-100/90 px-3 py-2 text-sm text-base-content/75 shadow-sm backdrop-blur">
+          Choose the matching spot on the base map first.
+        </div>
+      ) : null}
       {isLoading ? (
         <div className="absolute inset-0 flex items-center justify-center bg-base-200/80">
           <p className="border border-base-content/10 bg-base-100 px-3 py-2 text-sm shadow-sm">
