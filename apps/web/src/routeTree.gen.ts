@@ -17,10 +17,12 @@ import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthGithubRouteImport } from './routes/auth/github'
 import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dashboard'
-import { Route as DashboardPgliteLayoutRouteImport } from './routes/_dashboard/pglite/layout'
+import { Route as DashboardMapsLayoutRouteImport } from './routes/_dashboard/maps/layout'
 import { Route as DashboardSettingsIndexRouteImport } from './routes/_dashboard/settings/index'
-import { Route as DashboardPgliteIndexRouteImport } from './routes/_dashboard/pglite/index'
+import { Route as DashboardMapsIndexRouteImport } from './routes/_dashboard/maps/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as DashboardMapsNewRouteImport } from './routes/_dashboard/maps/new'
+import { Route as DashboardMapsIdIndexRouteImport } from './routes/_dashboard/maps/$id/index'
 
 const AuthLayoutRoute = AuthLayoutRouteImport.update({
   id: '/auth',
@@ -61,9 +63,9 @@ const DashboardDashboardRoute = DashboardDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
-const DashboardPgliteLayoutRoute = DashboardPgliteLayoutRouteImport.update({
-  id: '/pglite',
-  path: '/pglite',
+const DashboardMapsLayoutRoute = DashboardMapsLayoutRouteImport.update({
+  id: '/maps',
+  path: '/maps',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
 const DashboardSettingsIndexRoute = DashboardSettingsIndexRouteImport.update({
@@ -71,29 +73,41 @@ const DashboardSettingsIndexRoute = DashboardSettingsIndexRouteImport.update({
   path: '/settings/',
   getParentRoute: () => DashboardLayoutRoute,
 } as any)
-const DashboardPgliteIndexRoute = DashboardPgliteIndexRouteImport.update({
+const DashboardMapsIndexRoute = DashboardMapsIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => DashboardPgliteLayoutRoute,
+  getParentRoute: () => DashboardMapsLayoutRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardMapsNewRoute = DashboardMapsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => DashboardMapsLayoutRoute,
+} as any)
+const DashboardMapsIdIndexRoute = DashboardMapsIdIndexRouteImport.update({
+  id: '/$id/',
+  path: '/$id/',
+  getParentRoute: () => DashboardMapsLayoutRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthLayoutRouteWithChildren
-  '/pglite': typeof DashboardPgliteLayoutRouteWithChildren
+  '/maps': typeof DashboardMapsLayoutRouteWithChildren
   '/dashboard': typeof DashboardDashboardRoute
   '/auth/github': typeof AuthGithubRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
   '/test/': typeof TestIndexRoute
+  '/maps/new': typeof DashboardMapsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/pglite/': typeof DashboardPgliteIndexRoute
+  '/maps/': typeof DashboardMapsIndexRoute
   '/settings/': typeof DashboardSettingsIndexRoute
+  '/maps/$id/': typeof DashboardMapsIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -102,39 +116,45 @@ export interface FileRoutesByTo {
   '/auth/signup': typeof AuthSignupRoute
   '/auth': typeof AuthIndexRoute
   '/test': typeof TestIndexRoute
+  '/maps/new': typeof DashboardMapsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/pglite': typeof DashboardPgliteIndexRoute
+  '/maps': typeof DashboardMapsIndexRoute
   '/settings': typeof DashboardSettingsIndexRoute
+  '/maps/$id': typeof DashboardMapsIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_dashboard': typeof DashboardLayoutRouteWithChildren
   '/auth': typeof AuthLayoutRouteWithChildren
-  '/_dashboard/pglite': typeof DashboardPgliteLayoutRouteWithChildren
+  '/_dashboard/maps': typeof DashboardMapsLayoutRouteWithChildren
   '/_dashboard/dashboard': typeof DashboardDashboardRoute
   '/auth/github': typeof AuthGithubRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
   '/test/': typeof TestIndexRoute
+  '/_dashboard/maps/new': typeof DashboardMapsNewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/_dashboard/pglite/': typeof DashboardPgliteIndexRoute
+  '/_dashboard/maps/': typeof DashboardMapsIndexRoute
   '/_dashboard/settings/': typeof DashboardSettingsIndexRoute
+  '/_dashboard/maps/$id/': typeof DashboardMapsIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/auth'
-    | '/pglite'
+    | '/maps'
     | '/dashboard'
     | '/auth/github'
     | '/auth/signup'
     | '/auth/'
     | '/test/'
+    | '/maps/new'
     | '/api/auth/$'
-    | '/pglite/'
+    | '/maps/'
     | '/settings/'
+    | '/maps/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -143,23 +163,27 @@ export interface FileRouteTypes {
     | '/auth/signup'
     | '/auth'
     | '/test'
+    | '/maps/new'
     | '/api/auth/$'
-    | '/pglite'
+    | '/maps'
     | '/settings'
+    | '/maps/$id'
   id:
     | '__root__'
     | '/'
     | '/_dashboard'
     | '/auth'
-    | '/_dashboard/pglite'
+    | '/_dashboard/maps'
     | '/_dashboard/dashboard'
     | '/auth/github'
     | '/auth/signup'
     | '/auth/'
     | '/test/'
+    | '/_dashboard/maps/new'
     | '/api/auth/$'
-    | '/_dashboard/pglite/'
+    | '/_dashboard/maps/'
     | '/_dashboard/settings/'
+    | '/_dashboard/maps/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -228,11 +252,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardDashboardRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
-    '/_dashboard/pglite': {
-      id: '/_dashboard/pglite'
-      path: '/pglite'
-      fullPath: '/pglite'
-      preLoaderRoute: typeof DashboardPgliteLayoutRouteImport
+    '/_dashboard/maps': {
+      id: '/_dashboard/maps'
+      path: '/maps'
+      fullPath: '/maps'
+      preLoaderRoute: typeof DashboardMapsLayoutRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
     '/_dashboard/settings/': {
@@ -242,12 +266,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSettingsIndexRouteImport
       parentRoute: typeof DashboardLayoutRoute
     }
-    '/_dashboard/pglite/': {
-      id: '/_dashboard/pglite/'
+    '/_dashboard/maps/': {
+      id: '/_dashboard/maps/'
       path: '/'
-      fullPath: '/pglite/'
-      preLoaderRoute: typeof DashboardPgliteIndexRouteImport
-      parentRoute: typeof DashboardPgliteLayoutRoute
+      fullPath: '/maps/'
+      preLoaderRoute: typeof DashboardMapsIndexRouteImport
+      parentRoute: typeof DashboardMapsLayoutRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -256,30 +280,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_dashboard/maps/new': {
+      id: '/_dashboard/maps/new'
+      path: '/new'
+      fullPath: '/maps/new'
+      preLoaderRoute: typeof DashboardMapsNewRouteImport
+      parentRoute: typeof DashboardMapsLayoutRoute
+    }
+    '/_dashboard/maps/$id/': {
+      id: '/_dashboard/maps/$id/'
+      path: '/$id'
+      fullPath: '/maps/$id/'
+      preLoaderRoute: typeof DashboardMapsIdIndexRouteImport
+      parentRoute: typeof DashboardMapsLayoutRoute
+    }
   }
 }
 
-interface DashboardPgliteLayoutRouteChildren {
-  DashboardPgliteIndexRoute: typeof DashboardPgliteIndexRoute
+interface DashboardMapsLayoutRouteChildren {
+  DashboardMapsNewRoute: typeof DashboardMapsNewRoute
+  DashboardMapsIndexRoute: typeof DashboardMapsIndexRoute
+  DashboardMapsIdIndexRoute: typeof DashboardMapsIdIndexRoute
 }
 
-const DashboardPgliteLayoutRouteChildren: DashboardPgliteLayoutRouteChildren = {
-  DashboardPgliteIndexRoute: DashboardPgliteIndexRoute,
+const DashboardMapsLayoutRouteChildren: DashboardMapsLayoutRouteChildren = {
+  DashboardMapsNewRoute: DashboardMapsNewRoute,
+  DashboardMapsIndexRoute: DashboardMapsIndexRoute,
+  DashboardMapsIdIndexRoute: DashboardMapsIdIndexRoute,
 }
 
-const DashboardPgliteLayoutRouteWithChildren =
-  DashboardPgliteLayoutRoute._addFileChildren(
-    DashboardPgliteLayoutRouteChildren,
-  )
+const DashboardMapsLayoutRouteWithChildren =
+  DashboardMapsLayoutRoute._addFileChildren(DashboardMapsLayoutRouteChildren)
 
 interface DashboardLayoutRouteChildren {
-  DashboardPgliteLayoutRoute: typeof DashboardPgliteLayoutRouteWithChildren
+  DashboardMapsLayoutRoute: typeof DashboardMapsLayoutRouteWithChildren
   DashboardDashboardRoute: typeof DashboardDashboardRoute
   DashboardSettingsIndexRoute: typeof DashboardSettingsIndexRoute
 }
 
 const DashboardLayoutRouteChildren: DashboardLayoutRouteChildren = {
-  DashboardPgliteLayoutRoute: DashboardPgliteLayoutRouteWithChildren,
+  DashboardMapsLayoutRoute: DashboardMapsLayoutRouteWithChildren,
   DashboardDashboardRoute: DashboardDashboardRoute,
   DashboardSettingsIndexRoute: DashboardSettingsIndexRoute,
 }
