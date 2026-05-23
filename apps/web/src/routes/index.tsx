@@ -9,7 +9,7 @@ function LandingPage() {
   const Icon = AppConfig.icon;
 
   return (
-    <div data-test="landing-page" className="bg-base-100 bg-grid flex min-h-dvh flex-col">
+    <div data-test="landing-page" className="bg-base-100 bg-grid flex flex-col min-h-screen">
       <header className="border-base-300 border-b px-6 py-4">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-3">
@@ -29,7 +29,7 @@ function LandingPage() {
         </div>
       </header>
 
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center gap-6 px-6 py-16">
+      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center gap-6 px-6 py-16 min-h-screen">
         <p className="text-primary text-sm font-medium tracking-wide uppercase">Clean slate</p>
         <h1 className="text-4xl font-bold tracking-tight md:text-5xl">{AppConfig.name}</h1>
         <p className="text-base-content/70 max-w-2xl text-lg leading-relaxed">{AppConfig.brief}</p>
