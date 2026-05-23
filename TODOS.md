@@ -69,11 +69,9 @@ Local Postgres is already available. Migrate schemas and queries there; expose t
 - [ ] Enable **PostGIS** in Postgres (`CREATE EXTENSION postgis`)
 - [ ] Add a custom Drizzle migration for the extension (mirror `drizzle-pglite/migrations/0000_extensions.sql`)
 
-**Open decision:** single Postgres for auth + maps, or keep Turso for auth and Postgres for geo data. Simplest long-term: **one Postgres** for everything.
-
 ### 1.2 Move schema out of PGLite
 
-Port from `apps/web/src/lib/pglite/schema/` into `apps/web/src/lib/drizzle/scheam/maps/`:
+Port from `/home/dennis/Desktop/code/fullstack/agentic-json-resume/apps/web/src/lib/pglite/schema/` into `apps/web/src/lib/drizzle/scheam/maps/`:
 
 | Table                  | Notes                                                                                         |
 | ---------------------- | --------------------------------------------------------------------------------------------- |
