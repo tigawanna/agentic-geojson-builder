@@ -224,10 +224,18 @@ These run only on the server. Safe for MCP, oRPC, and TanStack AI `.server()` ha
 | `suggest_control_point_adjustments` | Proposed nudges when PDF icon vs satellite misaligned; human or policy confirms         | `control-points.server.ts`      |
 | `get_project_context`               | Aggregated JSON: map, control points, georeference status, feature counts, segment gaps | composes several `*.server.ts`  |
 | `compute_georeference`              | Affine transform from 3+ control points + residual error                                | new `georeference.server.ts`    |
+| `pdf_pixel_to_lon_lat`              | Convert PDF canvas pixel to WGS84 using stored transform                                | `georeference.server.ts`        |
+| `lon_lat_to_pdf_pixel`              | Inverse transform for map-side reference work                                           | `georeference.server.ts`        |
 | `list_feature_segments`             | Chunked path rows for a map/trail group                                                 | future `geo-segments.server.ts` |
 | `find_feature_gaps`                 | Missing links between segments in a `segmentGroupId`                                    | future `geo-segments.server.ts` |
 | `apply_feature_patch`               | Upsert segment or feature draft (small GeoJSON patch)                                   | future `geo-segments.server.ts` |
 | `validate_geojson_features`         | Turf checks: bounds, length, self-intersection, min vertices                            | pure server util                |
+| `verify_georeference_quality`       | Residual error, ready-for-tracing gate                                                  | `georeference.server.ts`        |
+| `verify_control_point_alignment`    | Map pin vs transform prediction offset in meters                                        | `georeference.server.ts`        |
+| `verify_segment_continuity`         | Gap detection between segments in a group                                               | `geo-segments.server.ts`        |
+| `verify_segment_on_pdf`             | Vision + geometry: line follows PDF trail                                               | hybrid (server + snapshot id)   |
+| `verify_feature_on_map`             | Vision + geometry: line matches satellite trail                                         | hybrid (server + snapshot id)   |
+| `compare_before_after`              | Diff two revisions of a segment                                                         | `geo-segments.server.ts`        |
 | `merge_feature_segments`            | Stitch segments by group id + snap endpoints                                            | future                          |
 | `export_geojson`                    | Build FeatureCollection from accepted features                                          | future                          |
 | `explain_feature`                   | Return feature metadata + provenance for agent/human                                    | future                          |
@@ -237,12 +245,13 @@ These run only on the server. Safe for MCP, oRPC, and TanStack AI `.server()` ha
 
 These need DOM, canvas, or clipboard. Implement via `toolDefinition().client()` or post-tool React effects (json-resume uses effects for refresh).
 
-| Tool name               | Purpose                                                    | Notes                                     |
-| ----------------------- | ---------------------------------------------------------- | ----------------------------------------- |
-| `get_rendered_map_view` | PNG snapshots of PDF pane + map viewport for vision models | Canvas capture in `MapAlignmentWorkspace` |
-| `refresh_map_workspace` | Invalidate TanStack Query keys after agent writes          | Hook watching completed tool parts        |
-| `set_map_viewport`      | Pan/zoom base map                                          | Wraps `map-handle.ts` `setViewport`       |
-| `pan_map_to_query`      | Nominatim search from chat                                 | Wraps `map-handle.ts` `panToQuery`        |
+| Tool name                   | Purpose                                                                   | Notes                                                                                                                |
+| --------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `get_rendered_map_view`     | PNG snapshots of PDF pane + map viewport with bounds/canvas metadata      | Client capture; [coordinate contract](docs/agent-digitization-design.md#required-metadata-agent-coordinate-contract) |
+| `get_verification_snapshot` | Fresh capture after writes, with overlays (refs, drafts) for verify tools | Client; returns `snapshotId` for server verify\_\* calls                                                             |
+| `refresh_map_workspace`     | Invalidate TanStack Query keys after agent writes                         | Hook watching completed tool parts                                                                                   |
+| `set_map_viewport`          | Pan/zoom base map                                                         | Wraps `map-handle.ts` `setViewport`                                                                                  |
+| `pan_map_to_query`          | Nominatim search from chat                                                | Wraps `map-handle.ts` `panToQuery`                                                                                   |
 
 ### Hybrid / orchestration
 
@@ -252,7 +261,7 @@ These need DOM, canvas, or clipboard. Implement via `toolDefinition().client()` 
 
 Agent constraint (from `GAMEPLAN.md`): writes create **`draft`** rows only until human accept.
 
-Full chunking strategy, coordinate spaces, agent vision loop, reference-point correction, and merge pipeline: **[`docs/agent-digitization-design.md`](docs/agent-digitization-design.md)**.
+Full chunking strategy, coordinate spaces, **vision vs JSON vs tools**, agent coordinate contract, verification loop, and merge pipeline: **[`docs/agent-digitization-design.md`](docs/agent-digitization-design.md)**.
 
 ---
 
@@ -277,10 +286,11 @@ Planned reference-point agent behavior: propose small adjustments via `update_co
 
 Ordered by dependency. Design rationale: [`docs/agent-digitization-design.md`](docs/agent-digitization-design.md).
 
-- [ ] **Affine georeference** — `compute_georeference` + UI residual error display
+- [ ] **Affine georeference** — `compute_georeference` + `pdf_pixel_to_lon_lat` / `lon_lat_to_pdf_pixel` + UI residual error display
+- [ ] **Implement `get_rendered_map_view` metadata contract** — canvas size, map bounds, coordinate spaces (see design doc)
 - [ ] **`geo_segment` table** — chunked patches with `segmentGroupId`, `segmentIndex`, `status`, `coordinateSpace`
 - [ ] **`find_feature_gaps` + merge pipeline** — snap endpoints, concatenate, Turf validate/simplify on accept
-- [ ] **Agent vision loop** — `get_rendered_map_view` (PDF + map PNGs) → `propose_features_from_overlay` → `apply_feature_patch`
+- [ ] **Agent vision loop** — `get_rendered_map_view` (PNG + metadata) → `propose_features_from_overlay` (pdf-pixels) → `apply_feature_patch` → server convert via `pdf_pixel_to_lon_lat`
 - [ ] **Reference point agent assist** — suggest/adjust misaligned control points; recompute transform after edits
 - [ ] **Trace mode** — manual LineString draw on map using transform from control points
 - [ ] **In-app agent chat** — TanStack AI tab on map workspace, OpenRouter key from client

@@ -189,4 +189,4 @@ Also exports base map tile config, default viewport, geocoding helper, coordinat
 - Multi-page PDF support (only page 1 rendered)
 - Server-side Postgres + external MCP (replacing browser PGLite)
 
-Planned agent workflow, chunking strategies, and reference-point correction: [`agent-digitization-design.md`](agent-digitization-design.md).
+Planned agent workflow, chunking strategies, reference-point correction, and **vision vs coordinates (JSON + tools, not screenshot-only)**: [`agent-digitization-design.md`](agent-digitization-design.md).

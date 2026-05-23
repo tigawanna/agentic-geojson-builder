@@ -50,16 +50,20 @@ Keep shared schemas in `packages/isomorphic` with Zod v4. Client and server code
 
 Agent tools should be thin wrappers around the same project state used by the UI:
 
-| Tool                            | Purpose                                                                    |
-| ------------------------------- | -------------------------------------------------------------------------- |
-| `get_project_context`           | Return asset metadata, control points, bounds, existing features           |
-| `get_rendered_map_view`         | Return a requested viewport snapshot or tile/overlay references            |
-| `propose_features_from_overlay` | Draft GeoJSON features from the current overlay and labels                 |
-| `validate_geojson_features`     | Check geometry validity, properties, duplicates, and suspicious segments   |
-| `apply_feature_patch`           | Add/update/delete draft features through a typed patch format              |
-| `explain_feature`               | Explain why a proposed feature exists and what visual evidence supports it |
+| Tool                            | Purpose                                                                        |
+| ------------------------------- | ------------------------------------------------------------------------------ |
+| `get_project_context`           | Return asset metadata, control points, bounds, existing features               |
+| `get_rendered_map_view`         | Return PDF + map viewport PNGs **and** bounds/canvas metadata (see design doc) |
+| `pdf_pixel_to_lon_lat`          | Convert traced PDF pixels to WGS84 using stored georeference                   |
+| `lon_lat_to_pdf_pixel`          | Inverse transform for map-side reference work                                  |
+| `propose_features_from_overlay` | Draft GeoJSON features from overlay and labels (prefer pdf-pixels output)      |
+| `validate_geojson_features`     | Check geometry validity, properties, duplicates, and suspicious segments       |
+| `apply_feature_patch`           | Add/update/delete draft features through a typed patch format                  |
+| `explain_feature`               | Explain why a proposed feature exists and what visual evidence supports it     |
 
 Expose these first through server functions/oRPC. MCP can wrap the same operations once auth and project permissions are solid.
+
+**Vision vs coordinates:** agents get location from JSON context + transform tools, not from screenshots alone. Images are for tracing and QA; lat/lng come from control points, bounds metadata, and server-side conversion. See [`docs/agent-digitization-design.md`](docs/agent-digitization-design.md).
 
 ## AI Chat Direction
 
