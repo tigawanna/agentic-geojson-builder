@@ -46,12 +46,13 @@ export function CurrentUser(_props: CurrentUserProps) {
       </DropdownMenu>
     );
   }
-  const avatarUrl = viewer.user?.image ?? "/blank-user.png";
+  const avatarImage = viewer.user?.image;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Avatar>
-          <AvatarImage src={avatarUrl} alt={viewer.user?.name} />
+          {avatarImage ? <AvatarImage src={avatarImage} alt={viewer.user?.name} /> : null}
           <AvatarFallback>{viewer.user?.name.slice(0, 2)}</AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
@@ -60,7 +61,7 @@ export function CurrentUser(_props: CurrentUserProps) {
         <DropdownMenuSeparator />
         <div className="flex h-full w-full gap-3">
           <Avatar>
-            <AvatarImage src={avatarUrl} alt={viewer.user?.name} />
+            {avatarImage ? <AvatarImage src={avatarImage} alt={viewer.user?.name} /> : null}
             <AvatarFallback>{viewer.user?.name.slice(0, 2)}</AvatarFallback>
           </Avatar>
           <div className="flex h-full w-full flex-col p-1">

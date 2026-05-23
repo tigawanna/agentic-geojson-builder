@@ -22,6 +22,7 @@ const config = defineConfig({
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
+    dedupe: ["solid-js"],
     tsconfigPaths: true,
   },
   plugins: [

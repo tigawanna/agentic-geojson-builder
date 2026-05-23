@@ -36,7 +36,8 @@
       "ip-address": "^10.1.1",
       "lodash": "^4.18.0",
       "picomatch": "^4.0.4",
-      "postcss": "^8.5.10"
+      "postcss": "^8.5.10",
+      "solid-js": "1.9.12"
     },
     "onlyBuiltDependencies": [
       "@openrouter/sdk",

@@ -32,6 +32,7 @@ overrides:
   lodash: ^4.18.0
   picomatch: ^4.0.4
   postcss: ^8.5.10
+  solid-js: 1.9.12
 
 importers:
 
@@ -2178,32 +2179,32 @@ packages:
   '@solid-primitives/event-listener@2.4.5':
     resolution: {integrity: sha512-nwRV558mIabl4yVAhZKY8cb6G+O1F0M6Z75ttTu5hk+SxdOnKSGj+eetDIu7Oax1P138ZdUU01qnBPR8rnxaEA==}
     peerDependencies:
-      solid-js: ^1.6.12
+      solid-js: 1.9.12
 
   '@solid-primitives/keyboard@1.3.5':
     resolution: {integrity: sha512-sav+l+PL+74z3yaftVs7qd8c2SXkqzuxPOVibUe5wYMt+U5Hxp3V3XCPgBPN2I6cANjvoFtz0NiU8uHVLdi9FQ==}
     peerDependencies:
-      solid-js: ^1.6.12
+      solid-js: 1.9.12
 
   '@solid-primitives/resize-observer@2.1.5':
     resolution: {integrity: sha512-AiyTknKcNBaKHbcSMuxtSNM8FjIuiSuFyFghdD0TcCMU9hKi9EmsC5pjfjDwxE+5EueB1a+T/34PLRI5vbBbKw==}
     peerDependencies:
-      solid-js: ^1.6.12
+      solid-js: 1.9.12
 
   '@solid-primitives/rootless@1.5.3':
     resolution: {integrity: sha512-N8cIDAHbWcLahNRLr0knAAQvXyEdEMoAZvIMZKmhNb1mlx9e2UOv9BRD5YNwQUJwbNoYVhhLwFOEOcVXFx0HqA==}
     peerDependencies:
-      solid-js: ^1.6.12
+      solid-js: 1.9.12
 
   '@solid-primitives/static-store@0.1.3':
     resolution: {integrity: sha512-uxez7SXnr5GiRnzqO2IEDjOJRIXaG+0LZLBizmUA1FwSi+hrpuMzVBwyk70m4prcl8X6FDDXUl9O8hSq8wHbBQ==}
     peerDependencies:
-      solid-js: ^1.6.12
+      solid-js: 1.9.12
 
   '@solid-primitives/utils@6.4.0':
     resolution: {integrity: sha512-AeGTBg8Wtkh/0s+evyLtP8piQoS4wyqqQaAFs2HJcFMMjYAtUgo+ZPduRXLjPlqKVc2ejeR544oeqpbn8Egn8A==}
     peerDependencies:
-      solid-js: ^1.6.12
+      solid-js: 1.9.12
 
   '@sqltools/formatter@1.2.5':
     resolution: {integrity: sha512-Uy0+khmZqUrUGm5dmMqVlnvufZRSK0FbYzVgp0UMstm+F5+W2/jnEEQyc9vo1ZR/E5ZI/B1WjjoTqBqwJL6Krw==}
@@ -2351,7 +2352,7 @@ packages:
     resolution: {integrity: sha512-5xHXFyX3nom0UaNfiOM92o6ziaHjGo3mcSGe2HD5Xs8dWRZNpdZ0Smd0B9ddEhy0oB+gXyMzZgUJb9DmrZV0Mg==}
     engines: {node: '>=18'}
     peerDependencies:
-      solid-js: '>=1.9.7'
+      solid-js: 1.9.12
 
   '@tanstack/devtools-utils@0.2.4':
     resolution: {integrity: sha512-6Y6JJHxoerWuq/dVLOPLZ1iSpZie1C+3whGjDFCK126qI8dA+Gui3s5jZUD12kvzs7vhRqY+uUlA5S6f85FHqg==}
@@ -2360,7 +2361,7 @@ packages:
       '@types/react': ^19.2.14
       preact: '>=10.0.0'
       react: '>=17.0.0'
-      solid-js: '>=1.9.7'
+      solid-js: 1.9.12
       vue: '>=3.2.0'
     peerDependenciesMeta:
       '@types/react':
@@ -2384,7 +2385,7 @@ packages:
     resolution: {integrity: sha512-ScwnFjJTMRUd6miQax7sEhq9winalQIVhm0MTX3YfjoGjMzB/jzjzYlLOraen8hcxMHH9CifTjio8ZVdqSRBRg==}
     engines: {node: '>=18'}
     peerDependencies:
-      solid-js: '>=1.9.7'
+      solid-js: 1.9.12
 
   '@tanstack/form-core@1.28.3':
     resolution: {integrity: sha512-DBhnu1d5VfACAYOAZJO8tsEUHjWczZMJY8v/YrtAJNWpwvL/3ogDuz8e6yUB2m/iVTNq6K8yrnVN2nrX0/BX/w==}
@@ -2632,7 +2633,7 @@ packages:
   '@tanstack/solid-store@0.8.1':
     resolution: {integrity: sha512-1p4TTJGIZJ2J7130aTo7oWfHVRSCd9DxLP3HzcDMnzn56pz8krlyBEzsE+z/sHGXP0EC/JjT02fgj2L9+fmf8Q==}
     peerDependencies:
-      solid-js: ^1.6.0
+      solid-js: 1.9.12
 
   '@tanstack/start-client-core@1.170.0':
     resolution: {integrity: sha512-0tAyjFoSDm3EyIPOyz21uPBS82UWWwiZtBK+Tyc4kqNkzdvoCH21ywdWDYK9wCHdoSTm1m1KEWOLm31gtiVdoQ==}
@@ -3131,7 +3132,7 @@ packages:
       prisma: ^5.0.0 || ^6.0.0 || ^7.0.0
       react: ^18.0.0 || ^19.0.0
       react-dom: ^18.0.0 || ^19.0.0
-      solid-js: ^1.0.0
+      solid-js: 1.9.12
       svelte: ^4.0.0 || ^5.0.0
       vitest: ^2.0.0 || ^3.0.0 || ^4.0.0
       vue: ^3.0.0
@@ -4575,21 +4576,11 @@ packages:
     resolution: {integrity: sha512-1gnZf7DFcoIcajTjTwjwuDjzuz4PPcY2StKPlsGAQ1+YH20IRVrBaXSWmdjowTJ6u8Rc01PoYOGHXfP1mYcZNQ==}
     engines: {node: '>= 18'}
 
-  seroval-plugins@1.5.0:
-    resolution: {integrity: sha512-EAHqADIQondwRZIdeW2I636zgsODzoBDwb3PT/+7TLDWyw1Dy/Xv7iGUIEXXav7usHDE9HVhOU61irI3EnyyHA==}
-    engines: {node: '>=10'}
-    peerDependencies:
-      seroval: ^1.0
-
   seroval-plugins@1.5.4:
     resolution: {integrity: sha512-S0xQPhUTefAhNvNWFg0c1J8qJArHt5KdtJ/cFAofo06KD1MVSeFWyl4iiu+ApDIuw0WhjpOfCdgConOfAnLgkw==}
     engines: {node: '>=10'}
     peerDependencies:
       seroval: ^1.0
-
-  seroval@1.5.0:
-    resolution: {integrity: sha512-OE4cvmJ1uSPrKorFIH9/w/Qwuvi/IMcGbv5RKgcJ/zjA/IohDLU6SVaxFN9FwajbP7nsX0dQqMDes1whk3y+yw==}
-    engines: {node: '>=10'}
 
   seroval@1.5.4:
     resolution: {integrity: sha512-46uFvgrXTVxZcUorgSSRZ4y+ieqLLQRMlG4bnCZKW3qI6BZm7Rg4ntMW4p1mILEEBZWrFlcpp0AyIIlM6jD9iw==}
@@ -4631,9 +4622,6 @@ packages:
   sirv@3.0.2:
     resolution: {integrity: sha512-2wcC/oGxHis/BoHkkPwldgiPSYcpZK3JU28WoMVv55yHJgcZ8rlXvuG9iZggz+sU1d4bRgIGASwyWqjxu3FM0g==}
     engines: {node: '>=18'}
-
-  solid-js@1.9.11:
-    resolution: {integrity: sha512-WEJtcc5mkh/BnHA6Yrg4whlF8g6QwpmXXRg4P2ztPmcKeHHlH4+djYecBLhSpecZY2RRECXYUwIc/C2r3yzQ4Q==}
 
   solid-js@1.9.12:
     resolution: {integrity: sha512-QzKaSJq2/iDrWR1As6MHZQ8fQkdOBf8GReYb7L5iKwMGceg7HxDcaOHk0at66tNgn9U2U7dXo8ZZpLIAmGMzgw==}
@@ -6897,29 +6885,11 @@ snapshots:
 
   '@tanstack/devtools-event-client@0.4.0': {}
 
-  '@tanstack/devtools-ui@0.4.4(csstype@3.2.3)(solid-js@1.9.11)':
-    dependencies:
-      clsx: 2.1.1
-      goober: 2.1.18(csstype@3.2.3)
-      solid-js: 1.9.11
-    transitivePeerDependencies:
-      - csstype
-
   '@tanstack/devtools-ui@0.4.4(csstype@3.2.3)(solid-js@1.9.12)':
     dependencies:
       clsx: 2.1.1
       goober: 2.1.18(csstype@3.2.3)
       solid-js: 1.9.12
-    transitivePeerDependencies:
-      - csstype
-
-  '@tanstack/devtools-utils@0.2.4(@types/react@19.2.14)(csstype@3.2.3)(react@19.2.5)(solid-js@1.9.11)':
-    dependencies:
-      '@tanstack/devtools-ui': 0.4.4(csstype@3.2.3)(solid-js@1.9.11)
-    optionalDependencies:
-      '@types/react': 19.2.14
-      react: 19.2.5
-      solid-js: 1.9.11
     transitivePeerDependencies:
       - csstype
 
@@ -6983,14 +6953,14 @@ snapshots:
 
   '@tanstack/pacer-devtools@1.1.2(@tanstack/pacer@0.18.0)(@types/react@19.2.14)(csstype@3.2.3)(react@19.2.5)':
     dependencies:
-      '@tanstack/devtools-ui': 0.4.4(csstype@3.2.3)(solid-js@1.9.11)
-      '@tanstack/devtools-utils': 0.2.4(@types/react@19.2.14)(csstype@3.2.3)(react@19.2.5)(solid-js@1.9.11)
+      '@tanstack/devtools-ui': 0.4.4(csstype@3.2.3)(solid-js@1.9.12)
+      '@tanstack/devtools-utils': 0.2.4(@types/react@19.2.14)(csstype@3.2.3)(react@19.2.5)(solid-js@1.9.12)
       '@tanstack/pacer': 0.18.0
-      '@tanstack/solid-store': 0.8.1(solid-js@1.9.11)
+      '@tanstack/solid-store': 0.8.1(solid-js@1.9.12)
       clsx: 2.1.1
       dayjs: 1.11.19
       goober: 2.1.18(csstype@3.2.3)
-      solid-js: 1.9.11
+      solid-js: 1.9.12
     transitivePeerDependencies:
       - '@types/react'
       - csstype
@@ -7336,10 +7306,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@tanstack/solid-store@0.8.1(solid-js@1.9.11)':
+  '@tanstack/solid-store@0.8.1(solid-js@1.9.12)':
     dependencies:
       '@tanstack/store': 0.8.1
-      solid-js: 1.9.11
+      solid-js: 1.9.12
 
   '@tanstack/start-client-core@1.170.0':
     dependencies:
@@ -9298,15 +9268,9 @@ snapshots:
       - supports-color
     optional: true
 
-  seroval-plugins@1.5.0(seroval@1.5.0):
-    dependencies:
-      seroval: 1.5.0
-
   seroval-plugins@1.5.4(seroval@1.5.4):
     dependencies:
       seroval: 1.5.4
-
-  seroval@1.5.0: {}
 
   seroval@1.5.4: {}
 
@@ -9367,12 +9331,6 @@ snapshots:
       '@polka/url': 1.0.0-next.29
       mrmime: 2.0.1
       totalist: 3.0.1
-
-  solid-js@1.9.11:
-    dependencies:
-      csstype: 3.2.3
-      seroval: 1.5.0
-      seroval-plugins: 1.5.0(seroval@1.5.0)
 
   solid-js@1.9.12:
     dependencies:

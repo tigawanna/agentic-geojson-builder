@@ -10,9 +10,13 @@ export type DeviceSession = {
 export const deviceSessionsQueryOptions = queryOptions({
   queryKey: [queryKeyPrefixes.deviceSessions],
   queryFn: async () => {
-    const { data, error } = await authClient.multiSession.listDeviceSessions();
-    if (error) throw error;
-    return data as DeviceSession[];
+    try {
+      const { data, error } = await authClient.multiSession.listDeviceSessions();
+      if (error) throw error;
+      return data as DeviceSession[];
+    } catch {
+      return [];
+    }
   },
   retry: false,
 });
