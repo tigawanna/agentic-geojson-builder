@@ -1,276 +1,340 @@
-# Agentic GeoJSON Builder - Running TODOs
+# Agentic GeoJSON Builder — running TODOs
 
-This file tracks what has been cleaned up, what is active now, and what should come next. Treat it as the handoff note between runs.
+Handoff note between work sessions. Update this file when priorities or reality change.
 
-## Covered Ground
+**Implemented UI inventory:** [`docs/map-workspace-features.md`](docs/map-workspace-features.md)  
+**Agent digitization design:** [`docs/agent-digitization-design.md`](docs/agent-digitization-design.md)  
+**Reference tool architecture:** [`../agentic-json-resume/apps/web/src/features/agentic-tools/`](../agentic-json-resume/apps/web/src/features/agentic-tools/README.md)
 
-- Renamed the root package from `agentic-json-resume` to `agentic-geojson-builder`.
-- Rewrote the main docs around the image/PDF-to-GeoJSON product direction:
-  - `README.md`
-  - `VISION.md`
-  - `ARCHITECTURE.md`
-  - `GAMEPLAN.md`
-- Updated active app branding through `apps/web/src/utils/system.tsx`.
-- Reworked the landing page copy and mock visuals around:
-  - source map upload
-  - overlay alignment
-  - manual tracing
-  - agent draft review
-  - GeoJSON export
-- Replaced the old dashboard landing content with a GeoJSON workspace overview.
-- Added the first active map-project route:
-  - `/map-projects`
-  - `apps/web/src/routes/_dashboard/map-projects/index.tsx`
-  - `apps/web/src/routes/_dashboard/map-projects/-components/MapProjectsPage.tsx`
-- Added shared Zod schemas for the new product contract:
-  - `packages/isomorphic/src/geojson-builder.ts`
-  - GeoJSON geometry and FeatureCollection schemas
-  - map project schema
-  - source asset schema
-  - georeference and control point schemas
-  - agent run/tool schemas
-- Added `zod` to `@repo/isomorphic`.
-- Removed old copied resume routes from the active router surface.
-- Removed old active MCP/API routes that still exposed resume tooling.
-- Moved copied resume app code out of active compilation to:
-  - `legacy/apps-web-copied-resume-app`
-- Moved the copied kitchen API and starter SPA out of the active workspace to:
-  - `legacy/apps-api-copied-kitchen-app`
-  - `legacy/apps-spa-copied-shell`
-- Narrowed `pnpm-workspace.yaml` to `apps/web` and `packages/*`.
-- Added a root `tsconfig.json` boundary and Vite+ ignore patterns so `legacy/**` is ignored by TypeScript, `vp fmt`, and `vp lint`.
-- Added `**/routeTree.gen.ts` to the Vite+ ignore patterns so generated TanStack Router output does not block clean checks.
-- Moved old resume Drizzle schema files out of the active web app and left the active schema barrel exporting Better Auth tables only.
-- Replaced old kitchen/menu organization permission names with GeoJSON project-oriented role statements in `packages/isomorphic/src/auth-roles.ts`.
-- Updated API key permissions and visible settings copy from resume language to map-project language.
-- Removed the active `octokit` dependency after moving the only Octokit helper into the legacy archive.
-- Updated active auth/settings/toolbar copy away from resume language.
-- Replaced the old MCP settings flow with a disabled GeoJSON MCP bridge placeholder.
-- Verified:
-  - `vp check`
-  - `pnpm check-types`
-  - `pnpm --filter @repo/isomorphic check-types`
-  - `pnpm --filter web check-types`
-  - `pnpm --filter web build`
-- Restarted the dev server at `http://localhost:3040/`.
-- Added the first real GeoJSON Builder persistence schema:
-  - `map_project`
-  - `source_asset`
-  - `control_point`
-  - `georeference`
-  - `geo_feature`
-  - `agent_run`
-  - `project_revision`
-- Generated the next Drizzle migration through `pnpm --filter web db:generate`.
-  - It creates the GeoJSON Builder tables.
-  - It also drops the old resume tables because those schemas are no longer active.
-  - It was applied locally with `pnpm --filter web db:migrate` against the file-backed dev DB.
-- Added map project server/data access files:
-  - list projects for the signed-in user
-  - create projects for the signed-in user
-  - update projects for the signed-in user
-  - delete projects for the signed-in user
-  - TanStack Query `queryOptions`
-- Reworked `/map-projects` from a static schema demo into a real project list with:
-  - empty state
-  - TanStack Form creation dialog
-  - Zod-backed create validation
-  - live project cards with source asset and feature counts
-  - project edit dialog for name, description, location hint, and base map
-  - confirmed project deletion with source asset file cleanup
-- Added the first map project workspace route:
-  - `/map-projects/$projectId`
-  - source asset panel
-  - map canvas placeholder
-  - georeferencing placeholder
-  - workspace metrics
-  - feature review panel
-  - accepted/draft/rejected feature status breakdown
-  - selected source asset context for georeferencing
-- Added the first source asset upload path:
-  - multipart API route at `/api/map-projects/$projectId/source-assets/upload`
-  - local dev file storage under `apps/web/uploads/source-assets/...`
-  - DB metadata row creation for uploaded PDFs/images
-  - source asset query invalidation after upload
-- Added authenticated source asset file serving:
-  - `/api/map-projects/$projectId/source-assets/$sourceAssetId/file`
-  - verifies the signed-in user owns the project
-  - bounds file reads to local upload storage
-  - returns the stored PDF/image with an inline content disposition
-- Added richer in-app source asset preview inside the workspace:
-  - selected image/PDF assets render inline in the map canvas panel
-  - uploaded image dimensions appear in the source asset list and georeferencing panel
-  - image control points render as numbered markers over the preview when dimensions are known
-- Added source asset metadata editing in the workspace:
-  - file display name
-  - image width/height
-  - PDF page count
-  - blank optional metadata clears stored values
-- Added upload progress feedback for source asset uploads:
-  - selected file name and size are shown before submit
-  - upload requests now report browser upload progress
-  - the upload form clears after a successful attachment
-- Added the first manual georeferencing write flow:
-  - source asset selector in the workspace
-  - TanStack Form control point entry for image pixel coordinates and longitude/latitude
-  - server function with project ownership and source-asset ownership checks
-  - workspace control point table
-  - control point edit dialog with stale transform clearing
-  - transform readiness hint once at least three control points exist
-- Added the first manual feature draft flow:
-  - TanStack Form point-feature entry in the workspace
-  - source asset association
-  - path kind, name, notes, and coordinate fields
-  - server function writes `geo_feature` rows as `manual-trace`/`draft`
-  - feature review table and status counts update from real DB rows
-- Added affine georeference estimation:
-  - generated and applied Drizzle migration `0003_fixed_whirlwind.sql`
-  - added a JSON `transform` column on `georeference`
-  - estimates pixel-to-lon/lat affine coefficients from at least three control points
-  - stores RMS residual error in meters
-  - clears stale georeferences when control points change
-  - replaces a selected source asset's previous transform estimate instead of stacking duplicates
-  - shows selected asset transform status in the workspace
-- Added cleanup actions for early editor data:
-  - delete source assets from the workspace with ownership checks
-  - remove uploaded local files after source asset deletion
-  - delete control points with ownership checks
-  - refresh project/workspace queries after cleanup
-- Added `uploads` to `apps/web/.gitignore`.
-- Re-verified after the data layer work:
-  - `pnpm --filter web check-types`
-  - `pnpm --filter @repo/isomorphic check-types`
-  - `pnpm --filter web build`
-  - `pnpm lint`
-  - unauthenticated source asset file route returns `401`
-- Re-verified after affine/delete work:
-  - `pnpm --filter web check-types`
-  - `pnpm lint`
-  - `pnpm --filter web build`
-  - unauthenticated workspace route redirects to `/auth`
-  - unauthenticated source asset upload route returns `401`
+---
 
-## Current State
+## Current state (what actually runs today)
 
-- The active `apps/web/src` app now has a much smaller route surface:
-  - landing page
-  - auth routes
-  - dashboard shell
-  - `/dashboard`
-  - `/map-projects`
-  - `/settings`
-  - Better Auth API route
-- `/map-projects` is protected and redirects unauthenticated users to auth.
-- `/map-projects/$projectId` is protected and redirects unauthenticated users to auth.
-- `/api/mcp` returns `404`, which is intentional until the GeoJSON MCP bridge is rebuilt.
-- `/api/map-projects/$projectId/source-assets/upload` returns `401` for unauthenticated requests.
-- `/api/map-projects/$projectId/source-assets/$sourceAssetId/file` returns `401` for unauthenticated requests.
-- The workspace can estimate an affine transform for a selected source asset once it has three or more control points.
-- The workspace shows an inline preview for the selected source asset, with image control point markers when image dimensions are available.
-- Source asset display metadata and control points can be edited from the workspace.
-- Source asset uploads now show file size and progress while the browser is sending the file.
-- Map project details can be edited from the project list.
-- Source assets and control points can now be removed from the workspace.
-- Map projects can be deleted from the project list, with owned source asset files cleaned up from local storage.
-- Old copied code is preserved under `legacy/` but outside active type checking and Vite+ checks.
-- The repo is now inside a git worktree, but current changes are uncommitted.
-- Generated Drizzle migrations exist for the new data layer and affine transform column, and both have been run locally against the file-backed dev DB.
+### Map workspace (`/maps`)
 
-## Next Runs
+Browser-only persistence via **PGLite** (IndexedDB + PostGIS extension). No server-side map data yet.
 
-### 3. Add Real Map Project Data Layer
+| Area        | Status                                                           |
+| ----------- | ---------------------------------------------------------------- |
+| Routes      | `/maps` (list), `/maps/new` → `/maps/$id` (workspace)            |
+| UI          | Side-by-side PDF + Leaflet map, reference points, controls modal |
+| Persistence | PGLite tables `map`, `control_point`                             |
+| PDF storage | `map.pdf_data` bytea in IndexedDB                                |
+| Auth tie-in | Maps are **not** scoped to signed-in user                        |
+| Server DB   | Turso/libSQL — **Better Auth tables only**                       |
 
-Mostly complete for the first slice.
+Key paths:
 
-Done:
+- `apps/web/src/routes/_dashboard/maps/new/-components/MapAlignmentWorkspace.tsx`
+- `apps/web/src/routes/_dashboard/maps/new/-components/map-handle.ts`
+- `apps/web/src/lib/pglite/` — client, schema, migrations
+- `apps/web/src/data-access-layer/pglite/` — TanStack Query options calling PGLite directly in the browser
 
-- create Drizzle schema for map projects, source assets, control points, features, agent runs, and revisions
-- generate migrations through Drizzle commands only
-- add server functions for listing/creating map projects
-- add TanStack Query `queryOptions`
-- wire `/map-projects` to real data instead of the static schema demo
+### Shared contracts (not wired to UI yet)
 
-Remaining:
+- `packages/isomorphic/src/geojson-builder.ts` — Zod domain + planned agent tool names
+- `packages/isomorphic/src/auth-roles.ts` — `mapProject`, `geoFeature`, etc.
 
-- add archive behavior after create/update/delete are stable
+### Agent / MCP
 
-### 4. Build The First Upload Flow
+- `/api/mcp` — **missing** (404)
+- MCP settings UI — commented out
+- No TanStack AI chat route yet
+- Legacy resume MCP/oRPC stack preserved under `legacy/apps-web-copied-resume-app/features/agentic-tools/`
 
-First source asset upload slice is in place.
+### Outdated notes
 
-Done:
+Older sections of this file referenced `/map-projects` and a Turso-backed GeoJSON data layer. That route **does not exist** in the active app. The live workspace is `/maps` on PGLite. Phase 1 below replaces PGLite with server Postgres — not a client/server sync layer.
 
-- source asset upload UI
-- store original PDF/image metadata
-- decide storage target: local dev filesystem for early prototype
+---
 
-Remaining:
+## Strategic decision
 
-- read PDF page counts and preview dimensions
-- decide production storage target: S3-compatible bucket or hosted volume
-- add PDF raster/page preview controls beyond the current inline browser PDF embed
+**Do not sync PGLite ↔ remote Postgres.** One source of truth on the server so that:
 
-### 5. Build The Map Workspace Route
+- MCP clients (Cursor, Claude Desktop, custom cloud agents) read/write the same project state as the web UI
+- API keys authenticate against server tools
+- Agent runs, feature segments, and exports share one database
 
-First workspace route is in place.
+Local Postgres is already available. Migrate schemas and queries there; expose them through TanStack Start server functions.
 
-Done:
+---
 
-- route structure: `/map-projects/$projectId`
-- route-specific components in `-components`
-- placeholder map canvas with project details
-- source asset panel
-- georeferencing panel
-- source asset selection for georeferencing
-- manual control point creation form
-- control point table
-- source asset metadata edit dialogs
-- control point edit dialogs
-- manual point feature draft form
-- estimate/store the first affine transform from control points
-- remove source assets and control points from the workspace
+## Phase 1 — Migrate PGLite → server Postgres (do this first)
 
-Remaining:
+### 1.1 Database setup
 
-- add transform history UI if keeping older estimates becomes useful
-- add line/polygon manual draft creation once map drawing exists
+- [ ] Switch `apps/web/drizzle.config.ts` from `turso` to **`postgresql`** (or add a dedicated `drizzle.postgres.config.ts` if auth stays on Turso temporarily)
+- [ ] Set `DATABASE_URL=postgresql://...` in `apps/web/.env` (see `ARCHITECTURE.md`)
+- [ ] Enable **PostGIS** in Postgres (`CREATE EXTENSION postgis`)
+- [ ] Add a custom Drizzle migration for the extension (mirror `drizzle-pglite/migrations/0000_extensions.sql`)
 
-### 6. Choose Map Editing Libraries
+**Open decision:** single Postgres for auth + maps, or keep Turso for auth and Postgres for geo data. Simplest long-term: **one Postgres** for everything.
 
-Pick the first real GIS UI stack.
+### 1.2 Move schema out of PGLite
 
-Likely starting point:
+Port from `apps/web/src/lib/pglite/schema/` into `apps/web/src/lib/drizzle/scheam/maps/`:
 
-- Leaflet for map display
-- Leaflet-Geoman for drawing/editing
-- Turf modules for geometry validation and measurements
-- PDF.js or server-side Poppler for source PDF rasterization
+| Table                  | Notes                                                                                         |
+| ---------------------- | --------------------------------------------------------------------------------------------- |
+| `map`                  | Add `owner_id` → `user.id`. Keep workspace columns (viewport, PDF transform, base map style). |
+| `control_point`        | Keep `image_x`, `image_y`, PostGIS `location` point SRID 4326                                 |
+| (later) `geo_segment`  | Chunked path rows for agent patches                                                           |
+| (later) `geo_feature`  | Merged/exportable features per `packages/isomorphic`                                          |
+| (later) `georeference` | Affine transform JSON + residual error                                                        |
+| (later) `agent_run`    | Tool audit trail                                                                              |
 
-Open question:
+Start minimal: **`map` + `control_point` + `owner_id`** — enough to replace today's PGLite slice.
 
-- whether Google Maps is a secondary tab/provider only when OSM imagery or labels are insufficient
+PDF storage options (pick one in implementation):
 
-### 7. Design The Agent Tool Boundary
+- **A.** Postgres `bytea` (matches current PGLite approach, simplest migration)
+- **B.** Filesystem under `uploads/maps/{mapId}/` + `pdf_storage_key` column (better for large PDFs)
 
-Rebuild MCP and in-app AI around GeoJSON tools, not resume tools.
+Generate migrations with `pnpm --filter web db:generate` only — no hand-written SQL unless custom (PostGIS extension).
 
-Suggested tools:
+### 1.3 Server data access layer
 
-- `get_project_context`
-- `get_rendered_map_view`
-- `propose_features_from_overlay`
-- `validate_geojson_features`
-- `apply_feature_patch`
-- `explain_feature`
-- `draw_shape`
+Create server-only modules (pattern from json-resume `*.server.ts`):
 
-Important constraint:
+```
+apps/web/src/data-access-layer/maps/
+  maps.server.ts           # Drizzle queries, ownership checks
+  maps.functions.ts        # createServerFn + viewerMiddleware
+  maps-query-options.ts    # TanStack Query → calls *.functions.ts
+  maps.types.ts
 
-- agent output should create reviewable drafts, not silently mutate accepted GeoJSON.
+apps/web/src/data-access-layer/control-points/
+  control-points.server.ts
+  control-points.functions.ts
+  control-points-query-options.ts
+  control-points.types.ts
+```
 
-## Known Cleanup Debt
+Rules:
 
-- `apps/web/.env` contains local secrets; move real secrets out before any public push.
-- `legacy/` still contains copied project code by design; it is ignored by active checks but should not ship with a public repo.
-- Some generic UI/wrapper components have typos or copied names, but they are not blocking the new product direction yet.
-- The Better Auth organization plugin is using the GeoJSON role definitions without passing the custom access-control builder until the real permission layer is designed.
+- `*.server.ts` — `import "@tanstack/react-start/server-only"`, receives `userId`, asserts map ownership
+- `*.functions.ts` — session auth via existing `viewerMiddleware`
+- UI components **never** import `*.server.ts` directly
+
+Port logic from:
+
+- `apps/web/src/data-access-layer/pglite/maps-query-options.ts`
+- `apps/web/src/data-access-layer/pglite/control-points-query-options.ts`
+
+### 1.4 Rewire the UI
+
+- [ ] Remove `PgliteProvider` / `PgliteProviderWrapper` from `apps/web/src/routes/_dashboard/maps/layout.tsx`
+- [ ] Update `MapAlignmentWorkspace`, maps list, and `/maps/new` to use server function query options
+- [ ] Scope list/create/delete to `context.viewer.user.id`
+- [ ] Handle loading/error states (already partially present)
+
+### 1.5 Remove PGLite (after parity)
+
+- [ ] Delete `apps/web/src/lib/pglite/`
+- [ ] Delete `apps/web/src/data-access-layer/pglite/`
+- [ ] Remove `@electric-sql/pglite`, `@electric-sql/pglite-postgis`, `@proj-airi/drizzle-orm-browser-migrator`, PGLite Vite plugin config
+- [ ] Remove `db:pglite:*` scripts from `apps/web/package.json`
+
+### 1.6 Verification checklist
+
+- [ ] Create map while signed in → row has `owner_id`
+- [ ] Upload PDF → persists across refresh
+- [ ] Control points CRUD + drag on map/PDF
+- [ ] Workspace prefs auto-save (viewport, transform, base map style)
+- [ ] Second user cannot read another user's map
+- [ ] `pnpm --filter web check-types` && `pnpm --filter web build`
+
+---
+
+## Phase 2 — Shared agent tool layer (mirror json-resume)
+
+Replicate the four-layer funnel from `agentic-json-resume/apps/web/src/features/agentic-tools/`:
+
+```
+packages/isomorphic (Zod contracts)
+        ↓
+geojson-tool-schemas.ts          ← input/output Zod for every tool
+        ↓
+geojson-tools.server.ts          ← single implementation: { userId, input } → result
+        ↓
+geojson-orpc-router.server.ts    ← procedures + read/write permissions
+        ↓
+┌─────────────────┬──────────────────────┬─────────────────────────┐
+geojson-mcp       /api/agentic/*         geojson-agent.server.ts
+(MCP register)    (OpenAPI + RPC)        (TanStack AI .server())
+```
+
+Create folder:
+
+```
+apps/web/src/features/agentic-tools/
+  README.md
+  agentic-routes.ts
+  geojson-tool-schemas.ts
+  geojson-tools.server.ts
+  geojson-orpc-base.server.ts
+  geojson-orpc-router.server.ts
+  geojson-orpc.server.ts
+  geojson-orpc-client.server.ts
+  geojson-mcp.server.ts
+  geojson-agent.server.ts
+  geojson-chat-tool-definitions.ts
+```
+
+Wire routes:
+
+- `apps/web/src/routes/api/mcp.ts`
+- `apps/web/src/routes/api/agentic/$.ts`
+- `apps/web/src/routes/api/agentic/rpc/$.ts`
+- `apps/web/src/routes/api/agentic/openapi.json.ts`
+- `apps/web/src/routes/api/ai/map-assistant.ts` (or similar SSE route)
+
+Auth:
+
+- **UI** — Better Auth session via `viewerMiddleware`
+- **MCP / external API** — Better Auth API keys via `apps/web/src/lib/better-auth/api-key.server.ts` (permissions already mention `mapProject`)
+
+Internal trusted callers use `createGeojsonAgenticServerClient(userId)` — in-process oRPC, no HTTP loop.
+
+Re-enable `McpConnectSection` in settings once `/api/mcp` exists.
+
+---
+
+## Tool inventory (shared definitions)
+
+One Zod schema per tool in `geojson-tool-schemas.ts`. One function per tool in `geojson-tools.server.ts`. MCP uses snake_case names; TanStack AI definitions can use the same or scoped variants.
+
+### Server tools — database & deterministic logic
+
+These run only on the server. Safe for MCP, oRPC, and TanStack AI `.server()` handlers.
+
+| Tool name                           | Purpose                                                                                 | Backed by                       |
+| ----------------------------------- | --------------------------------------------------------------------------------------- | ------------------------------- |
+| `list_maps`                         | Paginated maps for authenticated user                                                   | `maps.server.ts`                |
+| `get_map_workspace`                 | Map metadata + workspace prefs + PDF ref                                                | `maps.server.ts`                |
+| `create_map`                        | New map project                                                                         | `maps.server.ts`                |
+| `update_map_workspace`              | Viewport, transform, base map style, location query                                     | `maps.server.ts`                |
+| `delete_map`                        | Delete map + cascade control points                                                     | `maps.server.ts`                |
+| `save_map_pdf`                      | Upload/replace PDF binary or storage key                                                | `maps.server.ts`                |
+| `list_control_points`               | Control points for a map                                                                | `control-points.server.ts`      |
+| `create_control_point`              | PDF pixel ↔ lat/lng pair                                                                | `control-points.server.ts`      |
+| `update_control_point`              | Edit or drag-sync a point                                                               | `control-points.server.ts`      |
+| `delete_control_point`              | Remove reference point                                                                  | `control-points.server.ts`      |
+| `suggest_control_point_adjustments` | Proposed nudges when PDF icon vs satellite misaligned; human or policy confirms         | `control-points.server.ts`      |
+| `get_project_context`               | Aggregated JSON: map, control points, georeference status, feature counts, segment gaps | composes several `*.server.ts`  |
+| `compute_georeference`              | Affine transform from 3+ control points + residual error                                | new `georeference.server.ts`    |
+| `list_feature_segments`             | Chunked path rows for a map/trail group                                                 | future `geo-segments.server.ts` |
+| `find_feature_gaps`                 | Missing links between segments in a `segmentGroupId`                                    | future `geo-segments.server.ts` |
+| `apply_feature_patch`               | Upsert segment or feature draft (small GeoJSON patch)                                   | future `geo-segments.server.ts` |
+| `validate_geojson_features`         | Turf checks: bounds, length, self-intersection, min vertices                            | pure server util                |
+| `merge_feature_segments`            | Stitch segments by group id + snap endpoints                                            | future                          |
+| `export_geojson`                    | Build FeatureCollection from accepted features                                          | future                          |
+| `explain_feature`                   | Return feature metadata + provenance for agent/human                                    | future                          |
+| `record_agent_run`                  | Audit log for tool calls                                                                | future `agent-runs.server.ts`   |
+
+### Client tools — browser-only (TanStack AI)
+
+These need DOM, canvas, or clipboard. Implement via `toolDefinition().client()` or post-tool React effects (json-resume uses effects for refresh).
+
+| Tool name               | Purpose                                                    | Notes                                     |
+| ----------------------- | ---------------------------------------------------------- | ----------------------------------------- |
+| `get_rendered_map_view` | PNG snapshots of PDF pane + map viewport for vision models | Canvas capture in `MapAlignmentWorkspace` |
+| `refresh_map_workspace` | Invalidate TanStack Query keys after agent writes          | Hook watching completed tool parts        |
+| `set_map_viewport`      | Pan/zoom base map                                          | Wraps `map-handle.ts` `setViewport`       |
+| `pan_map_to_query`      | Nominatim search from chat                                 | Wraps `map-handle.ts` `panToQuery`        |
+
+### Hybrid / orchestration
+
+| Tool name                       | Purpose                                | Notes                                                                                                        |
+| ------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `propose_features_from_overlay` | Vision model traces paths on snapshots | Client captures images → server sends to model → server calls `apply_feature_patch` with pixel or geo coords |
+
+Agent constraint (from `GAMEPLAN.md`): writes create **`draft`** rows only until human accept.
+
+Full chunking strategy, coordinate spaces, agent vision loop, reference-point correction, and merge pipeline: **[`docs/agent-digitization-design.md`](docs/agent-digitization-design.md)**.
+
+---
+
+## Agent digitization — summary (see design doc for detail)
+
+Agents see **PDF + satellite snapshots** plus **`get_project_context` JSON**. They trace **one trail or segment per turn** via `apply_feature_patch`; humans review, drag vertices, and nudge reference points when misaligned.
+
+| Strategy              | When to use                                                |
+| --------------------- | ---------------------------------------------------------- |
+| One feature per trail | Karura colored loops — first default                       |
+| `geo_segment` rows    | Long paths split into ordered chunks with `segmentGroupId` |
+| Anchor + span         | Sparse corner points; app densifies between                |
+| Spatial tiles         | Very large maps only — not needed for Karura v1            |
+
+Do **not** sync or return whole-map GeoJSON in one agent response. Merge + simplify on accept/export (Turf).
+
+Planned reference-point agent behavior: propose small adjustments via `update_control_point` or `suggest_control_point_adjustments`; re-run `compute_georeference` after changes.
+
+---
+
+## Phase 3 — Product features (after Postgres + tools)
+
+Ordered by dependency. Design rationale: [`docs/agent-digitization-design.md`](docs/agent-digitization-design.md).
+
+- [ ] **Affine georeference** — `compute_georeference` + UI residual error display
+- [ ] **`geo_segment` table** — chunked patches with `segmentGroupId`, `segmentIndex`, `status`, `coordinateSpace`
+- [ ] **`find_feature_gaps` + merge pipeline** — snap endpoints, concatenate, Turf validate/simplify on accept
+- [ ] **Agent vision loop** — `get_rendered_map_view` (PDF + map PNGs) → `propose_features_from_overlay` → `apply_feature_patch`
+- [ ] **Reference point agent assist** — suggest/adjust misaligned control points; recompute transform after edits
+- [ ] **Trace mode** — manual LineString draw on map using transform from control points
+- [ ] **In-app agent chat** — TanStack AI tab on map workspace, OpenRouter key from client
+- [ ] **GeoJSON export** — accepted merged features only
+- [ ] **Multi-page PDF** — beyond page 1 render
+- [ ] **Align naming with isomorphic** — optional rename `map` → `map_project`, routes `/maps` → `/map-projects`, string ids
+
+---
+
+## Phase 4 — MCP & external agents
+
+- [ ] Register server tools on `McpServer` in `geojson-mcp.server.ts`
+- [ ] Streamable HTTP at `/api/mcp` with API key auth
+- [ ] Document MCP setup in settings (re-enable `McpConnectSection`)
+- [ ] OpenAPI spec at `/api/agentic/openapi/json` for non-MCP integrations
+
+---
+
+## Covered ground (UI — do not re-build)
+
+See [`docs/map-workspace-features.md`](docs/map-workspace-features.md). Summary:
+
+- Side-by-side PDF + Leaflet workspace
+- PDF upload, zoom/pan/rotate, control point markers on PDF
+- Reference point workflow (map click, paste Google Maps coords, PDF click)
+- Draggable control points on map and PDF
+- Double-click / cursor readout coordinate copy
+- Base maps: satellite (default), outline, standard
+- Nominatim location search
+- Controls modal (reference list, edit/delete, map area, PDF sliders)
+- PGLite persistence + debounced workspace auto-save
+- `map-handle.ts` imperative map API
+
+---
+
+## Known cleanup debt
+
+- `apps/web/.env` contains local secrets — do not commit
+- `TODOS.md` previously described `/map-projects` Turso work that was never merged; Phase 1 supersedes that path
+- `legacy/` is archived reference only
+- Better Auth organization plugin uses GeoJSON role names without full access-control wiring yet
+
+---
+
+## Quick reference — file mapping (json-resume → geojson)
+
+| json-resume                                 | geojson-builder (target)                  |
+| ------------------------------------------- | ----------------------------------------- |
+| `resume-tool-schemas.ts`                    | `geojson-tool-schemas.ts`                 |
+| `resume-tools.server.ts`                    | `geojson-tools.server.ts`                 |
+| `resume-orpc-router.server.ts`              | `geojson-orpc-router.server.ts`           |
+| `resume-mcp.server.ts`                      | `geojson-mcp.server.ts`                   |
+| `resume-agent.server.ts`                    | `geojson-agent.server.ts`                 |
+| `resume-chat-tool-definitions.ts`           | `geojson-chat-tool-definitions.ts`        |
+| `data-access-layer/resume/resume.server.ts` | `data-access-layer/maps/maps.server.ts`   |
+| `routes/api/mcp.ts`                         | `routes/api/mcp.ts` (create)              |
+| `routes/api/ai/resume-tailor.ts`            | `routes/api/ai/map-assistant.ts` (create) |

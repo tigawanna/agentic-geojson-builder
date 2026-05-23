@@ -183,8 +183,10 @@ Also exports base map tile config, default viewport, geocoding helper, coordinat
 ## Not implemented yet (for doc boundary)
 
 - Affine georeference transform from control points (`compute_georeference`)
-- Feature tracing / GeoJSON segments
+- Feature tracing / GeoJSON segments / merge-on-export
 - Agent tools (`get_project_context`, `propose_feature_patch`, etc.)
 - Export GeoJSON
 - Multi-page PDF support (only page 1 rendered)
-- Server-side sync / external MCP over Postgres
+- Server-side Postgres + external MCP (replacing browser PGLite)
+
+Planned agent workflow, chunking strategies, and reference-point correction: [`agent-digitization-design.md`](agent-digitization-design.md).
