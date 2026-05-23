@@ -2,7 +2,7 @@ import type { PgliteDb } from "@/lib/pglite/client";
 import { controlPointTable } from "@/lib/pglite/schema/control-point.schema";
 import { createMap } from "@/data-access-layer/pglite/maps-query-options";
 import { unwrapUnknownError } from "@/utils/errors";
-import { asc, eq } from "drizzle-orm";
+import { asc, and, eq } from "drizzle-orm";
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
 import { queryKeyPrefixes } from "../query-keys";
 import { toast } from "sonner";
@@ -71,6 +71,46 @@ export async function createControlPoint(db: PgliteDb, input: CreateControlPoint
   return toControlPointViewModel(row);
 }
 
+export async function deleteControlPoint(
+  db: PgliteDb,
+  input: { mapId: number; controlPointId: number },
+) {
+  await db
+    .delete(controlPointTable)
+    .where(
+      and(eq(controlPointTable.id, input.controlPointId), eq(controlPointTable.mapId, input.mapId)),
+    );
+}
+
+type UpdateControlPointInput = {
+  mapId: number;
+  controlPointId: number;
+  imageX: number;
+  imageY: number;
+  longitude: number;
+  latitude: number;
+};
+
+export async function updateControlPoint(db: PgliteDb, input: UpdateControlPointInput) {
+  const [row] = await db
+    .update(controlPointTable)
+    .set({
+      imageX: input.imageX,
+      imageY: input.imageY,
+      location: { x: input.longitude, y: input.latitude },
+    })
+    .where(
+      and(eq(controlPointTable.id, input.controlPointId), eq(controlPointTable.mapId, input.mapId)),
+    )
+    .returning();
+
+  if (!row) {
+    throw new Error("Reference point not found.");
+  }
+
+  return toControlPointViewModel(row);
+}
+
 export const listControlPointsQueryOptions = (db: PgliteDb, mapId: number | null) =>
   queryOptions({
     queryKey: [queryKeyPrefixes.controlPoints, mapId],
@@ -94,6 +134,38 @@ export const createControlPointMutationOptions = (db: PgliteDb) =>
     },
     onError: (err: unknown) => {
       toast.error("Failed to save reference point", {
+        description: unwrapUnknownError(err).message,
+      });
+    },
+  });
+
+export const deleteControlPointMutationOptions = (db: PgliteDb) =>
+  mutationOptions({
+    mutationFn: (input: { mapId: number; controlPointId: number }) => deleteControlPoint(db, input),
+    onSuccess: (_, variables, __, ctx) => {
+      void ctx.client.invalidateQueries({
+        queryKey: [queryKeyPrefixes.controlPoints, variables.mapId],
+      });
+      toast.success("Reference point removed");
+    },
+    onError: (err: unknown) => {
+      toast.error("Failed to remove reference point", {
+        description: unwrapUnknownError(err).message,
+      });
+    },
+  });
+
+export const updateControlPointMutationOptions = (db: PgliteDb) =>
+  mutationOptions({
+    mutationFn: (input: UpdateControlPointInput) => updateControlPoint(db, input),
+    onSuccess: (point, __, ___, ctx) => {
+      void ctx.client.invalidateQueries({
+        queryKey: [queryKeyPrefixes.controlPoints, point.mapId],
+      });
+      toast.success("Reference point updated");
+    },
+    onError: (err: unknown) => {
+      toast.error("Failed to update reference point", {
         description: unwrapUnknownError(err).message,
       });
     },

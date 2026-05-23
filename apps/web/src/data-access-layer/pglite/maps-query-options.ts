@@ -11,7 +11,7 @@ const PAGE_SIZE = DEFAULT_PAGE_SIZE;
 
 export type MapListItem = Pick<MapRecord, "id" | "name" | "pdfFileName" | "updatedAt">;
 
-export type MapBaseMapStyle = "outline" | "standard";
+export type MapBaseMapStyle = "outline" | "standard" | "satellite";
 
 export type MapWorkspaceState = {
   id: number;
@@ -59,7 +59,12 @@ function toMapWorkspaceState(row: MapRecord): MapWorkspaceState {
     mapCenterLat: row.mapCenterLat,
     mapCenterLng: row.mapCenterLng,
     mapZoom: row.mapZoom,
-    baseMapStyle: row.baseMapStyle === "outline" ? "outline" : "standard",
+    baseMapStyle:
+      row.baseMapStyle === "outline"
+        ? "outline"
+        : row.baseMapStyle === "satellite"
+          ? "satellite"
+          : "standard",
     pdfScale: row.pdfScale,
     pdfRotation: row.pdfRotation,
     pdfPanX: row.pdfPanX,

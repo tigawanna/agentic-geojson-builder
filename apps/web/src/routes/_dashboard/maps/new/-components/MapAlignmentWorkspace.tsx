@@ -10,7 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   createControlPointMutationOptions,
+  deleteControlPointMutationOptions,
   listControlPointsQueryOptions,
+  updateControlPointMutationOptions,
   type ControlPointViewModel,
 } from "@/data-access-layer/pglite/control-points-query-options";
 import {
@@ -25,8 +27,20 @@ import { useDebouncedValue } from "@/hooks/use-debouncer";
 import { usePglite } from "@/lib/pglite/components/PgliteProvider";
 import { cn } from "@/lib/utils";
 import { unwrapUnknownError } from "@/utils/errors";
+import { parseMapCoordinates } from "@/utils/parse-map-coordinates";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Crosshair, RotateCcw, Search, Settings2, Upload, X } from "lucide-react";
+import { toast } from "sonner";
+import {
+  Crosshair,
+  MapPin,
+  Pencil,
+  RotateCcw,
+  Search,
+  Settings2,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { PDFDocumentLoadingTask, RenderTask } from "pdfjs-dist";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
@@ -43,6 +57,12 @@ type PdfViewTransform = {
 type PendingMapPoint = {
   latitude: number;
   longitude: number;
+};
+
+type ControlPointEditDraft = {
+  imageX: string;
+  imageY: string;
+  mapCoordinatesInput: string;
 };
 
 const DEFAULT_TRANSFORM: PdfViewTransform = {
@@ -79,6 +99,12 @@ const BASE_MAP_CONFIG: Record<BaseMapStyle, BaseMapConfig> = {
   standard: {
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19,
+  },
+  satellite: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    attribution:
+      "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community",
     maxZoom: 19,
   },
 };
@@ -145,6 +171,16 @@ function clampPdfScale(scale: number) {
   return Math.min(MAX_PDF_SCALE, Math.max(MIN_PDF_SCALE, scale));
 }
 
+function formatMapCoordinates(latitude: number, longitude: number) {
+  return `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+}
+
+async function copyMapCoordinates(latitude: number, longitude: number) {
+  const text = formatMapCoordinates(latitude, longitude);
+  await navigator.clipboard.writeText(text);
+  toast.success("Coordinates copied", { description: text });
+}
+
 function getImageCoordinatesFromClick(
   canvas: HTMLCanvasElement,
   event: React.MouseEvent<HTMLCanvasElement>,
@@ -165,13 +201,19 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [transform, setTransform] = useState<PdfViewTransform>(DEFAULT_TRANSFORM);
-  const [baseMapStyle, setBaseMapStyle] = useState<BaseMapStyle>("standard");
+  const [baseMapStyle, setBaseMapStyle] = useState<BaseMapStyle>("satellite");
   const [locationQuery, setLocationQuery] = useState("");
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
   const [referenceMode, setReferenceMode] = useState(false);
   const [pendingMapPoint, setPendingMapPoint] = useState<PendingMapPoint | null>(null);
+  const [pinCoordinateInput, setPinCoordinateInput] = useState("");
+  const [pinCoordinateError, setPinCoordinateError] = useState<string | null>(null);
+  const [selectedControlPointId, setSelectedControlPointId] = useState<number | null>(null);
+  const [editingControlPointId, setEditingControlPointId] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState<ControlPointEditDraft | null>(null);
+  const [editDraftError, setEditDraftError] = useState<string | null>(null);
   const [mapViewport, setMapViewport] = useState<MapViewport>(DEFAULT_MAP_VIEWPORT);
   const [isHydrated, setIsHydrated] = useState(false);
   const mapHandleRef = useRef<MapHandle | null>(null);
@@ -183,6 +225,8 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
     ...listControlPointsQueryOptions(db, mapId),
   });
   const createControlPointMutation = useMutation(createControlPointMutationOptions(db));
+  const deleteControlPointMutation = useMutation(deleteControlPointMutationOptions(db));
+  const updateControlPointMutation = useMutation(updateControlPointMutationOptions(db));
   const savePdfMutation = useMutation(saveMapPdfMutationOptions(db));
   const saveWorkspaceMutation = useMutation(updateMapWorkspaceMutationOptions(db));
 
@@ -295,6 +339,116 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
   function stopReferenceMode() {
     setReferenceMode(false);
     setPendingMapPoint(null);
+    setPinCoordinateError(null);
+  }
+
+  function applyMapPinFromInput(rawInput: string) {
+    const parsed = parseMapCoordinates(rawInput);
+    if (!parsed.ok) {
+      setPinCoordinateError(parsed.error);
+      return;
+    }
+
+    setPinCoordinateError(null);
+    setReferenceMode(true);
+    setPendingMapPoint(parsed.value);
+    setPinCoordinateInput(
+      `${parsed.value.latitude.toFixed(6)}, ${parsed.value.longitude.toFixed(6)}`,
+    );
+
+    mapHandleRef.current?.setViewport({
+      latitude: parsed.value.latitude,
+      longitude: parsed.value.longitude,
+      zoom: Math.max(mapViewport.zoom, 16),
+    });
+  }
+
+  function handlePinCoordinateSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    applyMapPinFromInput(pinCoordinateInput);
+  }
+
+  function handleDeleteControlPoint(controlPointId: number) {
+    deleteControlPointMutation.mutate(
+      { mapId, controlPointId },
+      {
+        onSuccess: () => {
+          if (selectedControlPointId === controlPointId) {
+            setSelectedControlPointId(null);
+          }
+          if (editingControlPointId === controlPointId) {
+            setEditingControlPointId(null);
+            setEditDraft(null);
+            setEditDraftError(null);
+          }
+        },
+      },
+    );
+  }
+
+  function startEditingControlPoint(point: ControlPointViewModel) {
+    setEditingControlPointId(point.id);
+    setEditDraft({
+      imageX: point.imageX.toFixed(1),
+      imageY: point.imageY.toFixed(1),
+      mapCoordinatesInput: `${point.latitude.toFixed(6)}, ${point.longitude.toFixed(6)}`,
+    });
+    setEditDraftError(null);
+    setSelectedControlPointId(point.id);
+    mapHandleRef.current?.setViewport({
+      latitude: point.latitude,
+      longitude: point.longitude,
+      zoom: Math.max(mapViewport.zoom, 16),
+    });
+  }
+
+  function cancelEditingControlPoint() {
+    setEditingControlPointId(null);
+    setEditDraft(null);
+    setEditDraftError(null);
+  }
+
+  function handleSaveControlPointEdit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (editingControlPointId === null || !editDraft) {
+      return;
+    }
+
+    const parsed = parseMapCoordinates(editDraft.mapCoordinatesInput);
+    if (!parsed.ok) {
+      setEditDraftError(parsed.error);
+      return;
+    }
+
+    const imageX = Number(editDraft.imageX);
+    const imageY = Number(editDraft.imageY);
+    if (!Number.isFinite(imageX) || !Number.isFinite(imageY)) {
+      setEditDraftError("PDF coordinates must be valid numbers.");
+      return;
+    }
+
+    updateControlPointMutation.mutate(
+      {
+        mapId,
+        controlPointId: editingControlPointId,
+        imageX,
+        imageY,
+        latitude: parsed.value.latitude,
+        longitude: parsed.value.longitude,
+      },
+      {
+        onSuccess: (point) => {
+          cancelEditingControlPoint();
+          setSelectedControlPointId(point.id);
+          mapHandleRef.current?.setViewport({
+            latitude: point.latitude,
+            longitude: point.longitude,
+            zoom: Math.max(mapViewport.zoom, 16),
+          });
+        },
+      },
+    );
   }
 
   function handleMapLocationPick(latitude: number, longitude: number) {
@@ -303,6 +457,8 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
     }
 
     setPendingMapPoint({ latitude, longitude });
+    setPinCoordinateInput(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+    setPinCoordinateError(null);
   }
 
   function handlePdfLocationPick(imageX: number, imageY: number) {
@@ -353,8 +509,8 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
   const referenceHint = !referenceMode
     ? null
     : pendingMapPoint
-      ? "Click the same spot on the PDF."
-      : "Click a known spot on the base map.";
+      ? `Map pin set at ${pendingMapPoint.latitude.toFixed(5)}, ${pendingMapPoint.longitude.toFixed(5)}. Click the same spot on the PDF.`
+      : "Click the base map or paste coordinates from Google Maps.";
 
   if (mapQuery.isLoading || !isHydrated) {
     return (
@@ -432,33 +588,58 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
 
       {referenceHint ? (
         <div
-          className="flex shrink-0 items-center justify-between gap-3 border-b border-primary/20 bg-primary/10 px-4 py-2 text-sm"
+          className="flex shrink-0 flex-col gap-2 border-b border-primary/20 bg-primary/10 px-4 py-2 text-sm lg:flex-row lg:items-center lg:justify-between"
           data-test="reference-mode-hint"
         >
           <span>{referenceHint}</span>
-          <div className="flex items-center gap-2">
-            {pendingMapPoint ? (
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+            {!pendingMapPoint ? (
+              <form
+                className="flex min-w-0 flex-1 gap-2 sm:max-w-md"
+                onSubmit={handlePinCoordinateSubmit}
+              >
+                <Input
+                  value={pinCoordinateInput}
+                  onChange={(event) => setPinCoordinateInput(event.currentTarget.value)}
+                  placeholder="-1.24500, 36.81234 or Google Maps link"
+                  aria-label="Paste map coordinates"
+                  data-test="reference-pin-input"
+                />
+                <Button type="submit" size="sm" data-test="reference-pin-submit">
+                  <MapPin className="size-4" />
+                  Set pin
+                </Button>
+              </form>
+            ) : null}
+            <div className="flex items-center gap-2">
+              {pendingMapPoint ? (
+                <Button
+                  type="button"
+                  size="xs"
+                  variant="outline"
+                  onClick={() => setPendingMapPoint(null)}
+                  data-test="reference-pending-cancel"
+                >
+                  Pick map point again
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 size="xs"
-                variant="outline"
-                onClick={() => setPendingMapPoint(null)}
-                data-test="reference-pending-cancel"
+                variant="ghost"
+                onClick={stopReferenceMode}
+                data-test="reference-mode-cancel"
               >
-                Pick map point again
+                <X className="size-3.5" />
+                Cancel
               </Button>
-            ) : null}
-            <Button
-              type="button"
-              size="xs"
-              variant="ghost"
-              onClick={stopReferenceMode}
-              data-test="reference-mode-cancel"
-            >
-              <X className="size-3.5" />
-              Cancel
-            </Button>
+            </div>
           </div>
+          {pinCoordinateError ? (
+            <p className="text-sm text-error lg:w-full" data-test="reference-pin-error">
+              {pinCoordinateError}
+            </p>
+          ) : null}
         </div>
       ) : null}
 
@@ -472,6 +653,7 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
             file={pdfFile}
             transform={transform}
             controlPoints={controlPointsQuery.data ?? []}
+            selectedControlPointId={selectedControlPointId}
             referenceMode={referenceMode}
             canPickPdfPoint={referenceMode && pendingMapPoint !== null}
             onError={setPdfError}
@@ -496,6 +678,7 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
             pendingMapPoint={pendingMapPoint}
             referenceMode={referenceMode}
             canPickMapPoint={referenceMode && pendingMapPoint === null}
+            selectedControlPointId={selectedControlPointId}
             initialViewport={mapViewport}
             onReady={registerMapHandle}
             onMapLocationPick={handleMapLocationPick}
@@ -530,19 +713,166 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
                   Saved links between PDF pixels and map coordinates in PGLite.
                 </p>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="controls-pin-input">Map pin from coordinates</Label>
+                <p className="text-xs text-base-content/60">
+                  Copy a point from Google Maps and paste it here to place the map pin without
+                  clicking the map.
+                </p>
+                <form className="flex gap-2" onSubmit={handlePinCoordinateSubmit}>
+                  <Input
+                    id="controls-pin-input"
+                    value={pinCoordinateInput}
+                    onChange={(event) => setPinCoordinateInput(event.currentTarget.value)}
+                    placeholder="-1.24500, 36.81234"
+                    data-test="controls-pin-input"
+                  />
+                  <Button type="submit" size="sm" data-test="controls-pin-submit">
+                    <MapPin className="size-4" />
+                    Set pin
+                  </Button>
+                </form>
+                {pinCoordinateError ? (
+                  <p className="text-sm text-error" data-test="controls-pin-error">
+                    {pinCoordinateError}
+                  </p>
+                ) : null}
+              </div>
+
               {controlPointsQuery.data && controlPointsQuery.data.length > 0 ? (
                 <ul className="space-y-2" data-test="control-point-list">
                   {controlPointsQuery.data.map((point, index) => (
                     <li
                       key={point.id}
-                      className="rounded-md border border-base-content/10 bg-base-200 px-3 py-2 text-sm"
+                      className={cn(
+                        "rounded-md border border-base-content/10 bg-base-200 px-3 py-2 text-sm",
+                        selectedControlPointId === point.id && "ring-2 ring-primary",
+                      )}
                       data-test={`control-point-${point.id}`}
                     >
-                      <div className="font-medium">Point {index + 1}</div>
-                      <div className="font-mono text-xs text-base-content/70">
-                        PDF ({point.imageX.toFixed(1)}, {point.imageY.toFixed(1)}) → map (
-                        {point.latitude.toFixed(5)}, {point.longitude.toFixed(5)})
-                      </div>
+                      {editingControlPointId === point.id && editDraft ? (
+                        <form className="space-y-3" onSubmit={handleSaveControlPointEdit}>
+                          <div className="font-medium">Edit point {index + 1}</div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <Label htmlFor={`edit-pdf-x-${point.id}`}>PDF X</Label>
+                              <Input
+                                id={`edit-pdf-x-${point.id}`}
+                                value={editDraft.imageX}
+                                onChange={(event) => {
+                                  const value = event.target.value;
+                                  setEditDraft((current) =>
+                                    current ? { ...current, imageX: value } : current,
+                                  );
+                                }}
+                                data-test={`control-point-edit-pdf-x-${point.id}`}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label htmlFor={`edit-pdf-y-${point.id}`}>PDF Y</Label>
+                              <Input
+                                id={`edit-pdf-y-${point.id}`}
+                                value={editDraft.imageY}
+                                onChange={(event) => {
+                                  const value = event.target.value;
+                                  setEditDraft((current) =>
+                                    current ? { ...current, imageY: value } : current,
+                                  );
+                                }}
+                                data-test={`control-point-edit-pdf-y-${point.id}`}
+                              />
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <Label htmlFor={`edit-map-coords-${point.id}`}>Map coordinates</Label>
+                            <Input
+                              id={`edit-map-coords-${point.id}`}
+                              value={editDraft.mapCoordinatesInput}
+                              onChange={(event) => {
+                                const value = event.target.value;
+                                setEditDraft((current) =>
+                                  current ? { ...current, mapCoordinatesInput: value } : current,
+                                );
+                              }}
+                              placeholder="-1.24500, 36.81234"
+                              data-test={`control-point-edit-map-${point.id}`}
+                            />
+                          </div>
+                          {editDraftError ? (
+                            <p
+                              className="text-sm text-error"
+                              data-test={`control-point-edit-error-${point.id}`}
+                            >
+                              {editDraftError}
+                            </p>
+                          ) : null}
+                          <div className="flex gap-2">
+                            <Button
+                              type="submit"
+                              size="sm"
+                              disabled={updateControlPointMutation.isPending}
+                              data-test={`control-point-save-${point.id}`}
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={cancelEditingControlPoint}
+                              data-test={`control-point-cancel-${point.id}`}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </form>
+                      ) : (
+                        <div className="flex items-start justify-between gap-2">
+                          <button
+                            type="button"
+                            className="min-w-0 flex-1 text-left"
+                            onClick={() => {
+                              setSelectedControlPointId((current) =>
+                                current === point.id ? null : point.id,
+                              );
+                              mapHandleRef.current?.setViewport({
+                                latitude: point.latitude,
+                                longitude: point.longitude,
+                                zoom: Math.max(mapViewport.zoom, 16),
+                              });
+                            }}
+                            data-test={`control-point-select-${point.id}`}
+                          >
+                            <div className="font-medium">Point {index + 1}</div>
+                            <div className="font-mono text-xs text-base-content/70">
+                              PDF ({point.imageX.toFixed(1)}, {point.imageY.toFixed(1)}) → map (
+                              {point.latitude.toFixed(5)}, {point.longitude.toFixed(5)})
+                            </div>
+                          </button>
+                          <div className="flex shrink-0 items-center gap-1">
+                            <Button
+                              type="button"
+                              size="icon-sm"
+                              variant="ghost"
+                              onClick={() => startEditingControlPoint(point)}
+                              data-test={`control-point-edit-${point.id}`}
+                            >
+                              <Pencil className="size-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              size="icon-sm"
+                              variant="ghost"
+                              disabled={deleteControlPointMutation.isPending}
+                              onClick={() => handleDeleteControlPoint(point.id)}
+                              data-test={`control-point-delete-${point.id}`}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -591,6 +921,15 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
                 <Button
                   type="button"
                   size="sm"
+                  variant={baseMapStyle === "satellite" ? "default" : "outline"}
+                  onClick={() => setBaseMapStyle("satellite")}
+                  data-test="base-map-satellite"
+                >
+                  Satellite
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
                   variant={baseMapStyle === "outline" ? "default" : "outline"}
                   onClick={() => setBaseMapStyle("outline")}
                   data-test="base-map-outline"
@@ -607,6 +946,10 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
                   Standard
                 </Button>
               </div>
+              <p className="text-xs text-base-content/60">
+                Use Satellite for forest areas. Zoom to 15–16 and anchor on roads or gates, not
+                trails.
+              </p>
             </div>
 
             <div className="grid gap-4 border-t border-base-content/10 pt-5">
@@ -707,6 +1050,7 @@ type LeafletMapPaneProps = {
   pendingMapPoint: PendingMapPoint | null;
   referenceMode: boolean;
   canPickMapPoint: boolean;
+  selectedControlPointId: number | null;
   initialViewport: MapViewport;
   onReady: (handle: MapHandle) => void;
   onMapLocationPick: (latitude: number, longitude: number) => void;
@@ -727,6 +1071,7 @@ function LeafletMapPane({
   pendingMapPoint,
   referenceMode,
   canPickMapPoint,
+  selectedControlPointId,
   initialViewport,
   onReady,
   onMapLocationPick,
@@ -743,6 +1088,14 @@ function LeafletMapPane({
   const initialViewportRef = useRef(initialViewport);
   const hasAppliedInitialStyleRef = useRef(false);
   const suppressViewportSyncRef = useRef(false);
+  const [cursorCoordinates, setCursorCoordinates] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+  const setCursorCoordinatesRef = useRef(setCursorCoordinates);
+  const mapClickTimerRef = useRef<number | undefined>(undefined);
+
+  setCursorCoordinatesRef.current = setCursorCoordinates;
 
   onReadyRef.current = onReady;
   onMapLocationPickRef.current = onMapLocationPick;
@@ -768,6 +1121,7 @@ function LeafletMapPane({
         center: [startingViewport.latitude, startingViewport.longitude],
         zoom: startingViewport.zoom,
         zoomControl: true,
+        doubleClickZoom: false,
       });
 
       baseLayerRef.current = createBaseLayer(L, baseMapStyle).addTo(map);
@@ -790,6 +1144,30 @@ function LeafletMapPane({
 
       map.on("moveend", emitViewportChange);
       map.on("zoomend", emitViewportChange);
+
+      function handleMouseMove(event: Leaflet.LeafletMouseEvent) {
+        setCursorCoordinatesRef.current({
+          latitude: event.latlng.lat,
+          longitude: event.latlng.lng,
+        });
+      }
+
+      function handleMouseOut() {
+        setCursorCoordinatesRef.current(null);
+      }
+
+      map.on("mousemove", handleMouseMove);
+      map.on("mouseout", handleMouseOut);
+
+      function handleDoubleClick(event: Leaflet.LeafletMouseEvent) {
+        if (mapClickTimerRef.current !== undefined) {
+          window.clearTimeout(mapClickTimerRef.current);
+        }
+
+        void copyMapCoordinates(event.latlng.lat, event.latlng.lng);
+      }
+
+      map.on("dblclick", handleDoubleClick);
 
       onReadyRef.current({
         panToQuery: async (query) => {
@@ -838,11 +1216,15 @@ function LeafletMapPane({
       if (resizeTimer !== undefined) {
         window.clearTimeout(resizeTimer);
       }
+      if (mapClickTimerRef.current !== undefined) {
+        window.clearTimeout(mapClickTimerRef.current);
+      }
       mapRef.current?.remove();
       mapRef.current = null;
       baseLayerRef.current = null;
       markersLayerRef.current = null;
       leafletRef.current = null;
+      setCursorCoordinatesRef.current(null);
     };
   }, []);
 
@@ -875,11 +1257,13 @@ function LeafletMapPane({
     markersLayer.clearLayers();
 
     controlPoints.forEach((point, index) => {
+      const isSelected = selectedControlPointId === point.id;
+
       L.circleMarker([point.latitude, point.longitude], {
-        radius: 8,
+        radius: isSelected ? 11 : 8,
         color: "#ffffff",
         weight: 2,
-        fillColor: "#16a34a",
+        fillColor: isSelected ? "#2563eb" : "#16a34a",
         fillOpacity: 1,
       })
         .bindTooltip(`Reference ${index + 1}`, { permanent: false })
@@ -904,7 +1288,7 @@ function LeafletMapPane({
         fillOpacity: 1,
       }).addTo(markersLayer);
     }
-  }, [controlPoints, pendingMapPoint]);
+  }, [controlPoints, pendingMapPoint, selectedControlPointId]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -917,7 +1301,13 @@ function LeafletMapPane({
         return;
       }
 
-      onMapLocationPickRef.current(event.latlng.lat, event.latlng.lng);
+      if (mapClickTimerRef.current !== undefined) {
+        window.clearTimeout(mapClickTimerRef.current);
+      }
+
+      mapClickTimerRef.current = window.setTimeout(() => {
+        onMapLocationPickRef.current(event.latlng.lat, event.latlng.lng);
+      }, 250);
     }
 
     map.on("click", handleClick);
@@ -932,19 +1322,51 @@ function LeafletMapPane({
 
     return () => {
       map.off("click", handleClick);
+      if (mapClickTimerRef.current !== undefined) {
+        window.clearTimeout(mapClickTimerRef.current);
+      }
       if (containerRef.current) {
         containerRef.current.style.cursor = "";
       }
     };
   }, [canPickMapPoint, referenceMode]);
 
-  return <div ref={containerRef} className="absolute inset-0 z-0" data-test="leaflet-map" />;
+  const cursorCoordinatesLabel = cursorCoordinates
+    ? `${cursorCoordinates.latitude.toFixed(5)}, ${cursorCoordinates.longitude.toFixed(5)}`
+    : null;
+
+  return (
+    <div className="absolute inset-0 z-0">
+      <div ref={containerRef} className="absolute inset-0" data-test="leaflet-map" />
+      <div className="pointer-events-none absolute bottom-8 left-3 z-[500] rounded-md border border-base-content/10 bg-base-100/90 px-2 py-1 text-xs text-base-content/70 shadow-sm backdrop-blur">
+        Double-click to copy coordinates
+      </div>
+      {cursorCoordinatesLabel ? (
+        <button
+          type="button"
+          className="absolute bottom-8 right-3 z-[500] rounded-md border border-base-content/10 bg-base-100/95 px-2 py-1 font-mono text-xs text-base-content shadow-sm backdrop-blur hover:bg-base-100"
+          title="Click to copy cursor coordinates"
+          onClick={() => {
+            if (!cursorCoordinates) {
+              return;
+            }
+
+            void copyMapCoordinates(cursorCoordinates.latitude, cursorCoordinates.longitude);
+          }}
+          data-test="map-cursor-coordinates"
+        >
+          {cursorCoordinatesLabel}
+        </button>
+      ) : null}
+    </div>
+  );
 }
 
 type PdfPreviewPaneProps = {
   file: File | null;
   transform: PdfViewTransform;
   controlPoints: ControlPointViewModel[];
+  selectedControlPointId: number | null;
   referenceMode: boolean;
   canPickPdfPoint: boolean;
   onError: (message: string | null) => void;
@@ -957,6 +1379,7 @@ function PdfPreviewPane({
   file,
   transform,
   controlPoints,
+  selectedControlPointId,
   referenceMode,
   canPickPdfPoint,
   onError,
@@ -1178,7 +1601,10 @@ function PdfPreviewPane({
           {controlPoints.map((point, index) => (
             <div
               key={point.id}
-              className="pointer-events-none absolute flex size-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-primary text-[10px] font-bold text-white"
+              className={cn(
+                "pointer-events-none absolute flex size-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white",
+                selectedControlPointId === point.id ? "size-5 bg-blue-600" : "bg-primary",
+              )}
               style={{ left: point.imageX, top: point.imageY }}
               data-test={`pdf-control-point-${point.id}`}
             >

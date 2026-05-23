@@ -8,7 +8,7 @@ export const mapTable = pgTable("map", {
   mapCenterLat: real("map_center_lat"),
   mapCenterLng: real("map_center_lng"),
   mapZoom: real("map_zoom"),
-  baseMapStyle: varchar("base_map_style", { length: 32 }).default("standard").notNull(),
+  baseMapStyle: varchar("base_map_style", { length: 32 }).default("satellite").notNull(),
   pdfScale: real("pdf_scale").default(1).notNull(),
   pdfRotation: real("pdf_rotation").default(0).notNull(),
   pdfPanX: real("pdf_pan_x").default(0).notNull(),

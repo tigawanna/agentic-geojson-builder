@@ -1,0 +1,1 @@
+ALTER TABLE "map" ALTER COLUMN "base_map_style" SET DEFAULT 'satellite';
