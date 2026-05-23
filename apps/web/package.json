@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vp dev --port 3040",
+    "dev": "vp dev --port 3050",
     "build": "vp build",
     "preview": "vp preview",
     "test": "vp test run",
@@ -79,7 +79,6 @@
     "tailwindcss": "^4.3.0",
     "uuidv7": "^1.2.1",
     "vaul": "^1.1.2",
-    "vite-tsconfig-paths": "^6.0.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {

@@ -18,7 +18,6 @@
   },
   "devDependencies": {
     "@typescript/native-preview": "catalog:",
-    "site": "^2.60.4",
     "turbo": "^2.7.3",
     "typescript": "catalog:",
     "vite-plus": "catalog:"
