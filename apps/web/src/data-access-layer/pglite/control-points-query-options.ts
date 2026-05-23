@@ -89,6 +89,7 @@ type UpdateControlPointInput = {
   imageY: number;
   longitude: number;
   latitude: number;
+  silent?: boolean;
 };
 
 export async function updateControlPoint(db: PgliteDb, input: UpdateControlPointInput) {
@@ -158,11 +159,13 @@ export const deleteControlPointMutationOptions = (db: PgliteDb) =>
 export const updateControlPointMutationOptions = (db: PgliteDb) =>
   mutationOptions({
     mutationFn: (input: UpdateControlPointInput) => updateControlPoint(db, input),
-    onSuccess: (point, __, ___, ctx) => {
+    onSuccess: (point, variables, __, ctx) => {
       void ctx.client.invalidateQueries({
         queryKey: [queryKeyPrefixes.controlPoints, point.mapId],
       });
-      toast.success("Reference point updated");
+      if (!variables.silent) {
+        toast.success("Reference point updated");
+      }
     },
     onError: (err: unknown) => {
       toast.error("Failed to update reference point", {

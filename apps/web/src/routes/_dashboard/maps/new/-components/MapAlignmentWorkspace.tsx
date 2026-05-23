@@ -185,13 +185,21 @@ function getImageCoordinatesFromClick(
   canvas: HTMLCanvasElement,
   event: React.MouseEvent<HTMLCanvasElement>,
 ) {
+  return getImageCoordinatesFromPointer(canvas, event.clientX, event.clientY);
+}
+
+function getImageCoordinatesFromPointer(
+  canvas: HTMLCanvasElement,
+  clientX: number,
+  clientY: number,
+) {
   const rect = canvas.getBoundingClientRect();
   const scaleX = canvas.width / rect.width;
   const scaleY = canvas.height / rect.height;
 
   return {
-    imageX: (event.clientX - rect.left) * scaleX,
-    imageY: (event.clientY - rect.top) * scaleY,
+    imageX: (clientX - rect.left) * scaleX,
+    imageY: (clientY - rect.top) * scaleY,
   };
 }
 
@@ -406,6 +414,40 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
     setEditingControlPointId(null);
     setEditDraft(null);
     setEditDraftError(null);
+  }
+
+  function handleControlPointMapMove(controlPointId: number, latitude: number, longitude: number) {
+    const point = controlPointsQuery.data?.find((item) => item.id === controlPointId);
+    if (!point) {
+      return;
+    }
+
+    updateControlPointMutation.mutate({
+      mapId,
+      controlPointId,
+      imageX: point.imageX,
+      imageY: point.imageY,
+      latitude,
+      longitude,
+      silent: true,
+    });
+  }
+
+  function handleControlPointPdfMove(controlPointId: number, imageX: number, imageY: number) {
+    const point = controlPointsQuery.data?.find((item) => item.id === controlPointId);
+    if (!point) {
+      return;
+    }
+
+    updateControlPointMutation.mutate({
+      mapId,
+      controlPointId,
+      imageX,
+      imageY,
+      latitude: point.latitude,
+      longitude: point.longitude,
+      silent: true,
+    });
   }
 
   function handleSaveControlPointEdit(event: React.FormEvent<HTMLFormElement>) {
@@ -659,6 +701,7 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
             onError={setPdfError}
             onPageCountChange={setPageCount}
             onPdfLocationPick={handlePdfLocationPick}
+            onControlPointPdfMove={handleControlPointPdfMove}
             onTransformChange={updateTransform}
           />
           {!pdfFile ? (
@@ -682,6 +725,7 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
             initialViewport={mapViewport}
             onReady={registerMapHandle}
             onMapLocationPick={handleMapLocationPick}
+            onControlPointMapMove={handleControlPointMapMove}
             onViewportChange={setMapViewport}
           />
         </section>
@@ -1054,6 +1098,7 @@ type LeafletMapPaneProps = {
   initialViewport: MapViewport;
   onReady: (handle: MapHandle) => void;
   onMapLocationPick: (latitude: number, longitude: number) => void;
+  onControlPointMapMove: (controlPointId: number, latitude: number, longitude: number) => void;
   onViewportChange: (viewport: MapViewport) => void;
 };
 
@@ -1075,6 +1120,7 @@ function LeafletMapPane({
   initialViewport,
   onReady,
   onMapLocationPick,
+  onControlPointMapMove,
   onViewportChange,
 }: LeafletMapPaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -1084,6 +1130,7 @@ function LeafletMapPane({
   const markersLayerRef = useRef<Leaflet.LayerGroup | null>(null);
   const onReadyRef = useRef(onReady);
   const onMapLocationPickRef = useRef(onMapLocationPick);
+  const onControlPointMapMoveRef = useRef(onControlPointMapMove);
   const onViewportChangeRef = useRef(onViewportChange);
   const initialViewportRef = useRef(initialViewport);
   const hasAppliedInitialStyleRef = useRef(false);
@@ -1099,6 +1146,7 @@ function LeafletMapPane({
 
   onReadyRef.current = onReady;
   onMapLocationPickRef.current = onMapLocationPick;
+  onControlPointMapMoveRef.current = onControlPointMapMove;
   onViewportChangeRef.current = onViewportChange;
   initialViewportRef.current = initialViewport;
 
@@ -1258,25 +1306,23 @@ function LeafletMapPane({
 
     controlPoints.forEach((point, index) => {
       const isSelected = selectedControlPointId === point.id;
+      const fillColor = isSelected ? "#2563eb" : "#16a34a";
 
-      L.circleMarker([point.latitude, point.longitude], {
-        radius: isSelected ? 11 : 8,
-        color: "#ffffff",
-        weight: 2,
-        fillColor: isSelected ? "#2563eb" : "#16a34a",
-        fillOpacity: 1,
-      })
-        .bindTooltip(`Reference ${index + 1}`, { permanent: false })
-        .addTo(markersLayer);
-
-      L.marker([point.latitude, point.longitude], {
+      const marker = L.marker([point.latitude, point.longitude], {
+        draggable: true,
         icon: L.divIcon({
           className: "",
-          html: `<div style="margin-left:-8px;margin-top:-8px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;">${index + 1}</div>`,
-          iconSize: [16, 16],
+          html: `<div style="margin-left:-12px;margin-top:-12px;width:24px;height:24px;border-radius:9999px;border:2px solid white;background:${fillColor};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;cursor:grab;">${index + 1}</div>`,
+          iconSize: [24, 24],
         }),
-        interactive: false,
-      }).addTo(markersLayer);
+      })
+        .bindTooltip(`Reference ${index + 1} · drag to move`, { permanent: false })
+        .addTo(markersLayer);
+
+      marker.on("dragend", () => {
+        const { lat, lng } = marker.getLatLng();
+        onControlPointMapMoveRef.current(point.id, lat, lng);
+      });
     });
 
     if (pendingMapPoint) {
@@ -1339,7 +1385,7 @@ function LeafletMapPane({
     <div className="absolute inset-0 z-0">
       <div ref={containerRef} className="absolute inset-0" data-test="leaflet-map" />
       <div className="pointer-events-none absolute bottom-8 left-3 z-[500] rounded-md border border-base-content/10 bg-base-100/90 px-2 py-1 text-xs text-base-content/70 shadow-sm backdrop-blur">
-        Double-click to copy coordinates
+        Double-click to copy · drag refs to move
       </div>
       {cursorCoordinatesLabel ? (
         <button
@@ -1372,6 +1418,7 @@ type PdfPreviewPaneProps = {
   onError: (message: string | null) => void;
   onPageCountChange: (count: number | null) => void;
   onPdfLocationPick: (imageX: number, imageY: number) => void;
+  onControlPointPdfMove: (controlPointId: number, imageX: number, imageY: number) => void;
   onTransformChange: (patch: Partial<PdfViewTransform>) => void;
 };
 
@@ -1385,6 +1432,7 @@ function PdfPreviewPane({
   onError,
   onPageCountChange,
   onPdfLocationPick,
+  onControlPointPdfMove,
   onTransformChange,
 }: PdfPreviewPaneProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -1398,11 +1446,20 @@ function PdfPreviewPane({
   } | null>(null);
   const transformRef = useRef(transform);
   const onTransformChangeRef = useRef(onTransformChange);
+  const onControlPointPdfMoveRef = useRef(onControlPointPdfMove);
+  const pdfMarkerDragRef = useRef<{ pointerId: number; controlPointId: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isDraggingMarker, setIsDraggingMarker] = useState(false);
+  const [pdfDragPreview, setPdfDragPreview] = useState<{
+    id: number;
+    imageX: number;
+    imageY: number;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   transformRef.current = transform;
   onTransformChangeRef.current = onTransformChange;
+  onControlPointPdfMoveRef.current = onControlPointPdfMove;
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -1442,7 +1499,7 @@ function PdfPreviewPane({
   }, [file]);
 
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    if (canPickPdfPoint || !file || event.button !== 0) {
+    if (canPickPdfPoint || !file || event.button !== 0 || isDraggingMarker) {
       return;
     }
 
@@ -1477,6 +1534,54 @@ function PdfPreviewPane({
 
     dragStateRef.current = null;
     setIsDragging(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }
+
+  function handleMarkerPointerDown(
+    event: React.PointerEvent<HTMLDivElement>,
+    controlPointId: number,
+  ) {
+    if (canPickPdfPoint || event.button !== 0) {
+      return;
+    }
+
+    event.stopPropagation();
+    pdfMarkerDragRef.current = { pointerId: event.pointerId, controlPointId };
+    setIsDraggingMarker(true);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handleMarkerPointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    const drag = pdfMarkerDragRef.current;
+    const canvas = canvasRef.current;
+    if (!drag || drag.pointerId !== event.pointerId || !canvas) {
+      return;
+    }
+
+    event.stopPropagation();
+    const coords = getImageCoordinatesFromPointer(canvas, event.clientX, event.clientY);
+    setPdfDragPreview({
+      id: drag.controlPointId,
+      imageX: coords.imageX,
+      imageY: coords.imageY,
+    });
+  }
+
+  function handleMarkerPointerUp(event: React.PointerEvent<HTMLDivElement>) {
+    const drag = pdfMarkerDragRef.current;
+    const canvas = canvasRef.current;
+    if (!drag || drag.pointerId !== event.pointerId || !canvas) {
+      return;
+    }
+
+    event.stopPropagation();
+    const coords = getImageCoordinatesFromPointer(canvas, event.clientX, event.clientY);
+    onControlPointPdfMoveRef.current(drag.controlPointId, coords.imageX, coords.imageY);
+    pdfMarkerDragRef.current = null;
+    setPdfDragPreview(null);
+    setIsDraggingMarker(false);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
     }
@@ -1598,24 +1703,34 @@ function PdfPreviewPane({
             }}
             data-test="pdf-preview-canvas"
           />
-          {controlPoints.map((point, index) => (
-            <div
-              key={point.id}
-              className={cn(
-                "pointer-events-none absolute flex size-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white",
-                selectedControlPointId === point.id ? "size-5 bg-blue-600" : "bg-primary",
-              )}
-              style={{ left: point.imageX, top: point.imageY }}
-              data-test={`pdf-control-point-${point.id}`}
-            >
-              {index + 1}
-            </div>
-          ))}
+          {controlPoints.map((point, index) => {
+            const displayX = pdfDragPreview?.id === point.id ? pdfDragPreview.imageX : point.imageX;
+            const displayY = pdfDragPreview?.id === point.id ? pdfDragPreview.imageY : point.imageY;
+
+            return (
+              <div
+                key={point.id}
+                className={cn(
+                  "absolute flex size-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white touch-none select-none",
+                  selectedControlPointId === point.id ? "size-5 bg-blue-600" : "bg-primary",
+                  canPickPdfPoint ? "pointer-events-none" : "cursor-grab active:cursor-grabbing",
+                )}
+                style={{ left: displayX, top: displayY }}
+                onPointerDown={(event) => handleMarkerPointerDown(event, point.id)}
+                onPointerMove={handleMarkerPointerMove}
+                onPointerUp={handleMarkerPointerUp}
+                onPointerCancel={handleMarkerPointerUp}
+                data-test={`pdf-control-point-${point.id}`}
+              >
+                {index + 1}
+              </div>
+            );
+          })}
         </div>
       </div>
       {file ? (
         <div className="pointer-events-none absolute bottom-4 left-4 rounded-md border border-base-content/10 bg-base-100/90 px-2 py-1 text-xs text-base-content/70 shadow-sm backdrop-blur">
-          Scroll to zoom · drag to pan
+          Scroll to zoom · drag to pan · drag refs to move
         </div>
       ) : null}
       {referenceMode && !canPickPdfPoint ? (
