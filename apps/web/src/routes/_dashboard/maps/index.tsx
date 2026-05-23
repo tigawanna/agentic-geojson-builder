@@ -11,6 +11,7 @@ import { Trash2 } from "lucide-react";
 import { z } from "zod";
 import { MapsListScafolld } from "./-components/MapsListScafolld";
 import { MainLoader } from "@/components/wrappers/MainLoader";
+import { ErrorOutput } from "@/components/wrappers/ErrorOutput";
 
 const searchParams = z.object({
   sq: z.string().optional(),
@@ -49,8 +50,8 @@ function RouteComponent() {
   if (query.isError) {
     return (
       <MapsListScafolld showPagination={false}>
-        <div className="flex flex-col gap-4 h-screen">
-          <div>Error: {query.error.message}</div>
+        <div className="flex flex-col items-center justify-center gap-4 h-full">
+          <ErrorOutput error={query.error} className="h-[60%] w-[90%]" />
         </div>
       </MapsListScafolld>
     );
