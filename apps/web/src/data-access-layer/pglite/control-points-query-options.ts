@@ -1,6 +1,6 @@
 import type { PgliteDb } from "@/lib/pglite/client";
 import { controlPointTable } from "@/lib/pglite/schema/control-point.schema";
-import { mapTable } from "@/lib/pglite/schema/map.schema";
+import { createMap } from "@/data-access-layer/pglite/maps-query-options";
 import { unwrapUnknownError } from "@/utils/errors";
 import { asc, eq } from "drizzle-orm";
 import { mutationOptions, queryOptions } from "@tanstack/react-query";
@@ -34,8 +34,7 @@ function toControlPointViewModel(row: ControlPointRecord): ControlPointViewModel
 }
 
 export async function ensureDraftMap(db: PgliteDb, name = "Untitled map") {
-  const [row] = await db.insert(mapTable).values({ name }).returning();
-  return row;
+  return createMap(db, name);
 }
 
 export async function listControlPoints(db: PgliteDb, mapId: number) {

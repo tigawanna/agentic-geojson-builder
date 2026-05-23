@@ -84,9 +84,14 @@ function RouteComponent() {
         {data.items.map((map) => (
           <div
             key={map.id}
-            className="p-4 border rounded bg-base-200 flex items-center justify-between"
+            className="p-4 border rounded bg-base-200 flex items-center justify-between gap-3"
           >
-            <h2 className="text-2xl font-bold">{map.name}</h2>
+            <Link to="/maps/$id" params={{ id: String(map.id) }} className="min-w-0 flex-1">
+              <h2 className="text-2xl font-bold truncate">{map.name}</h2>
+              {map.pdfFileName ? (
+                <p className="text-sm text-base-content/65 truncate">{map.pdfFileName}</p>
+              ) : null}
+            </Link>
             <Button variant="outline" size="sm" onClick={() => deleteMapMutation.mutate(map.id)}>
               <Trash2 className="ml-2 size-4" />
             </Button>

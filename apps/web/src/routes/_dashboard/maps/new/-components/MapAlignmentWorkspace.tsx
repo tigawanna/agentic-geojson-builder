@@ -10,16 +10,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   createControlPointMutationOptions,
-  ensureDraftMap,
   listControlPointsQueryOptions,
   type ControlPointViewModel,
 } from "@/data-access-layer/pglite/control-points-query-options";
+import {
+  getMapWorkspaceQueryOptions,
+  loadMapPdfFile,
+  saveMapPdfMutationOptions,
+  updateMapWorkspaceMutationOptions,
+  type MapBaseMapStyle,
+  type MapViewport,
+} from "@/data-access-layer/pglite/maps-query-options";
+import { useDebouncedValue } from "@/hooks/use-debouncer";
 import { usePglite } from "@/lib/pglite/components/PgliteProvider";
 import { cn } from "@/lib/utils";
 import { unwrapUnknownError } from "@/utils/errors";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Crosshair, RotateCcw, Search, Settings2, Upload, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { PDFDocumentLoadingTask, RenderTask } from "pdfjs-dist";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
 import "leaflet/dist/leaflet.css";
@@ -47,7 +55,13 @@ const DEFAULT_TRANSFORM: PdfViewTransform = {
 const MIN_PDF_SCALE = 0.25;
 const MAX_PDF_SCALE = 5;
 
-type BaseMapStyle = "outline" | "standard";
+type BaseMapStyle = MapBaseMapStyle;
+
+const DEFAULT_MAP_VIEWPORT: MapViewport = {
+  latitude: -1.286389,
+  longitude: 36.817223,
+  zoom: 13,
+};
 
 type BaseMapConfig = {
   url: string;
@@ -77,6 +91,11 @@ type GeocodeResult = {
 
 type MapHandle = {
   panToQuery: (query: string) => Promise<{ error?: string }>;
+  setViewport: (viewport: MapViewport) => void;
+};
+
+type MapAlignmentWorkspaceProps = {
+  mapId: number;
 };
 
 async function geocodePlace(query: string): Promise<GeocodeResult> {
@@ -140,9 +159,8 @@ function getImageCoordinatesFromClick(
   };
 }
 
-export function MapAlignmentWorkspace() {
+export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
   const { db } = usePglite();
-  const [mapId, setMapId] = useState<number | null>(null);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [pageCount, setPageCount] = useState<number | null>(null);
@@ -154,31 +172,92 @@ export function MapAlignmentWorkspace() {
   const [controlsOpen, setControlsOpen] = useState(false);
   const [referenceMode, setReferenceMode] = useState(false);
   const [pendingMapPoint, setPendingMapPoint] = useState<PendingMapPoint | null>(null);
+  const [mapViewport, setMapViewport] = useState<MapViewport>(DEFAULT_MAP_VIEWPORT);
+  const [isHydrated, setIsHydrated] = useState(false);
   const mapHandleRef = useRef<MapHandle | null>(null);
 
+  const mapQuery = useQuery({
+    ...getMapWorkspaceQueryOptions(db, mapId),
+  });
   const controlPointsQuery = useQuery({
     ...listControlPointsQueryOptions(db, mapId),
   });
-  const createControlPointMutation = useMutation({
-    ...createControlPointMutationOptions(db),
-  });
+  const createControlPointMutation = useMutation(createControlPointMutationOptions(db));
+  const savePdfMutation = useMutation(saveMapPdfMutationOptions(db));
+  const saveWorkspaceMutation = useMutation(updateMapWorkspaceMutationOptions(db));
+
+  const workspaceSnapshot = useMemo(
+    () => ({
+      locationQuery,
+      baseMapStyle,
+      pdfScale: transform.scale,
+      pdfRotation: transform.rotation,
+      pdfPanX: transform.panX,
+      pdfPanY: transform.panY,
+      pdfPageCount: pageCount,
+      mapCenterLat: mapViewport.latitude,
+      mapCenterLng: mapViewport.longitude,
+      mapZoom: mapViewport.zoom,
+    }),
+    [locationQuery, baseMapStyle, transform, mapViewport, pageCount],
+  );
+  const { debouncedValue: debouncedWorkspace } = useDebouncedValue(workspaceSnapshot, 800);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function createDraftMap() {
-      const draftMap = await ensureDraftMap(db);
-      if (!cancelled) {
-        setMapId(draftMap.id);
-      }
+    if (!mapQuery.data || isHydrated) {
+      return;
     }
 
-    void createDraftMap();
+    const map = mapQuery.data;
+    setLocationQuery(map.locationQuery);
+    setBaseMapStyle(map.baseMapStyle);
+    setTransform({
+      scale: map.pdfScale,
+      rotation: map.pdfRotation,
+      panX: map.pdfPanX,
+      panY: map.pdfPanY,
+    });
+    setPageCount(map.pdfPageCount);
+
+    if (map.mapCenterLat !== null && map.mapCenterLng !== null && map.mapZoom !== null) {
+      setMapViewport({
+        latitude: map.mapCenterLat,
+        longitude: map.mapCenterLng,
+        zoom: map.mapZoom,
+      });
+    }
+
+    setIsHydrated(true);
+  }, [mapQuery.data, isHydrated]);
+
+  useEffect(() => {
+    if (!isHydrated || !mapQuery.data?.hasPdf) {
+      return;
+    }
+
+    let cancelled = false;
+
+    void loadMapPdfFile(db, mapId).then((file) => {
+      if (!cancelled && file) {
+        setPdfFile(file);
+      }
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [db]);
+  }, [db, isHydrated, mapId, mapQuery.data?.hasPdf]);
+
+  useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
+    saveWorkspaceMutation.mutate({
+      mapId,
+      ...debouncedWorkspace,
+    });
+  }, [debouncedWorkspace, isHydrated, mapId]);
 
   function registerMapHandle(handle: MapHandle) {
     mapHandleRef.current = handle;
@@ -202,6 +281,11 @@ export function MapAlignmentWorkspace() {
 
     setPdfFile(selectedFile);
     setTransform(DEFAULT_TRANSFORM);
+
+    savePdfMutation.mutate({
+      mapId,
+      file: selectedFile,
+    });
   }
 
   function updateTransform(patch: Partial<PdfViewTransform>) {
@@ -222,7 +306,7 @@ export function MapAlignmentWorkspace() {
   }
 
   function handlePdfLocationPick(imageX: number, imageY: number) {
-    if (!referenceMode || !pendingMapPoint || mapId === null) {
+    if (!referenceMode || !pendingMapPoint) {
       return;
     }
 
@@ -272,13 +356,29 @@ export function MapAlignmentWorkspace() {
       ? "Click the same spot on the PDF."
       : "Click a known spot on the base map.";
 
+  if (mapQuery.isLoading || !isHydrated) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+        <p className="text-sm text-base-content/70">Loading map...</p>
+      </div>
+    );
+  }
+
+  if (mapQuery.isError || !mapQuery.data) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+        <p className="text-sm text-error">Could not load this map.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-[calc(100vh-4rem)] w-full flex-col bg-base-100 text-base-content">
       <header className="flex shrink-0 items-center justify-between gap-3 border-b border-base-content/10 px-4 py-3">
         <div className="min-w-0">
           <h1 className="text-lg font-semibold tracking-normal">Create map</h1>
           <p className="truncate text-sm text-base-content/70" data-test="pdf-file-status">
-            {pdfFile ? pdfFile.name : "Compare your PDF against the base map side by side."}
+            {pdfFile ? pdfFile.name : mapQuery.data.name}
             {pageCount ? ` Page 1 of ${pageCount}.` : ""}
           </p>
         </div>
@@ -303,7 +403,7 @@ export function MapAlignmentWorkspace() {
             type="button"
             size="sm"
             variant={referenceMode ? "default" : "outline"}
-            disabled={!pdfFile || mapId === null}
+            disabled={!pdfFile}
             onClick={() => {
               if (referenceMode) {
                 stopReferenceMode();
@@ -396,8 +496,10 @@ export function MapAlignmentWorkspace() {
             pendingMapPoint={pendingMapPoint}
             referenceMode={referenceMode}
             canPickMapPoint={referenceMode && pendingMapPoint === null}
+            initialViewport={mapViewport}
             onReady={registerMapHandle}
             onMapLocationPick={handleMapLocationPick}
+            onViewportChange={setMapViewport}
           />
         </section>
       </div>
@@ -605,8 +707,10 @@ type LeafletMapPaneProps = {
   pendingMapPoint: PendingMapPoint | null;
   referenceMode: boolean;
   canPickMapPoint: boolean;
+  initialViewport: MapViewport;
   onReady: (handle: MapHandle) => void;
   onMapLocationPick: (latitude: number, longitude: number) => void;
+  onViewportChange: (viewport: MapViewport) => void;
 };
 
 function createBaseLayer(L: typeof Leaflet, style: BaseMapStyle) {
@@ -623,8 +727,10 @@ function LeafletMapPane({
   pendingMapPoint,
   referenceMode,
   canPickMapPoint,
+  initialViewport,
   onReady,
   onMapLocationPick,
+  onViewportChange,
 }: LeafletMapPaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<Leaflet.Map | null>(null);
@@ -633,10 +739,15 @@ function LeafletMapPane({
   const markersLayerRef = useRef<Leaflet.LayerGroup | null>(null);
   const onReadyRef = useRef(onReady);
   const onMapLocationPickRef = useRef(onMapLocationPick);
+  const onViewportChangeRef = useRef(onViewportChange);
+  const initialViewportRef = useRef(initialViewport);
   const hasAppliedInitialStyleRef = useRef(false);
+  const suppressViewportSyncRef = useRef(false);
 
   onReadyRef.current = onReady;
   onMapLocationPickRef.current = onMapLocationPick;
+  onViewportChangeRef.current = onViewportChange;
+  initialViewportRef.current = initialViewport;
 
   useEffect(() => {
     let cancelled = false;
@@ -652,9 +763,10 @@ function LeafletMapPane({
 
       leafletRef.current = L;
 
+      const startingViewport = initialViewportRef.current;
       const map = L.map(containerRef.current, {
-        center: [-1.286389, 36.817223],
-        zoom: 13,
+        center: [startingViewport.latitude, startingViewport.longitude],
+        zoom: startingViewport.zoom,
         zoomControl: true,
       });
 
@@ -663,21 +775,47 @@ function LeafletMapPane({
       mapRef.current = map;
       hasAppliedInitialStyleRef.current = true;
 
+      function emitViewportChange() {
+        if (suppressViewportSyncRef.current) {
+          return;
+        }
+
+        const center = map.getCenter();
+        onViewportChangeRef.current({
+          latitude: center.lat,
+          longitude: center.lng,
+          zoom: map.getZoom(),
+        });
+      }
+
+      map.on("moveend", emitViewportChange);
+      map.on("zoomend", emitViewportChange);
+
       onReadyRef.current({
         panToQuery: async (query) => {
           try {
             const result = await geocodePlace(query);
 
+            suppressViewportSyncRef.current = true;
             if (result.bounds) {
               map.fitBounds(result.bounds, { padding: [48, 48] });
             } else {
               map.flyTo([result.lat, result.lng], 14);
             }
+            window.setTimeout(() => {
+              suppressViewportSyncRef.current = false;
+              emitViewportChange();
+            }, 300);
 
             return {};
           } catch (err: unknown) {
             return { error: unwrapUnknownError(err).message };
           }
+        },
+        setViewport: (viewport) => {
+          suppressViewportSyncRef.current = true;
+          map.setView([viewport.latitude, viewport.longitude], viewport.zoom, { animate: false });
+          suppressViewportSyncRef.current = false;
         },
       });
 
