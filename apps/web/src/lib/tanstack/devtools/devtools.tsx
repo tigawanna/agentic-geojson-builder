@@ -5,21 +5,23 @@ import { pacerDevtoolsPlugin } from "@tanstack/react-pacer-devtools";
 
 export function TanstackDevtools() {
   return (
-    <TanStackDevtools
-      config={{
-        position: "bottom-right",
-      }}
-      plugins={[
-        {
-          name: "Tanstack Router",
-          render: <TanStackRouterDevtoolsPanel />,
-        },
-        {
-          name: "Tanstack Query",
-          render: <ReactQueryDevtoolsPanel />,
-        },
-        pacerDevtoolsPlugin(),
-      ]}
-    />
+    <>
+      <TanStackDevtools
+        config={{
+          position: "bottom-right",
+        }}
+        plugins={[
+          {
+            name: "Tanstack Router",
+            render: <TanStackRouterDevtoolsPanel />,
+          },
+          {
+            name: "Tanstack Query",
+            render: <ReactQueryDevtoolsPanel />,
+          },
+          pacerDevtoolsPlugin(),
+        ]}
+      />
+    </>
   );
 }
