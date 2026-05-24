@@ -1,12 +1,19 @@
 {
   "version": "7",
-  "dialect": "sqlite",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "6",
-      "when": 1779289496880,
-      "tag": "0000_curious_speed",
+      "version": "7",
+      "when": 1779598124436,
+      "tag": "0000_extensions",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779598132116,
+      "tag": "0001_tense_franklin_richards",
       "breakpoints": true
     }
   ]

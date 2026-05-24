@@ -5,16 +5,15 @@ const envSchema = z.object({
   DATABASE_URL: z.string().refine(
     (val) => {
       try {
-        // Accepts standard URLs or 'file:' scheme for sqlite paths
-        const u = new URL(val, "file://");
+        const u = new URL(val);
         return !!u;
       } catch {
         return false;
       }
     },
-    { message: "Invalid DATABASE_URL; must be a valid URL or file: URL" },
+    { message: "Invalid DATABASE_URL; must be a valid URL" },
   ),
-  DATABASE_AUTH_TOKEN: z.string(),
+  DATABASE_AUTH_TOKEN: z.string().optional(),
   BETTER_AUTH_SECRET: z.string(),
   GITHUB_CLIENT_ID: z.string(),
   GITHUB_CLIENT_SECRET: z.string(),

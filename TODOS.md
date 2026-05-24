@@ -64,10 +64,10 @@ Local Postgres is already available. Migrate schemas and queries there; expose t
 
 ### 1.1 Database setup
 
-- [ ] Switch `apps/web/drizzle.config.ts` from `turso` to **`postgresql`** (or add a dedicated `drizzle.postgres.config.ts` if auth stays on Turso temporarily)
-- [ ] Set `DATABASE_URL=postgresql://...` in `apps/web/.env` (see `ARCHITECTURE.md`)
+- [x] Switch `apps/web/drizzle.config.ts` from `turso` to **`postgresql`** (or add a dedicated `drizzle.postgres.config.ts` if auth stays on Turso temporarily)
+- [x] Set `DATABASE_URL=postgresql://...` in `apps/web/.env` (see `ARCHITECTURE.md`)
 - [ ] Enable **PostGIS** in Postgres (`CREATE EXTENSION postgis`)
-- [ ] Add a custom Drizzle migration for the extension (mirror `drizzle-pglite/migrations/0000_extensions.sql`)
+- [x] Add a custom Drizzle migration for the extension (mirror `drizzle-pglite/migrations/0000_extensions.sql`)
 
 ### 1.2 Move schema out of PGLite
 
@@ -83,6 +83,8 @@ Port from `/home/dennis/Desktop/code/fullstack/agentic-json-resume/apps/web/src/
 | (later) `agent_run`    | Tool audit trail                                                                              |
 
 Start minimal: **`map` + `control_point` + `owner_id`** — enough to replace today's PGLite slice.
+
+Status: the active server Drizzle schema now includes Better Auth's generated Postgres schema plus `map` and `control_point` under `apps/web/src/lib/drizzle/scheam/maps/`. Migrations start with `0000_extensions.sql`, then the generated Postgres schema migration.
 
 PDF storage options (pick one in implementation):
 
