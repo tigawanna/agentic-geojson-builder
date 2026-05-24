@@ -112,6 +112,38 @@ function clampPdfScale(scale: number) {
   return Math.min(MAX_PDF_SCALE, Math.max(MIN_PDF_SCALE, scale));
 }
 
+function isPickModifierEvent(event: Pick<MouseEvent, "ctrlKey" | "metaKey">) {
+  return event.ctrlKey || event.metaKey;
+}
+
+function usePickModifierHeld() {
+  const [held, setHeld] = useState(false);
+
+  useEffect(() => {
+    function syncFromKeyboard(event: KeyboardEvent) {
+      if (event.key === "Control" || event.key === "Meta") {
+        setHeld(event.type === "keydown");
+      }
+    }
+
+    function reset() {
+      setHeld(false);
+    }
+
+    window.addEventListener("keydown", syncFromKeyboard);
+    window.addEventListener("keyup", syncFromKeyboard);
+    window.addEventListener("blur", reset);
+
+    return () => {
+      window.removeEventListener("keydown", syncFromKeyboard);
+      window.removeEventListener("keyup", syncFromKeyboard);
+      window.removeEventListener("blur", reset);
+    };
+  }, []);
+
+  return held;
+}
+
 function getImageCoordinatesFromClick(
   canvas: HTMLCanvasElement,
   event: React.MouseEvent<HTMLCanvasElement>,
@@ -556,8 +588,8 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
   const referenceHint = !referenceMode
     ? null
     : pendingMapPoint
-      ? `Map pin set at ${pendingMapPoint.latitude.toFixed(5)}, ${pendingMapPoint.longitude.toFixed(5)}. Click the same spot on the PDF.`
-      : "Click the base map or paste coordinates from Google Maps.";
+      ? `Map pin set at ${pendingMapPoint.latitude.toFixed(5)}, ${pendingMapPoint.longitude.toFixed(5)}. Ctrl+click the same spot on the PDF (drag to pan).`
+      : "Ctrl+click the base map or paste coordinates from Google Maps (drag to pan).";
 
   if (mapQuery.isLoading || !isHydrated) {
     return (
@@ -715,8 +747,8 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
         >
           <div className="space-y-2">
             <p>
-              Click the base map to add vertices. Finish when you have at least 2 points (
-              {pendingTracePoints.length} added).
+              Ctrl+click the base map to add vertices (drag to pan). Finish when you have at least 2
+              points ({pendingTracePoints.length} added).
             </p>
             <div className="grid gap-2 sm:grid-cols-3">
               <div className="space-y-1">
@@ -1335,6 +1367,8 @@ function LeafletMapPane({
   } | null>(null);
   const setCursorCoordinatesRef = useRef(setCursorCoordinates);
   const mapClickTimerRef = useRef<number | undefined>(undefined);
+  const pickModifierHeld = usePickModifierHeld();
+  const pickModeActive = canPickTracePoint || canPickMapPoint;
 
   setCursorCoordinatesRef.current = setCursorCoordinates;
 
@@ -1600,7 +1634,13 @@ function LeafletMapPane({
     }
 
     function handleClick(event: Leaflet.LeafletMouseEvent) {
+      const domEvent = event.originalEvent;
+      if (!isPickModifierEvent(domEvent)) {
+        return;
+      }
+
       if (canPickTracePoint) {
+        domEvent.preventDefault();
         onTracePointAddRef.current(event.latlng.lat, event.latlng.lng);
         return;
       }
@@ -1608,6 +1648,8 @@ function LeafletMapPane({
       if (!canPickMapPoint) {
         return;
       }
+
+      domEvent.preventDefault();
 
       if (mapClickTimerRef.current !== undefined) {
         window.clearTimeout(mapClickTimerRef.current);
@@ -1621,7 +1663,7 @@ function LeafletMapPane({
     map.on("click", handleClick);
 
     if (containerRef.current) {
-      containerRef.current.style.cursor = canPickTracePoint || canPickMapPoint ? "crosshair" : "";
+      containerRef.current.style.cursor = pickModeActive && pickModifierHeld ? "crosshair" : "";
     }
 
     return () => {
@@ -1633,7 +1675,7 @@ function LeafletMapPane({
         containerRef.current.style.cursor = "";
       }
     };
-  }, [canPickMapPoint, canPickTracePoint]);
+  }, [canPickMapPoint, canPickTracePoint, pickModifierHeld, pickModeActive]);
 
   const cursorCoordinatesLabel = cursorCoordinates
     ? `${cursorCoordinates.latitude.toFixed(5)}, ${cursorCoordinates.longitude.toFixed(5)}`
@@ -1644,8 +1686,10 @@ function LeafletMapPane({
       <div ref={containerRef} className="absolute inset-0" data-test="leaflet-map" />
       <div className="pointer-events-none absolute bottom-8 left-3 z-[500] rounded-md border border-base-content/10 bg-base-100/90 px-2 py-1 text-xs text-base-content/70 shadow-sm backdrop-blur">
         {traceMode
-          ? "Click to add trail vertices · Finish when done"
-          : "Double-click to copy · drag refs to move"}
+          ? "Ctrl+click to add vertices · drag to pan"
+          : canPickMapPoint
+            ? "Ctrl+click to set map pin · drag to pan"
+            : "Double-click to copy · drag refs to move"}
       </div>
       {cursorCoordinatesLabel ? (
         <button
@@ -1716,6 +1760,7 @@ function PdfPreviewPane({
     imageY: number;
   } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const pickModifierHeld = usePickModifierHeld();
 
   transformRef.current = transform;
   onTransformChangeRef.current = onTransformChange;
@@ -1759,7 +1804,11 @@ function PdfPreviewPane({
   }, [file]);
 
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    if (canPickPdfPoint || !file || event.button !== 0 || isDraggingMarker) {
+    if (!file || event.button !== 0 || isDraggingMarker) {
+      return;
+    }
+
+    if (canPickPdfPoint && isPickModifierEvent(event)) {
       return;
     }
 
@@ -1803,7 +1852,11 @@ function PdfPreviewPane({
     event: React.PointerEvent<HTMLDivElement>,
     controlPointId: number,
   ) {
-    if (canPickPdfPoint || event.button !== 0) {
+    if (event.button !== 0) {
+      return;
+    }
+
+    if (canPickPdfPoint && isPickModifierEvent(event)) {
       return;
     }
 
@@ -1924,7 +1977,7 @@ function PdfPreviewPane({
       ref={viewportRef}
       className={cn(
         "absolute inset-0 overflow-hidden touch-none select-none",
-        canPickPdfPoint
+        canPickPdfPoint && pickModifierHeld
           ? "cursor-crosshair"
           : isDragging
             ? "cursor-grabbing"
@@ -1953,7 +2006,7 @@ function PdfPreviewPane({
               !file && "hidden",
             )}
             onClick={(event) => {
-              if (!canPickPdfPoint || !canvasRef.current) {
+              if (!canPickPdfPoint || !canvasRef.current || !isPickModifierEvent(event)) {
                 return;
               }
 
@@ -1971,9 +2024,8 @@ function PdfPreviewPane({
               <div
                 key={point.id}
                 className={cn(
-                  "absolute flex size-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white touch-none select-none",
+                  "absolute flex size-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white touch-none select-none cursor-grab active:cursor-grabbing",
                   selectedControlPointId === point.id ? "size-5 bg-blue-600" : "bg-primary",
-                  canPickPdfPoint ? "pointer-events-none" : "cursor-grab active:cursor-grabbing",
                 )}
                 style={{ left: displayX, top: displayY }}
                 onPointerDown={(event) => handleMarkerPointerDown(event, point.id)}
@@ -1990,7 +2042,9 @@ function PdfPreviewPane({
       </div>
       {file ? (
         <div className="pointer-events-none absolute bottom-4 left-4 rounded-md border border-base-content/10 bg-base-100/90 px-2 py-1 text-xs text-base-content/70 shadow-sm backdrop-blur">
-          Scroll to zoom · drag to pan · drag refs to move
+          {canPickPdfPoint
+            ? "Ctrl+click to set PDF pin · drag to pan · drag refs to move"
+            : "Scroll to zoom · drag to pan · drag refs to move"}
         </div>
       ) : null}
       {referenceMode && !canPickPdfPoint ? (
