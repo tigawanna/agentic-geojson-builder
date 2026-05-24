@@ -8,4 +8,5 @@ export const queryKeyPrefixes = {
   controlPoints: "controlPoints",
   georeference: "georeference",
   geoSegments: "geoSegments",
+  tileCache: "tileCache",
 } as const;

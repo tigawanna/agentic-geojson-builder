@@ -6,8 +6,10 @@ export type GeoreferencePointError = {
 export type GeoreferenceReadyViewModel = {
   mapId: number;
   ready: true;
-  method: "affine";
+  method: "affine-robust";
   controlPointCount: number;
+  inlierControlPointCount: number;
+  excludedControlPointIds: number[];
   residualErrorMeters: number;
   maxErrorMeters: number;
   computedAt: string;

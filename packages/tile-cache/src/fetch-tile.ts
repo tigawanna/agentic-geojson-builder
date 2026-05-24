@@ -1,6 +1,11 @@
-import { buildTileUrl } from "./tile-url";
+import { buildTileUrl } from "./tile-url.js";
 
-export async function fetchTileBuffer(style: Parameters<typeof buildTileUrl>[0], z: number, x: number, y: number) {
+export async function fetchTileBuffer(
+  style: Parameters<typeof buildTileUrl>[0],
+  z: number,
+  x: number,
+  y: number,
+) {
   const url = buildTileUrl(style, z, x, y);
   const response = await fetch(url, {
     headers: {

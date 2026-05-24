@@ -104,13 +104,21 @@ export async function copyMapCoordinates(latitude: number, longitude: number) {
   toast.success("Coordinates copied", { description: text });
 }
 
-export function createBaseLayer(L: typeof Leaflet, style: BaseMapStyle) {
+export function createBaseLayer(
+  L: typeof Leaflet,
+  style: BaseMapStyle,
+  tileUrlOverride?: string | null,
+) {
   const config = BASE_MAP_CONFIG[style];
-  return L.tileLayer(config.url, {
+  return L.tileLayer(tileUrlOverride ?? config.url, {
     maxZoom: config.maxZoom,
     attribution: config.attribution,
     crossOrigin: "anonymous",
   });
+}
+
+export function getLocalTileUrl(mapId: number, style: BaseMapStyle) {
+  return `/api/tiles/${mapId}/${style}/{z}/{x}/{y}.png`;
 }
 
 type CreateMapHandleOptions = {

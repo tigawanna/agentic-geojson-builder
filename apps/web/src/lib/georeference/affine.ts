@@ -5,6 +5,27 @@ export type ControlPointPair = {
   latitude: number;
 };
 
+export type ControlPointPairWithId = ControlPointPair & {
+  id: number;
+};
+
+export type RobustAffineFitResult = {
+  coefficients: AffineCoefficients;
+  inlierIds: number[];
+  excludedIds: number[];
+  inlierStats: {
+    rmseMeters: number;
+    maxErrorMeters: number;
+  };
+  perPointErrors: Array<{
+    controlPointId: number;
+    errorMeters: number;
+    isInlier: boolean;
+  }>;
+};
+
+const ROBUST_INLIER_MAX_ERROR_METERS = 75;
+
 export type AffineCoefficients = {
   a: number;
   b: number;
@@ -140,6 +161,71 @@ export function lonLatToPdfPixel(
     imageX: (coefficients.e * longitudeOffset - coefficients.b * latitudeOffset) / determinant,
     imageY: (-coefficients.d * longitudeOffset + coefficients.a * latitudeOffset) / determinant,
   };
+}
+
+export function fitAffineTransformRobust(points: ControlPointPairWithId[]): RobustAffineFitResult {
+  if (points.length < 3) {
+    throw new Error("At least 3 control points are required.");
+  }
+
+  let inliers = [...points];
+  const excludedIds: number[] = [];
+
+  while (true) {
+    const coefficients = fitAffineTransform(inliers);
+    const inlierStats = computeResidualStats(inliers, coefficients);
+    const shouldStop =
+      inlierStats.maxErrorMeters <= ROBUST_INLIER_MAX_ERROR_METERS || inliers.length <= 3;
+
+    if (shouldStop) {
+      const excludedIdSet = new Set(excludedIds);
+      const perPointErrors = points.map((point) => {
+        const predicted = pdfPixelToLonLat(coefficients, point.imageX, point.imageY);
+        const errorMeters = haversineDistanceMeters(
+          point.latitude,
+          point.longitude,
+          predicted.latitude,
+          predicted.longitude,
+        );
+        return {
+          controlPointId: point.id,
+          errorMeters,
+          isInlier: !excludedIdSet.has(point.id),
+        };
+      });
+
+      return {
+        coefficients,
+        inlierIds: inliers.map((point) => point.id),
+        excludedIds,
+        inlierStats: {
+          rmseMeters: inlierStats.rmseMeters,
+          maxErrorMeters: inlierStats.maxErrorMeters,
+        },
+        perPointErrors,
+      };
+    }
+
+    let worstIndex = 0;
+    let worstError = -1;
+    for (let index = 0; index < inlierStats.perPointErrorsMeters.length; index += 1) {
+      const error = inlierStats.perPointErrorsMeters[index] ?? 0;
+      if (error > worstError) {
+        worstError = error;
+        worstIndex = index;
+      }
+    }
+
+    const removed = inliers[worstIndex];
+    if (!removed) {
+      break;
+    }
+
+    excludedIds.push(removed.id);
+    inliers = inliers.filter((_, index) => index !== worstIndex);
+  }
+
+  throw new Error("Transform is singular.");
 }
 
 export function computeResidualStats(points: ControlPointPair[], coefficients: AffineCoefficients) {

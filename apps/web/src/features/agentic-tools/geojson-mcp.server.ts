@@ -10,21 +10,23 @@ import {
   deleteControlPointToolInputSchema,
   exportGeoJsonToolInputSchema,
   findFeatureGapsToolInputSchema,
+  getMapSectorViewToolInputSchema,
   listMapsToolInputSchema,
   lonLatToolInputSchema,
   mapIdInputSchema,
   mergeFeatureSegmentsToolInputSchema,
   pdfPixelToolInputSchema,
   saveMapPdfToolInputSchema,
+  setTileCacheBoundsToolInputSchema,
   updateControlPointToolInputSchema,
   updateFeatureSegmentStatusToolInputSchema,
   updateMapWorkspaceToolInputSchema,
 } from "./geojson-tool-schemas";
 
-function jsonToolResult<T extends Record<string, unknown>>(data: T): CallToolResult {
+function jsonToolResult<T extends Record<string, unknown> | null>(data: T): CallToolResult {
   return {
     content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
-    structuredContent: data,
+    structuredContent: data ?? undefined,
   };
 }
 
@@ -164,6 +166,50 @@ export function createGeojsonMcpServer(userId: string): McpServer {
       inputSchema: mapIdInputSchema.shape,
     },
     async (input) => jsonToolResult(await client.project.renderedMapView(input)),
+  );
+
+  server.registerTool(
+    "get_tile_cache_status",
+    {
+      title: "Get Tile Cache Status",
+      description:
+        "Return the configured square tile cache bounds and optional pre-warm status for a map.",
+      inputSchema: mapIdInputSchema.shape,
+    },
+    async (input) => jsonToolResult(await client.tileCache.status(input)),
+  );
+
+  server.registerTool(
+    "set_tile_cache_bounds",
+    {
+      title: "Set Tile Cache Bounds",
+      description:
+        "Configure a square tile cache region centered on latitude/longitude with a half-side length in meters.",
+      inputSchema: setTileCacheBoundsToolInputSchema.shape,
+    },
+    async (input) => jsonToolResult(await client.tileCache.setBounds(input)),
+  );
+
+  server.registerTool(
+    "build_tile_cache",
+    {
+      title: "Build Tile Cache",
+      description:
+        "Optionally pre-download XYZ tiles for the configured square bounds. Sector views work on demand without this.",
+      inputSchema: mapIdInputSchema.shape,
+    },
+    async (input) => jsonToolResult(await client.tileCache.build(input)),
+  );
+
+  server.registerTool(
+    "get_map_sector_view",
+    {
+      title: "Get Map Sector View",
+      description:
+        "Stitch map tiles into a PNG centered on a WGS84 coordinate inside the configured square bounds. Fetches tiles on demand.",
+      inputSchema: getMapSectorViewToolInputSchema.shape,
+    },
+    async (input) => jsonToolResult(await client.tileCache.sectorView(input)),
   );
 
   server.registerTool(

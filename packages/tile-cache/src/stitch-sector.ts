@@ -1,12 +1,7 @@
 import sharp from "sharp";
-import { readCachedTile } from "./paths";
-import {
-  metersPerPixel,
-  sectorBoundsFromCenter,
-  TILE_SIZE,
-  tilesForSector,
-} from "./tile-math";
-import type { MapSectorView, SquareBounds, TileStyle } from "./types";
+import { resolveTilesParallel } from "./resolve-tile.js";
+import { metersPerPixel, sectorBoundsFromCenter, TILE_SIZE, tilesForSector } from "./tile-math.js";
+import type { MapSectorView, SquareBounds, TileStyle } from "./types.js";
 
 export type RenderMapSectorInput = {
   baseDir: string;
@@ -18,6 +13,7 @@ export type RenderMapSectorInput = {
   zoom: number;
   width?: number;
   height?: number;
+  writeToCache?: boolean;
 };
 
 export async function renderMapSectorFromCache(
@@ -25,7 +21,7 @@ export async function renderMapSectorFromCache(
 ): Promise<MapSectorView> {
   const width = input.width ?? 768;
   const height = input.height ?? 768;
-  const { tiles, topLeftX, topLeftY, minTileX, minTileY } = tilesForSector(
+  const { tiles, topLeftX, topLeftY } = tilesForSector(
     input.centerLatitude,
     input.centerLongitude,
     input.zoom,
@@ -33,27 +29,29 @@ export async function renderMapSectorFromCache(
     height,
   );
 
+  const resolvedTiles = await resolveTilesParallel({
+    baseDir: input.baseDir,
+    mapId: input.mapId,
+    style: input.style,
+    tiles,
+    writeToCache: input.writeToCache,
+    concurrency: 8,
+  });
+
   const composites: Array<{ input: Buffer; left: number; top: number }> = [];
   let missingTileCount = 0;
 
-  for (const tile of tiles) {
-    try {
-      const buffer = await readCachedTile(
-        input.baseDir,
-        input.mapId,
-        input.style,
-        tile.z,
-        tile.x,
-        tile.y,
-      );
-      composites.push({
-        input: buffer,
-        left: tile.x * TILE_SIZE - topLeftX,
-        top: tile.y * TILE_SIZE - topLeftY,
-      });
-    } catch {
+  for (const resolved of resolvedTiles) {
+    if (!resolved) {
       missingTileCount += 1;
+      continue;
     }
+
+    composites.push({
+      input: resolved.buffer,
+      left: Math.round(resolved.tile.x * TILE_SIZE - topLeftX),
+      top: Math.round(resolved.tile.y * TILE_SIZE - topLeftY),
+    });
   }
 
   const imageBuffer = await sharp({
@@ -76,6 +74,8 @@ export async function renderMapSectorFromCache(
     height,
   );
 
+  const cacheHit = resolvedTiles.every((tile) => tile?.fromCache ?? false);
+
   return {
     mapId: input.mapId,
     style: input.style,
@@ -90,7 +90,7 @@ export async function renderMapSectorFromCache(
     metersPerPixel: metersPerPixel(input.centerLatitude, input.zoom),
     mimeType: "image/png",
     imageBase64: imageBuffer.toString("base64"),
-    cacheHit: missingTileCount === 0,
+    cacheHit,
     missingTileCount,
   };
 }
@@ -104,5 +104,3 @@ export function getSectorTileSummary(
 ) {
   return tilesForSector(centerLatitude, centerLongitude, zoom, width, height);
 }
-
-export { minTileX, minTileY, topLeftX, topLeftY };

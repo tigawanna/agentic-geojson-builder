@@ -35,11 +35,21 @@ import {
 import type { MapWorkspaceState } from "@/data-access-layer/maps/maps.types";
 import type { GeoreferenceViewModel } from "@/data-access-layer/georeference/georeference.types";
 import { getRenderedMapViewForUser } from "@/data-access-layer/map-snapshots/map-snapshots.server";
+import {
+  buildMapTileCacheForUser,
+  getMapSectorViewForUser,
+  getMapTileCacheForUser,
+  setMapTileCacheBoundsForUser,
+} from "@/data-access-layer/tile-cache/tile-cache.server";
 import type {
   ApplyFeaturePatchToolInput,
   FindFeatureGapsToolInput,
   MergeFeatureSegmentsToolInput,
   UpdateFeatureSegmentStatusToolInput,
+} from "./geojson-tool-schemas";
+import type {
+  GetMapSectorViewToolInput,
+  SetTileCacheBoundsToolInput,
 } from "./geojson-tool-schemas";
 import type {
   CreateControlPointToolInput,
@@ -298,6 +308,25 @@ export async function updateFeatureSegmentStatusTool(
 
 export async function getRenderedMapViewTool(context: ToolContext, mapId: number) {
   return getRenderedMapViewForUser(context.userId, mapId);
+}
+
+export async function getMapTileCacheTool(context: ToolContext, mapId: number) {
+  return getMapTileCacheForUser(context.userId, mapId);
+}
+
+export async function setTileCacheBoundsTool(
+  context: ToolContext,
+  input: SetTileCacheBoundsToolInput,
+) {
+  return setMapTileCacheBoundsForUser(context.userId, input);
+}
+
+export async function buildTileCacheTool(context: ToolContext, mapId: number) {
+  return buildMapTileCacheForUser(context.userId, mapId);
+}
+
+export async function getMapSectorViewTool(context: ToolContext, input: GetMapSectorViewToolInput) {
+  return getMapSectorViewForUser(context.userId, input);
 }
 
 export async function exportGeoJsonTool(

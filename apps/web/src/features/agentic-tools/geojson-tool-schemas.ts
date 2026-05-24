@@ -111,8 +111,10 @@ export const controlPointSchema = z.object({
 export const georeferenceReadySchema = z.object({
   mapId: z.number().int().positive(),
   ready: z.literal(true),
-  method: z.literal("affine"),
+  method: z.literal("affine-robust"),
   controlPointCount: z.number().int().nonnegative(),
+  inlierControlPointCount: z.number().int().nonnegative(),
+  excludedControlPointIds: z.array(z.number().int().positive()),
   residualErrorMeters: z.number(),
   maxErrorMeters: z.number(),
   computedAt: z.string(),
@@ -424,6 +426,91 @@ export const getRenderedMapViewToolOutputSchema = z.object({
   snapshot: renderedMapViewSchema.nullable(),
 });
 
+export const squareBoundsSchema = z.object({
+  north: z.number(),
+  south: z.number(),
+  east: z.number(),
+  west: z.number(),
+  centerLatitude: z.number(),
+  centerLongitude: z.number(),
+  halfSideMeters: z.number().positive(),
+});
+
+export const mapTileCacheConfigSchema = z.object({
+  mapId: z.number().int().positive(),
+  centerLat: z.number(),
+  centerLng: z.number(),
+  halfSideMeters: z.number().positive(),
+  minZoom: z.number().int(),
+  maxZoom: z.number().int(),
+  style: mapBaseMapStyleSchema,
+  tileCount: z.number().int().nonnegative(),
+  builtAt: z.string().nullable(),
+  bounds: squareBoundsSchema,
+});
+
+export const setTileCacheBoundsToolInputSchema = z.object({
+  mapId: z.number().int().positive(),
+  centerLat: z.number().min(-90).max(90),
+  centerLng: z.number().min(-180).max(180),
+  halfSideMeters: z.number().positive().max(20000),
+  minZoom: z.number().int().min(10).max(20).optional(),
+  maxZoom: z.number().int().min(10).max(20).optional(),
+  style: mapBaseMapStyleSchema.optional(),
+});
+
+export const buildTileCacheToolOutputSchema = z.object({
+  config: mapTileCacheConfigSchema,
+  downloadedCount: z.number().int().nonnegative(),
+  skippedCount: z.number().int().nonnegative(),
+  failedCount: z.number().int().nonnegative(),
+  manifest: z.object({
+    mapId: z.number().int().positive(),
+    style: mapBaseMapStyleSchema,
+    bounds: squareBoundsSchema,
+    minZoom: z.number().int(),
+    maxZoom: z.number().int(),
+    tileCount: z.number().int().nonnegative(),
+    builtAt: z.string(),
+    attribution: z.string(),
+  }),
+});
+
+export const getMapSectorViewToolInputSchema = z.object({
+  mapId: z.number().int().positive(),
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  zoom: z.number().int().min(10).max(20).optional(),
+  width: z.number().int().min(128).max(2048).optional(),
+  height: z.number().int().min(128).max(2048).optional(),
+  style: mapBaseMapStyleSchema.optional(),
+});
+
+export const getMapSectorViewToolOutputSchema = z.object({
+  mapId: z.number().int().positive(),
+  style: mapBaseMapStyleSchema,
+  center: z.object({
+    latitude: z.number(),
+    longitude: z.number(),
+  }),
+  zoom: z.number().int(),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  bounds: z.object({
+    north: z.number(),
+    south: z.number(),
+    east: z.number(),
+    west: z.number(),
+  }),
+  metersPerPixel: z.number().positive(),
+  mimeType: z.literal("image/png"),
+  imageBase64: z.string(),
+  cacheHit: z.boolean(),
+  missingTileCount: z.number().int().nonnegative(),
+  attribution: z.string().nullable(),
+  cacheBounds: squareBoundsSchema,
+});
+
 export const exportedGeoJsonSchema = z.object({
   type: z.literal("FeatureCollection"),
   features: z.array(
@@ -466,3 +553,5 @@ export type MergeFeatureSegmentsToolInput = z.infer<typeof mergeFeatureSegmentsT
 export type UpdateFeatureSegmentStatusToolInput = z.infer<
   typeof updateFeatureSegmentStatusToolInputSchema
 >;
+export type SetTileCacheBoundsToolInput = z.infer<typeof setTileCacheBoundsToolInputSchema>;
+export type GetMapSectorViewToolInput = z.infer<typeof getMapSectorViewToolInputSchema>;

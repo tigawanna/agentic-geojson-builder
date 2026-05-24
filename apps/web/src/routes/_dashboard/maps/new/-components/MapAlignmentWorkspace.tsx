@@ -34,18 +34,28 @@ import {
   type MapViewport,
 } from "@/data-access-layer/maps/maps-query-options";
 import {
+  buildMapTileCacheMutationOptions,
+  getMapTileCacheQueryOptions,
+  setMapTileCacheBoundsMutationOptions,
+} from "@/data-access-layer/tile-cache/tile-cache-query-options";
+import {
   copyMapCoordinates,
   createBaseLayer,
   createMapHandle,
   DEFAULT_MAP_VIEWPORT,
+  getLocalTileUrl,
   type BaseMapStyle,
   type MapHandle,
 } from "./map-handle";
+import { estimateTileCount, squareBoundsFromCenter } from "@repo/tile-cache/tile-math";
 import { segmentGroupColor, lineStringToLatLngs } from "./segment-utils";
 import { MapAiPanel } from "./MapAiPanel";
 import { WorkspaceScreenshotDialog } from "./WorkspaceScreenshotDialog";
 import { buildChatScreenshotBlob } from "@/lib/rendered-map-view/build-chat-screenshot";
-import { capturePdfPanePngBlob, capturePdfPaneToCanvas } from "@/lib/rendered-map-view/capture-pdf-pane";
+import {
+  capturePdfPanePngBlob,
+  capturePdfPaneToCanvas,
+} from "@/lib/rendered-map-view/capture-pdf-pane";
 import { captureWorkspaceView } from "@/lib/rendered-map-view/capture-workspace-view";
 import { PDF_RENDER_SCALE } from "@/lib/rendered-map-view/constants";
 import { useDebouncedValue } from "@/hooks/use-debouncer";
@@ -118,6 +128,9 @@ const DEFAULT_TRANSFORM: PdfViewTransform = {
 
 const MIN_PDF_SCALE = 0.25;
 const MAX_PDF_SCALE = 5;
+const DEFAULT_TILE_CACHE_HALF_SIDE_KM = 2;
+const MIN_TILE_CACHE_HALF_SIDE_KM = 0.5;
+const MAX_TILE_CACHE_HALF_SIDE_KM = 10;
 
 type MapAlignmentWorkspaceProps = {
   mapId: number;
@@ -213,6 +226,7 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
   const [editDraft, setEditDraft] = useState<ControlPointEditDraft | null>(null);
   const [editDraftError, setEditDraftError] = useState<string | null>(null);
   const [mapViewport, setMapViewport] = useState<MapViewport>(DEFAULT_MAP_VIEWPORT);
+  const [tileCacheHalfSideKm, setTileCacheHalfSideKm] = useState(DEFAULT_TILE_CACHE_HALF_SIDE_KM);
   const [isHydrated, setIsHydrated] = useState(false);
   const mapHandleRef = useRef<MapHandle | null>(null);
   const pdfCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -246,6 +260,11 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
   const geoSegmentsQuery = useQuery({
     ...listGeoSegmentsQueryOptions(mapId),
   });
+  const tileCacheQuery = useQuery({
+    ...getMapTileCacheQueryOptions(mapId),
+  });
+  const setTileCacheBoundsMutation = useMutation(setMapTileCacheBoundsMutationOptions());
+  const buildTileCacheMutation = useMutation(buildMapTileCacheMutationOptions());
   const createControlPointMutation = useMutation(createControlPointMutationOptions());
   const deleteControlPointMutation = useMutation(deleteControlPointMutationOptions());
   const updateControlPointMutation = useMutation(updateControlPointMutationOptions());
@@ -277,6 +296,33 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
   );
   const { debouncedValue: debouncedWorkspace } = useDebouncedValue(workspaceSnapshot, 800);
 
+  const tileCacheOverlay = useMemo(() => {
+    if (tileCacheQuery.data) {
+      return tileCacheQuery.data.bounds;
+    }
+
+    return squareBoundsFromCenter(
+      mapViewport.latitude,
+      mapViewport.longitude,
+      tileCacheHalfSideKm * 1000,
+    );
+  }, [tileCacheQuery.data, mapViewport.latitude, mapViewport.longitude, tileCacheHalfSideKm]);
+
+  const localTileUrl = useMemo(() => {
+    const cache = tileCacheQuery.data;
+    if (!cache?.builtAt || cache.tileCount === 0 || cache.style !== baseMapStyle) {
+      return null;
+    }
+
+    return getLocalTileUrl(mapId, baseMapStyle);
+  }, [tileCacheQuery.data, baseMapStyle, mapId]);
+
+  const estimatedTileCount = useMemo(() => {
+    const minZoom = tileCacheQuery.data?.minZoom ?? 14;
+    const maxZoom = tileCacheQuery.data?.maxZoom ?? 17;
+    return estimateTileCount(tileCacheOverlay, minZoom, maxZoom);
+  }, [tileCacheOverlay, tileCacheQuery.data?.minZoom, tileCacheQuery.data?.maxZoom]);
+
   useEffect(() => {
     if (!mapQuery.data || isHydrated) {
       return;
@@ -303,6 +349,14 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
 
     setIsHydrated(true);
   }, [mapQuery.data, isHydrated]);
+
+  useEffect(() => {
+    if (!tileCacheQuery.data) {
+      return;
+    }
+
+    setTileCacheHalfSideKm(tileCacheQuery.data.halfSideMeters / 1000);
+  }, [tileCacheQuery.data?.halfSideMeters]);
 
   useEffect(() => {
     if (!isHydrated || !mapQuery.data?.hasPdf) {
@@ -337,6 +391,24 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
     mapHandleRef.current = handle;
   }
 
+  async function handleSetTileCacheFromCenter() {
+    await setTileCacheBoundsMutation.mutateAsync({
+      mapId,
+      centerLat: mapViewport.latitude,
+      centerLng: mapViewport.longitude,
+      halfSideMeters: tileCacheHalfSideKm * 1000,
+      style: baseMapStyle,
+    });
+  }
+
+  async function handleBuildTileCache() {
+    if (!tileCacheQuery.data) {
+      await handleSetTileCacheFromCenter();
+    }
+
+    await buildTileCacheMutation.mutateAsync({ mapId });
+  }
+
   async function captureWorkspaceSnapshot(options?: { silent?: boolean }) {
     const handle = mapHandleRef.current;
     if (!handle) {
@@ -369,7 +441,8 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
         overlays: {
           pendingMapPin: pendingMapPoint,
           draftSegmentsDrawn:
-            pendingTracePoints.length >= 2 || geoSegments.some((segment) => segment.status === "draft"),
+            pendingTracePoints.length >= 2 ||
+            geoSegments.some((segment) => segment.status === "draft"),
         },
       });
 
@@ -1138,6 +1211,8 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
           <PanelLabel>Base map</PanelLabel>
           <LeafletMapPane
             baseMapStyle={baseMapStyle}
+            localTileUrl={localTileUrl}
+            tileCacheOverlay={tileCacheOverlay}
             controlPoints={controlPointsQuery.data ?? []}
             geoSegments={geoSegmentsQuery.data ?? []}
             editingSegmentId={editingSegmentId}
@@ -1246,6 +1321,62 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
               </p>
             </div>
 
+            <div className="space-y-3 border-t border-base-content/10 pt-5">
+              <div className="space-y-1">
+                <h2 className="text-sm font-semibold">Agent map region</h2>
+                <p className="text-sm text-base-content/70">
+                  Set a square bounds box. Sector views fetch tiles on demand (~9 tiles per view).
+                </p>
+              </div>
+              <RangeControl
+                label="Square half-side"
+                value={tileCacheHalfSideKm}
+                min={MIN_TILE_CACHE_HALF_SIDE_KM}
+                max={MAX_TILE_CACHE_HALF_SIDE_KM}
+                step={0.25}
+                displayValue={`${tileCacheHalfSideKm.toFixed(2)} km`}
+                onChange={setTileCacheHalfSideKm}
+                dataTest="tile-cache-half-side"
+              />
+              <p className="text-xs text-base-content/60">
+                Side length {(tileCacheHalfSideKm * 2).toFixed(1)} km. Pre-warm is optional (
+                {estimatedTileCount.toLocaleString()} tiles at zoom 14–17).
+              </p>
+              {tileCacheQuery.data ? (
+                <p className="text-xs text-base-content/60" data-test="tile-cache-status">
+                  {tileCacheQuery.data.builtAt
+                    ? `${tileCacheQuery.data.tileCount.toLocaleString()} tiles pre-warmed · ${tileCacheQuery.data.style}`
+                    : "Bounds saved · sector views ready on demand"}
+                </p>
+              ) : (
+                <p className="text-xs text-base-content/60" data-test="tile-cache-status">
+                  Set bounds from map center to enable get_map_sector_view.
+                </p>
+              )}
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={setTileCacheBoundsMutation.isPending}
+                  onClick={() => void handleSetTileCacheFromCenter()}
+                  data-test="tile-cache-set-from-center"
+                >
+                  Set from map center
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={buildTileCacheMutation.isPending}
+                  onClick={() => void handleBuildTileCache()}
+                  data-test="tile-cache-build"
+                >
+                  {buildTileCacheMutation.isPending ? "Pre-warming…" : "Pre-warm cache (optional)"}
+                </Button>
+              </div>
+            </div>
+
             <div className="grid gap-4 border-t border-base-content/10 pt-5">
               <RangeControl
                 label="PDF scale"
@@ -1299,8 +1430,15 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
                   <p className="text-base-content/70">
                     RMS error {georeferenceQuery.data.residualErrorMeters.toFixed(1)} m · max{" "}
                     {georeferenceQuery.data.maxErrorMeters.toFixed(1)} m ·{" "}
-                    {georeferenceQuery.data.controlPointCount} reference points
+                    {georeferenceQuery.data.inlierControlPointCount} of{" "}
+                    {georeferenceQuery.data.controlPointCount} reference points used
                   </p>
+                  {georeferenceQuery.data.excludedControlPointIds.length > 0 ? (
+                    <p className="text-xs text-base-content/60">
+                      Excluded outlier points:{" "}
+                      {georeferenceQuery.data.excludedControlPointIds.join(", ")}
+                    </p>
+                  ) : null}
                 </div>
               ) : (
                 <p className="text-sm text-base-content/60" data-test="georeference-status">
@@ -1647,6 +1785,13 @@ function RangeControl({
 
 type LeafletMapPaneProps = {
   baseMapStyle: BaseMapStyle;
+  localTileUrl: string | null;
+  tileCacheOverlay: {
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  };
   controlPoints: ControlPointViewModel[];
   geoSegments: GeoSegmentViewModel[];
   editingSegmentId: number | null;
@@ -1667,6 +1812,8 @@ type LeafletMapPaneProps = {
 
 function LeafletMapPane({
   baseMapStyle,
+  localTileUrl,
+  tileCacheOverlay,
   controlPoints,
   geoSegments,
   editingSegmentId,
@@ -1688,6 +1835,7 @@ function LeafletMapPane({
   const mapRef = useRef<Leaflet.Map | null>(null);
   const leafletRef = useRef<typeof Leaflet | null>(null);
   const baseLayerRef = useRef<Leaflet.TileLayer | null>(null);
+  const cacheOverlayLayerRef = useRef<Leaflet.Rectangle | null>(null);
   const markersLayerRef = useRef<Leaflet.LayerGroup | null>(null);
   const segmentsLayerRef = useRef<Leaflet.LayerGroup | null>(null);
   const onReadyRef = useRef(onReady);
@@ -1746,7 +1894,7 @@ function LeafletMapPane({
         doubleClickZoom: false,
       });
 
-      baseLayerRef.current = createBaseLayer(L, baseMapStyle).addTo(map);
+      baseLayerRef.current = createBaseLayer(L, baseMapStyle, localTileUrl).addTo(map);
       markersLayerRef.current = L.layerGroup().addTo(map);
       segmentsLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
@@ -1829,6 +1977,7 @@ function LeafletMapPane({
       mapRef.current?.remove();
       mapRef.current = null;
       baseLayerRef.current = null;
+      cacheOverlayLayerRef.current = null;
       markersLayerRef.current = null;
       segmentsLayerRef.current = null;
       leafletRef.current = null;
@@ -1860,7 +2009,7 @@ function LeafletMapPane({
     }
 
     map.removeLayer(currentLayer);
-    baseLayerRef.current = createBaseLayer(L, baseMapStyle).addTo(map);
+    baseLayerRef.current = createBaseLayer(L, baseMapStyle, localTileUrl).addTo(map);
 
     if (segmentsLayer) {
       segmentsLayer.addTo(map);
@@ -1868,7 +2017,39 @@ function LeafletMapPane({
     if (markersLayer) {
       markersLayer.addTo(map);
     }
-  }, [baseMapStyle]);
+  }, [baseMapStyle, localTileUrl]);
+
+  useEffect(() => {
+    if (!mapReady) {
+      return;
+    }
+
+    const map = mapRef.current;
+    const L = leafletRef.current;
+
+    if (!map || !L) {
+      return;
+    }
+
+    if (cacheOverlayLayerRef.current) {
+      map.removeLayer(cacheOverlayLayerRef.current);
+      cacheOverlayLayerRef.current = null;
+    }
+
+    cacheOverlayLayerRef.current = L.rectangle(
+      [
+        [tileCacheOverlay.south, tileCacheOverlay.west],
+        [tileCacheOverlay.north, tileCacheOverlay.east],
+      ],
+      {
+        color: "#2563eb",
+        weight: 2,
+        fillColor: "#2563eb",
+        fillOpacity: 0.08,
+        dashArray: "6 4",
+      },
+    ).addTo(map);
+  }, [mapReady, tileCacheOverlay]);
 
   useEffect(() => {
     if (!mapReady) {

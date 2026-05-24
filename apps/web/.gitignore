@@ -17,4 +17,4 @@ playwright-report
 db.sqlite
 *.sqlite
 *.sqlite3
-*.db
+data/tile-cache

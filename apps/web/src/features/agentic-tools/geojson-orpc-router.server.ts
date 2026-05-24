@@ -13,6 +13,11 @@ import {
   getMapWorkspaceToolOutputSchema,
   getProjectContextToolOutputSchema,
   getRenderedMapViewToolOutputSchema,
+  buildTileCacheToolOutputSchema,
+  getMapSectorViewToolInputSchema,
+  getMapSectorViewToolOutputSchema,
+  mapTileCacheConfigSchema,
+  setTileCacheBoundsToolInputSchema,
   applyFeaturePatchToolInputSchema,
   applyFeaturePatchToolOutputSchema,
   exportGeoJsonToolInputSchema,
@@ -47,6 +52,7 @@ import {
 } from "./geojson-orpc-base.server";
 import {
   applyFeaturePatchTool,
+  buildTileCacheTool,
   computeGeoreferenceTool,
   createControlPointTool,
   createMapTool,
@@ -56,6 +62,8 @@ import {
   findFeatureGapsTool,
   getGeoreferenceTool,
   getMapWorkspaceTool,
+  getMapSectorViewTool,
+  getMapTileCacheTool,
   getProjectContextTool,
   getRenderedMapViewTool,
   listFeatureSegmentsTool,
@@ -66,6 +74,7 @@ import {
   mergeFeatureSegmentsTool,
   pdfPixelToLonLatTool,
   saveMapPdfTool,
+  setTileCacheBoundsTool,
   updateControlPointTool,
   updateFeatureSegmentStatusTool,
   updateMapWorkspaceTool,
@@ -303,6 +312,62 @@ const getRenderedMapViewProcedure = geojsonReadProcedure
     getRenderedMapViewTool({ userId: context.userId }, input.mapId),
   );
 
+const getTileCacheStatusProcedure = geojsonReadProcedure
+  .route({
+    method: "POST",
+    path: "/tile-cache/status",
+    summary: "Get tile cache status",
+    description: "Return configured square tile cache bounds and build status for a map.",
+    tags: ["Agentic GeoJSON"],
+    successStatus: 200,
+  })
+  .input(mapIdInputSchema)
+  .output(mapTileCacheConfigSchema.nullable())
+  .handler(async ({ context, input }) =>
+    getMapTileCacheTool({ userId: context.userId }, input.mapId),
+  );
+
+const setTileCacheBoundsProcedure = geojsonUpdateProcedure
+  .route({
+    method: "POST",
+    path: "/tile-cache/set-bounds",
+    summary: "Set tile cache bounds",
+    description: "Configure a square tile cache region for a map.",
+    tags: ["Agentic GeoJSON"],
+    successStatus: 200,
+  })
+  .input(setTileCacheBoundsToolInputSchema)
+  .output(mapTileCacheConfigSchema)
+  .handler(async ({ context, input }) => setTileCacheBoundsTool({ userId: context.userId }, input));
+
+const buildTileCacheProcedure = geojsonUpdateProcedure
+  .route({
+    method: "POST",
+    path: "/tile-cache/build",
+    summary: "Build tile cache",
+    description: "Download XYZ tiles for the configured square bounds and zoom range.",
+    tags: ["Agentic GeoJSON"],
+    successStatus: 200,
+  })
+  .input(mapIdInputSchema)
+  .output(buildTileCacheToolOutputSchema)
+  .handler(async ({ context, input }) =>
+    buildTileCacheTool({ userId: context.userId }, input.mapId),
+  );
+
+const getMapSectorViewProcedure = geojsonReadProcedure
+  .route({
+    method: "POST",
+    path: "/tile-cache/sector-view",
+    summary: "Get map sector view",
+    description: "Stitch cached map tiles into a PNG centered on a WGS84 coordinate.",
+    tags: ["Agentic GeoJSON"],
+    successStatus: 200,
+  })
+  .input(getMapSectorViewToolInputSchema)
+  .output(getMapSectorViewToolOutputSchema)
+  .handler(async ({ context, input }) => getMapSectorViewTool({ userId: context.userId }, input));
+
 const listFeatureSegmentsProcedure = geojsonReadProcedure
   .route({
     method: "POST",
@@ -412,6 +477,12 @@ export const geojsonAgenticRouter = {
   project: {
     context: getProjectContextProcedure,
     renderedMapView: getRenderedMapViewProcedure,
+  },
+  tileCache: {
+    status: getTileCacheStatusProcedure,
+    setBounds: setTileCacheBoundsProcedure,
+    build: buildTileCacheProcedure,
+    sectorView: getMapSectorViewProcedure,
   },
   featureSegments: {
     list: listFeatureSegmentsProcedure,

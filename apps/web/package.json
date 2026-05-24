@@ -30,6 +30,7 @@
     "@orpc/server": "^1.14.3",
     "@orpc/zod": "^1.14.3",
     "@repo/isomorphic": "workspace:*",
+    "@repo/tile-cache": "workspace:*",
     "@tailwindcss/vite": "^4.3.0",
     "@tanem/react-nprogress": "^5.0.56",
     "@tanstack/ai": "^0.21.3",

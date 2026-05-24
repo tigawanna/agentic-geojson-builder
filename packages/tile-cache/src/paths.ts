@@ -1,6 +1,6 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile, access } from "node:fs/promises";
 import path from "node:path";
-import type { TileCacheManifest, TileStyle } from "./types";
+import type { TileCacheManifest, TileStyle } from "./types.js";
 
 export function getMapCacheRoot(baseDir: string, mapId: number) {
   return path.join(baseDir, `map-${mapId}`);
@@ -52,6 +52,22 @@ export async function readCachedTile(
 ) {
   const tilePath = getTilePath(baseDir, mapId, style, z, x, y);
   return readFile(tilePath);
+}
+
+export async function cachedTileExists(
+  baseDir: string,
+  mapId: number,
+  style: TileStyle,
+  z: number,
+  x: number,
+  y: number,
+) {
+  try {
+    await access(getTilePath(baseDir, mapId, style, z, x, y));
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export async function writeCachedTile(

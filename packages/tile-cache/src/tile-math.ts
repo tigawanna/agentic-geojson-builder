@@ -1,4 +1,4 @@
-import type { SquareBounds, TileCoordinate } from "./types";
+import type { SquareBounds, TileCoordinate } from "./types.js";
 
 const TILE_SIZE = 256;
 const EARTH_RADIUS_METERS = 6378137;
@@ -24,11 +24,7 @@ export function squareBoundsFromCenter(
   };
 }
 
-export function isPointInSquareBounds(
-  latitude: number,
-  longitude: number,
-  bounds: SquareBounds,
-) {
+export function isPointInSquareBounds(latitude: number, longitude: number, bounds: SquareBounds) {
   return (
     latitude <= bounds.north &&
     latitude >= bounds.south &&
@@ -89,6 +85,14 @@ export function listTilesForBounds(bounds: SquareBounds, zoom: number): TileCoor
   }
 
   return tiles;
+}
+
+export function estimateTileCount(bounds: SquareBounds, minZoom: number, maxZoom: number) {
+  let total = 0;
+  for (let zoom = minZoom; zoom <= maxZoom; zoom += 1) {
+    total += listTilesForBounds(bounds, zoom).length;
+  }
+  return total;
 }
 
 export function sectorBoundsFromCenter(

@@ -14,6 +14,7 @@ import {
   findFeatureGapsToolOutputSchema,
   getProjectContextToolOutputSchema,
   getRenderedMapViewToolOutputSchema,
+  getMapSectorViewToolOutputSchema,
   listFeatureSegmentsToolOutputSchema,
   mergeFeatureSegmentsToolInputSchema,
   mergeFeatureSegmentsToolOutputSchema,
@@ -40,11 +41,28 @@ const getMapProjectContextToolDefinition = toolDefinition({
   outputSchema: getProjectContextToolOutputSchema,
 });
 
+const getMapSectorViewInputSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  zoom: z.number().int().min(10).max(20).optional(),
+  width: z.number().int().min(128).max(2048).optional(),
+  height: z.number().int().min(128).max(2048).optional(),
+  style: z.enum(["outline", "standard", "satellite"]).optional(),
+});
+
 const getMapRenderedViewToolDefinition = toolDefinition({
   name: "get_map_rendered_view",
   description:
     "Load the latest client-captured PDF and map pane PNG snapshots with coordinate metadata for the active map.",
   outputSchema: getRenderedMapViewToolOutputSchema,
+});
+
+const getMapSectorViewToolDefinition = toolDefinition({
+  name: "get_map_sector_view",
+  description:
+    "Load a stitched PNG map view centered on WGS84 coordinates inside the configured square bounds. Tiles are fetched on demand.",
+  inputSchema: getMapSectorViewInputSchema,
+  outputSchema: getMapSectorViewToolOutputSchema,
 });
 
 const listTrailSegmentsToolDefinition = toolDefinition({
@@ -98,6 +116,7 @@ function buildSystemPrompt(mapId: number): string {
     "Rules:",
     "- Always call get_map_project_context before giving map-specific advice.",
     "- Call get_map_rendered_view when you need to inspect the PDF or map visually.",
+    "- Call get_map_sector_view to pan around inside the cached square map region.",
     "- Ground answers in tool results. Do not invent coordinates, trails, or reference points.",
     "- Trail segments are stored as draft LineStrings until a human accepts them.",
     "- Use apply_trail_patch only when the user explicitly asks to create, update, or delete a trail segment.",
@@ -134,6 +153,13 @@ export async function streamMapAgentChat(input: {
 
   const getMapRenderedView = getMapRenderedViewToolDefinition.server(async () =>
     client.project.renderedMapView({ mapId }),
+  );
+
+  const getMapSectorView = getMapSectorViewToolDefinition.server(async (toolInput) =>
+    client.tileCache.sectorView({
+      mapId,
+      ...toolInput,
+    }),
   );
 
   const listTrailSegments = listTrailSegmentsToolDefinition.server(async () =>
@@ -188,6 +214,7 @@ export async function streamMapAgentChat(input: {
     tools: [
       getMapProjectContext,
       getMapRenderedView,
+      getMapSectorView,
       listTrailSegments,
       findTrailGaps,
       mergeTrailSegments,

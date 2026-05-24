@@ -3,8 +3,7 @@ import "@tanstack/react-start/server-only";
 import { listControlPointsForUser } from "@/data-access-layer/control-points/control-points.server";
 import { assertMapBelongsToUser } from "@/data-access-layer/maps/maps.server";
 import {
-  computeResidualStats,
-  fitAffineTransform,
+  fitAffineTransformRobust,
   lonLatToPdfPixel,
   pdfPixelToLonLat,
   type AffineCoefficients,
@@ -24,20 +23,28 @@ import type {
 
 type GeoreferenceRecord = typeof georeferenceTable.$inferSelect;
 
+const ROBUST_GEOREFERENCE_METHOD = "affine-robust";
+
 function toReadyViewModel(
   mapId: number,
   row: GeoreferenceRecord,
-  perPointErrors: GeoreferenceReadyViewModel["perPointErrors"],
+  fit: {
+    inlierIds: number[];
+    excludedIds: number[];
+    perPointErrors: GeoreferenceReadyViewModel["perPointErrors"];
+  },
 ): GeoreferenceReadyViewModel {
   return {
     mapId,
     ready: true,
-    method: "affine",
+    method: ROBUST_GEOREFERENCE_METHOD,
     controlPointCount: row.controlPointCount,
+    inlierControlPointCount: fit.inlierIds.length,
+    excludedControlPointIds: fit.excludedIds,
     residualErrorMeters: row.residualErrorMeters,
     maxErrorMeters: row.maxErrorMeters,
     computedAt: row.computedAt.toISOString(),
-    perPointErrors,
+    perPointErrors: fit.perPointErrors,
   };
 }
 
@@ -66,6 +73,32 @@ async function getStoredCoefficients(userId: string, mapId: number) {
   return row ?? null;
 }
 
+function buildControlPointPairs(
+  controlPoints: Awaited<ReturnType<typeof listControlPointsForUser>>,
+) {
+  return controlPoints.map((point) => ({
+    id: point.id,
+    imageX: point.imageX,
+    imageY: point.imageY,
+    longitude: point.longitude,
+    latitude: point.latitude,
+  }));
+}
+
+function computeRobustFit(pairs: ReturnType<typeof buildControlPointPairs>) {
+  const fit = fitAffineTransformRobust(pairs);
+  return {
+    coefficients: fit.coefficients,
+    inlierIds: fit.inlierIds,
+    excludedIds: fit.excludedIds,
+    inlierStats: fit.inlierStats,
+    perPointErrors: fit.perPointErrors.map((point) => ({
+      controlPointId: point.controlPointId,
+      errorMeters: point.errorMeters,
+    })),
+  };
+}
+
 export async function getGeoreferenceForUser(
   userId: string,
   mapId: number,
@@ -77,31 +110,18 @@ export async function getGeoreferenceForUser(
   }
 
   const stored = await getStoredCoefficients(userId, mapId);
-  if (!stored || stored.controlPointCount !== controlPoints.length) {
+  if (
+    !stored ||
+    stored.controlPointCount !== controlPoints.length ||
+    stored.method !== ROBUST_GEOREFERENCE_METHOD
+  ) {
     return computeGeoreferenceForUser(userId, mapId);
   }
 
-  const pairs = controlPoints.map((point) => ({
-    id: point.id,
-    imageX: point.imageX,
-    imageY: point.imageY,
-    longitude: point.longitude,
-    latitude: point.latitude,
-  }));
+  const pairs = buildControlPointPairs(controlPoints);
+  const fit = computeRobustFit(pairs);
 
-  const residuals = computeResidualStats(
-    pairs.map(({ id: _id, ...pair }) => pair),
-    stored.coefficients,
-  );
-
-  return toReadyViewModel(
-    mapId,
-    stored,
-    pairs.map((point, index) => ({
-      controlPointId: point.id,
-      errorMeters: residuals.perPointErrorsMeters[index] ?? 0,
-    })),
-  );
+  return toReadyViewModel(mapId, stored, fit);
 }
 
 export async function computeGeoreferenceForUser(
@@ -116,59 +136,43 @@ export async function computeGeoreferenceForUser(
     return toNotReadyViewModel(mapId, controlPoints.length, "insufficient_control_points");
   }
 
-  const pairs = controlPoints.map((point) => ({
-    id: point.id,
-    imageX: point.imageX,
-    imageY: point.imageY,
-    longitude: point.longitude,
-    latitude: point.latitude,
-  }));
+  const pairs = buildControlPointPairs(controlPoints);
 
-  let coefficients: AffineCoefficients;
+  let fit: ReturnType<typeof computeRobustFit>;
   try {
-    coefficients = fitAffineTransform(pairs.map(({ id: _id, ...pair }) => pair));
+    fit = computeRobustFit(pairs);
   } catch {
     await db.delete(georeferenceTable).where(eq(georeferenceTable.mapId, mapId));
     return toNotReadyViewModel(mapId, controlPoints.length, "singular_transform");
   }
 
-  const residuals = computeResidualStats(
-    pairs.map(({ id: _id, ...pair }) => pair),
-    coefficients,
-  );
+  const coefficients: AffineCoefficients = fit.coefficients;
 
   const [row] = await db
     .insert(georeferenceTable)
     .values({
       mapId,
-      method: "affine",
+      method: ROBUST_GEOREFERENCE_METHOD,
       coefficients,
       controlPointCount: controlPoints.length,
-      residualErrorMeters: residuals.rmseMeters,
-      maxErrorMeters: residuals.maxErrorMeters,
+      residualErrorMeters: fit.inlierStats.rmseMeters,
+      maxErrorMeters: fit.inlierStats.maxErrorMeters,
       computedAt: new Date(),
     })
     .onConflictDoUpdate({
       target: georeferenceTable.mapId,
       set: {
-        method: "affine",
+        method: ROBUST_GEOREFERENCE_METHOD,
         coefficients,
         controlPointCount: controlPoints.length,
-        residualErrorMeters: residuals.rmseMeters,
-        maxErrorMeters: residuals.maxErrorMeters,
+        residualErrorMeters: fit.inlierStats.rmseMeters,
+        maxErrorMeters: fit.inlierStats.maxErrorMeters,
         computedAt: new Date(),
       },
     })
     .returning();
 
-  return toReadyViewModel(
-    mapId,
-    row,
-    pairs.map((point, index) => ({
-      controlPointId: point.id,
-      errorMeters: residuals.perPointErrorsMeters[index] ?? 0,
-    })),
-  );
+  return toReadyViewModel(mapId, row, fit);
 }
 
 export async function pdfPixelToLonLatForUser(

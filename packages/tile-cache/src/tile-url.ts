@@ -1,11 +1,9 @@
-import type { TileStyle } from "./types";
+import type { TileStyle } from "./types.js";
 
 const STYLE_ATTRIBUTION: Record<TileStyle, string> = {
-  outline:
-    "© OpenStreetMap © CARTO — tiles cached for offline agent prototype use",
+  outline: "© OpenStreetMap © CARTO — tiles cached for offline agent prototype use",
   standard: "© OpenStreetMap contributors — tiles cached for offline agent prototype use",
-  satellite:
-    "© Esri — tiles cached for offline agent prototype use",
+  satellite: "© Esri — tiles cached for offline agent prototype use",
 };
 
 export function getTileAttribution(style: TileStyle) {

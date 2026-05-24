@@ -28,6 +28,7 @@ import { Route as DashboardMapsNewRouteImport } from './routes/_dashboard/maps/n
 import { Route as DashboardMapsIdIndexRouteImport } from './routes/_dashboard/maps/$id/index'
 import { Route as ApiAgenticRpcSplatRouteImport } from './routes/api/agentic/rpc/$'
 import { Route as ApiAgenticOpenapiJsonRouteImport } from './routes/api/agentic/openapi.json'
+import { Route as ApiTilesMapIdStyleZXYPngRouteImport } from './routes/api/tiles/$mapId/$style/$z/$x/$y.png'
 
 const AuthLayoutRoute = AuthLayoutRouteImport.update({
   id: '/auth',
@@ -123,6 +124,12 @@ const ApiAgenticOpenapiJsonRoute = ApiAgenticOpenapiJsonRouteImport.update({
   path: '/api/agentic/openapi/json',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTilesMapIdStyleZXYPngRoute =
+  ApiTilesMapIdStyleZXYPngRouteImport.update({
+    id: '/api/tiles/$mapId/$style/$z/$x/$y/png',
+    path: '/api/tiles/$mapId/$style/$z/$x/$y/png',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -143,6 +150,7 @@ export interface FileRoutesByFullPath {
   '/api/agentic/openapi/json': typeof ApiAgenticOpenapiJsonRoute
   '/api/agentic/rpc/$': typeof ApiAgenticRpcSplatRoute
   '/maps/$id/': typeof DashboardMapsIdIndexRoute
+  '/api/tiles/$mapId/$style/$z/$x/$y/png': typeof ApiTilesMapIdStyleZXYPngRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -161,6 +169,7 @@ export interface FileRoutesByTo {
   '/api/agentic/openapi/json': typeof ApiAgenticOpenapiJsonRoute
   '/api/agentic/rpc/$': typeof ApiAgenticRpcSplatRoute
   '/maps/$id': typeof DashboardMapsIdIndexRoute
+  '/api/tiles/$mapId/$style/$z/$x/$y/png': typeof ApiTilesMapIdStyleZXYPngRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -183,6 +192,7 @@ export interface FileRoutesById {
   '/api/agentic/openapi/json': typeof ApiAgenticOpenapiJsonRoute
   '/api/agentic/rpc/$': typeof ApiAgenticRpcSplatRoute
   '/_dashboard/maps/$id/': typeof DashboardMapsIdIndexRoute
+  '/api/tiles/$mapId/$style/$z/$x/$y/png': typeof ApiTilesMapIdStyleZXYPngRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -205,6 +215,7 @@ export interface FileRouteTypes {
     | '/api/agentic/openapi/json'
     | '/api/agentic/rpc/$'
     | '/maps/$id/'
+    | '/api/tiles/$mapId/$style/$z/$x/$y/png'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -223,6 +234,7 @@ export interface FileRouteTypes {
     | '/api/agentic/openapi/json'
     | '/api/agentic/rpc/$'
     | '/maps/$id'
+    | '/api/tiles/$mapId/$style/$z/$x/$y/png'
   id:
     | '__root__'
     | '/'
@@ -244,6 +256,7 @@ export interface FileRouteTypes {
     | '/api/agentic/openapi/json'
     | '/api/agentic/rpc/$'
     | '/_dashboard/maps/$id/'
+    | '/api/tiles/$mapId/$style/$z/$x/$y/png'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -257,6 +270,7 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAgenticOpenapiJsonRoute: typeof ApiAgenticOpenapiJsonRoute
   ApiAgenticRpcSplatRoute: typeof ApiAgenticRpcSplatRoute
+  ApiTilesMapIdStyleZXYPngRoute: typeof ApiTilesMapIdStyleZXYPngRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -394,6 +408,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAgenticOpenapiJsonRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/tiles/$mapId/$style/$z/$x/$y/png': {
+      id: '/api/tiles/$mapId/$style/$z/$x/$y/png'
+      path: '/api/tiles/$mapId/$style/$z/$x/$y/png'
+      fullPath: '/api/tiles/$mapId/$style/$z/$x/$y/png'
+      preLoaderRoute: typeof ApiTilesMapIdStyleZXYPngRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -455,6 +476,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAgenticOpenapiJsonRoute: ApiAgenticOpenapiJsonRoute,
   ApiAgenticRpcSplatRoute: ApiAgenticRpcSplatRoute,
+  ApiTilesMapIdStyleZXYPngRoute: ApiTilesMapIdStyleZXYPngRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
