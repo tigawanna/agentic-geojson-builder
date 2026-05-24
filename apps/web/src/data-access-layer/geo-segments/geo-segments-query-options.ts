@@ -6,8 +6,9 @@ import {
   createGeoSegmentFn,
   deleteGeoSegmentFn,
   listGeoSegmentsFn,
+  updateGeoSegmentFn,
 } from "./geo-segments.functions";
-import type { CreateGeoSegmentInput } from "./geo-segments.types";
+import type { CreateGeoSegmentInput, UpdateGeoSegmentInput } from "./geo-segments.types";
 
 export type {
   GeoSegmentViewModel,
@@ -55,6 +56,22 @@ export const deleteGeoSegmentMutationOptions = () =>
     },
     onError: (err: unknown) => {
       toast.error("Failed to remove trail segment", {
+        description: unwrapUnknownError(err).message,
+      });
+    },
+  });
+
+export const updateGeoSegmentMutationOptions = () =>
+  mutationOptions({
+    mutationFn: (input: UpdateGeoSegmentInput) => updateGeoSegmentFn({ data: input }),
+    onSuccess: (segment, __, ___, ctx) => {
+      void ctx.client.invalidateQueries({
+        queryKey: [queryKeyPrefixes.geoSegments, segment.mapId],
+      });
+      toast.success("Trail segment updated");
+    },
+    onError: (err: unknown) => {
+      toast.error("Failed to update trail segment", {
         description: unwrapUnknownError(err).message,
       });
     },

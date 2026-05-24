@@ -38,6 +38,15 @@ export type CreateGeoSegmentInput = {
   confidence?: number;
 };
 
+export type UpdateGeoSegmentInput = {
+  mapId: number;
+  segmentId: number;
+  segmentGroupId?: string;
+  name?: string;
+  pathKind?: GeoSegmentPathKind;
+  geometry: StoredLineStringGeometry;
+};
+
 export type ApplyFeaturePatchInput = {
   mapId: number;
   op: "upsert_segment" | "delete_segment";

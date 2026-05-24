@@ -135,6 +135,46 @@ export async function deleteGeoSegmentForUser(userId: string, mapId: number, seg
     .where(and(eq(geoSegmentTable.id, segmentId), eq(geoSegmentTable.mapId, mapId)));
 }
 
+export async function updateGeoSegmentForUser(
+  userId: string,
+  input: {
+    mapId: number;
+    segmentId: number;
+    segmentGroupId?: string;
+    name?: string;
+    pathKind?: GeoSegmentPathKind;
+    geometry: StoredLineStringGeometry;
+  },
+) {
+  await assertMapBelongsToUser(userId, input.mapId);
+
+  const [existing] = await db
+    .select()
+    .from(geoSegmentTable)
+    .where(and(eq(geoSegmentTable.id, input.segmentId), eq(geoSegmentTable.mapId, input.mapId)));
+
+  if (!existing) {
+    throw new Error("Segment not found.");
+  }
+
+  const geometry = await normalizeGeometryToWgs84(userId, input.mapId, input.geometry, "wgs84");
+
+  const [row] = await db
+    .update(geoSegmentTable)
+    .set({
+      segmentGroupId: input.segmentGroupId ?? existing.segmentGroupId,
+      name: input.name !== undefined ? input.name || null : existing.name,
+      pathKind: input.pathKind ?? existing.pathKind,
+      geometryJson: geometry,
+      coordinateSpace: "wgs84",
+      updatedAt: new Date(),
+    })
+    .where(and(eq(geoSegmentTable.id, input.segmentId), eq(geoSegmentTable.mapId, input.mapId)))
+    .returning();
+
+  return toViewModel(row);
+}
+
 export async function applyFeaturePatchForUser(userId: string, input: ApplyFeaturePatchInput) {
   await assertMapBelongsToUser(userId, input.mapId);
 

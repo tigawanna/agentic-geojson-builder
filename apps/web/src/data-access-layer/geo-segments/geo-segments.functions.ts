@@ -50,6 +50,15 @@ const deleteGeoSegmentInputSchema = z.object({
   segmentId: z.number().int().positive(),
 });
 
+const updateGeoSegmentInputSchema = z.object({
+  mapId: z.number().int().positive(),
+  segmentId: z.number().int().positive(),
+  segmentGroupId: z.string().trim().min(1).max(128).optional(),
+  name: z.string().trim().max(255).optional(),
+  pathKind: pathKindSchema.optional(),
+  geometry: lineStringGeometrySchema,
+});
+
 export const listGeoSegmentsFn = createServerFn({ method: "GET" })
   .middleware([requireViewerMiddleware])
   .inputValidator((input: z.infer<typeof mapIdSchema>) => mapIdSchema.parse(input))
@@ -80,4 +89,14 @@ export const deleteGeoSegmentFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { deleteGeoSegmentForUser } = await import("./geo-segments.server");
     await deleteGeoSegmentForUser(context.viewer.user.id, data.mapId, data.segmentId);
+  });
+
+export const updateGeoSegmentFn = createServerFn({ method: "POST" })
+  .middleware([requireViewerMiddleware])
+  .inputValidator((input: z.infer<typeof updateGeoSegmentInputSchema>) =>
+    updateGeoSegmentInputSchema.parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { updateGeoSegmentForUser } = await import("./geo-segments.server");
+    return updateGeoSegmentForUser(context.viewer.user.id, data);
   });
