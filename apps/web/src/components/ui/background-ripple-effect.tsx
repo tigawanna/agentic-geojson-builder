@@ -171,8 +171,8 @@ const DivGrid = ({
           <div
             key={idx}
             className={cn(
-              "cell relative border opacity-50 shadow-[0px_0px_20px_1px_var(--cell-shadow-color)_inset] transition-opacity duration-150 will-change-transform hover:opacity-80 dark:opacity-40 dark:shadow-[0px_0px_40px_1px_var(--cell-shadow-color)_inset] dark:hover:opacity-60",
-              clickedCell && "animate-cell-ripple fill-mode-[none]",
+              "cell relative border opacity-50 shadow-[0px_0px_20px_1px_var(--cell-shadow-color)_inset] transition-opacity duration-150 will-change-transform hover:opacity-80 dark:opacity-40 dark:shadow-[0px_0px_40px_1px_var(--cell-shadow-color)_inset] hover:dark:opacity-60",
+              clickedCell && "animate-cell-ripple fill-mode-none",
               !interactive && "pointer-events-none",
             )}
             style={{

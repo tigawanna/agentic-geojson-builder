@@ -24,8 +24,8 @@ import {
   type GeoSegmentPathKind,
   type GeoSegmentViewModel,
 } from "@/data-access-layer/geo-segments/geo-segments-query-options";
-import { saveRenderedMapViewFn } from "@/data-access-layer/map-snapshots/map-snapshots.functions";
 import { getGeoreferenceQueryOptions } from "@/data-access-layer/georeference/georeference-query-options";
+import { saveRenderedMapViewFn } from "@/data-access-layer/map-snapshots/map-snapshots.functions";
 import {
   getMapWorkspaceQueryOptions,
   loadMapPdfFile,
@@ -38,19 +38,7 @@ import {
   getMapTileCacheQueryOptions,
   setMapTileCacheBoundsMutationOptions,
 } from "@/data-access-layer/tile-cache/tile-cache-query-options";
-import {
-  copyMapCoordinates,
-  createBaseLayer,
-  createMapHandle,
-  DEFAULT_MAP_VIEWPORT,
-  getLocalTileUrl,
-  type BaseMapStyle,
-  type MapHandle,
-} from "./map-handle";
-import { estimateTileCount, squareBoundsFromCenter } from "@repo/tile-cache/tile-math";
-import { segmentGroupColor, lineStringToLatLngs } from "./segment-utils";
-import { MapAiPanel } from "./MapAiPanel";
-import { WorkspaceScreenshotDialog } from "./WorkspaceScreenshotDialog";
+import { useDebouncedValue } from "@/hooks/use-debouncer";
 import { buildChatScreenshotBlob } from "@/lib/rendered-map-view/build-chat-screenshot";
 import {
   capturePdfPanePngBlob,
@@ -58,13 +46,14 @@ import {
 } from "@/lib/rendered-map-view/capture-pdf-pane";
 import { captureWorkspaceView } from "@/lib/rendered-map-view/capture-workspace-view";
 import { PDF_RENDER_SCALE } from "@/lib/rendered-map-view/constants";
-import { useDebouncedValue } from "@/hooks/use-debouncer";
 import { cn } from "@/lib/utils";
-import { unwrapUnknownError } from "@/utils/errors";
 import { downloadJsonFile, sanitizeDownloadFilename } from "@/utils/download-json";
+import { unwrapUnknownError } from "@/utils/errors";
 import { parseMapCoordinates } from "@/utils/parse-map-coordinates";
+import { estimateTileCount, squareBoundsFromCenter } from "@repo/tile-cache/tile-math";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { toast } from "sonner";
+import type * as Leaflet from "leaflet";
+import "leaflet/dist/leaflet.css";
 import {
   Bot,
   Camera,
@@ -80,11 +69,22 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
 import type { PDFDocumentLoadingTask, RenderTask } from "pdfjs-dist";
 import pdfWorkerUrl from "pdfjs-dist/build/pdf.worker.mjs?url";
-import "leaflet/dist/leaflet.css";
-import type * as Leaflet from "leaflet";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import {
+  copyMapCoordinates,
+  createBaseLayer,
+  createMapHandle,
+  DEFAULT_MAP_VIEWPORT,
+  getLocalTileUrl,
+  type BaseMapStyle,
+  type MapHandle,
+} from "./map-handle";
+import { MapAiPanel } from "./MapAiPanel";
+import { lineStringToLatLngs, segmentGroupColor } from "./segment-utils";
+import { WorkspaceScreenshotDialog } from "./WorkspaceScreenshotDialog";
 
 type PdfViewTransform = {
   scale: number;
@@ -2218,7 +2218,7 @@ function LeafletMapPane({
   return (
     <div className="absolute inset-0 z-0">
       <div ref={containerRef} className="absolute inset-0" data-test="leaflet-map" />
-      <div className="pointer-events-none absolute bottom-8 left-3 z-[500] rounded-md border border-base-content/10 bg-base-100/90 px-2 py-1 text-xs text-base-content/70 shadow-sm backdrop-blur">
+      <div className="pointer-events-none absolute bottom-8 left-3 z-500 rounded-md border border-base-content/10 bg-base-100/90 px-2 py-1 text-xs text-base-content/70 shadow-sm backdrop-blur">
         {traceMode
           ? "Ctrl+click to add · drag vertices to adjust · drag map to pan"
           : canPickMapPoint

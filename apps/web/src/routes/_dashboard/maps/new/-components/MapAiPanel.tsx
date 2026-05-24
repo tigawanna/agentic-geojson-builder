@@ -122,7 +122,7 @@ export function MapAiPanel({ mapId, mapName, onBeforeSend }: MapAiPanelProps) {
       </Card>
 
       <Card className="min-h-0 flex-1">
-        <CardContent className="flex h-full min-h-[24rem] flex-col gap-4 p-4">
+        <CardContent className="flex h-full min-h-96 flex-col gap-4 p-4">
           <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
             {messages.length === 0 ? (
               <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-base-content/15 px-6 py-10 text-center text-sm text-base-content/60">
