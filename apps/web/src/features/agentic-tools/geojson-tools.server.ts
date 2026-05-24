@@ -10,6 +10,7 @@ import type { ControlPointViewModel } from "@/data-access-layer/control-points/c
 import {
   applyFeaturePatchForUser,
   deleteGeoSegmentForUser,
+  exportGeoJsonForUser,
   listGeoSegmentsForUser,
 } from "@/data-access-layer/geo-segments/geo-segments.server";
 import type { GeoSegmentViewModel } from "@/data-access-layer/geo-segments/geo-segments.types";
@@ -262,4 +263,15 @@ export async function applyFeaturePatchTool(
     op: "upsert_segment" as const,
     segment: serializeGeoSegment(result.segment),
   };
+}
+
+export async function exportGeoJsonTool(
+  context: ToolContext,
+  input: {
+    mapId: number;
+    segmentGroupId?: string;
+    statuses?: Array<"draft" | "needs-review" | "accepted" | "rejected">;
+  },
+) {
+  return exportGeoJsonForUser(context.userId, input);
 }

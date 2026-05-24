@@ -14,6 +14,8 @@ import {
   getProjectContextToolOutputSchema,
   applyFeaturePatchToolInputSchema,
   applyFeaturePatchToolOutputSchema,
+  exportGeoJsonToolInputSchema,
+  exportGeoJsonToolOutputSchema,
   listFeatureSegmentsToolOutputSchema,
   listControlPointsToolOutputSchema,
   listMapsToolInputSchema,
@@ -43,6 +45,7 @@ import {
   createMapTool,
   deleteControlPointTool,
   deleteMapTool,
+  exportGeoJsonTool,
   getGeoreferenceTool,
   getMapWorkspaceTool,
   getProjectContextTool,
@@ -301,6 +304,19 @@ const applyFeaturePatchProcedure = geojsonUpdateProcedure
   .output(applyFeaturePatchToolOutputSchema)
   .handler(async ({ context, input }) => applyFeaturePatchTool({ userId: context.userId }, input));
 
+const exportGeoJsonProcedure = geojsonReadProcedure
+  .route({
+    method: "POST",
+    path: "/geojson/export",
+    summary: "Export GeoJSON",
+    description: "Build a FeatureCollection from saved trail segments.",
+    tags: ["Agentic GeoJSON"],
+    successStatus: 200,
+  })
+  .input(exportGeoJsonToolInputSchema)
+  .output(exportGeoJsonToolOutputSchema)
+  .handler(async ({ context, input }) => exportGeoJsonTool({ userId: context.userId }, input));
+
 export const geojsonAgenticRouter = {
   maps: {
     list: listMapsProcedure,
@@ -329,6 +345,9 @@ export const geojsonAgenticRouter = {
   featureSegments: {
     list: listFeatureSegmentsProcedure,
     patch: applyFeaturePatchProcedure,
+  },
+  export: {
+    geojson: exportGeoJsonProcedure,
   },
 };
 

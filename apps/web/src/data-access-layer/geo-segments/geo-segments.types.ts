@@ -47,6 +47,37 @@ export type UpdateGeoSegmentInput = {
   geometry: StoredLineStringGeometry;
 };
 
+export type ExportGeoJsonInput = {
+  mapId: number;
+  segmentGroupId?: string;
+  statuses?: GeoSegmentStatus[];
+};
+
+export type ExportGeoJsonResult = {
+  mapId: number;
+  mapName: string | null;
+  featureCount: number;
+  geojson: {
+    type: "FeatureCollection";
+    features: Array<{
+      type: "Feature";
+      id: number;
+      geometry: StoredLineStringGeometry;
+      properties: {
+        id: string;
+        name?: string;
+        pathKind: GeoSegmentPathKind;
+        source: "manual-trace";
+        status: GeoSegmentStatus;
+        confidence?: number;
+        segmentGroupId: string;
+        segmentIndex: number;
+        mapId: number;
+      };
+    }>;
+  };
+};
+
 export type ApplyFeaturePatchInput = {
   mapId: number;
   op: "upsert_segment" | "delete_segment";

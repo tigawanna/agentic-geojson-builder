@@ -8,6 +8,7 @@ import {
   createControlPointToolInputSchema,
   createMapToolInputSchema,
   deleteControlPointToolInputSchema,
+  exportGeoJsonToolInputSchema,
   listMapsToolInputSchema,
   lonLatToolInputSchema,
   mapIdInputSchema,
@@ -199,6 +200,16 @@ export function createGeojsonMcpServer(userId: string): McpServer {
       inputSchema: applyFeaturePatchToolInputSchema.shape,
     },
     async (input) => jsonToolResult(await client.featureSegments.patch(input)),
+  );
+
+  server.registerTool(
+    "export_geojson",
+    {
+      title: "Export GeoJSON",
+      description: "Export saved trail segments as a GeoJSON FeatureCollection.",
+      inputSchema: exportGeoJsonToolInputSchema.shape,
+    },
+    async (input) => jsonToolResult(await client.export.geojson(input)),
   );
 
   return server;

@@ -36,6 +36,8 @@ const pathKindSchema = z.enum([
   "unknown",
 ]);
 
+const segmentStatusSchema = z.enum(["draft", "needs-review", "accepted", "rejected"]);
+
 const createGeoSegmentInputSchema = z.object({
   mapId: z.number().int().positive(),
   segmentGroupId: z.string().trim().min(1).max(128),
@@ -57,6 +59,12 @@ const updateGeoSegmentInputSchema = z.object({
   name: z.string().trim().max(255).optional(),
   pathKind: pathKindSchema.optional(),
   geometry: lineStringGeometrySchema,
+});
+
+const exportGeoJsonInputSchema = z.object({
+  mapId: z.number().int().positive(),
+  segmentGroupId: z.string().trim().min(1).max(128).optional(),
+  statuses: z.array(segmentStatusSchema).optional(),
 });
 
 export const listGeoSegmentsFn = createServerFn({ method: "GET" })
@@ -99,4 +107,14 @@ export const updateGeoSegmentFn = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { updateGeoSegmentForUser } = await import("./geo-segments.server");
     return updateGeoSegmentForUser(context.viewer.user.id, data);
+  });
+
+export const exportGeoJsonFn = createServerFn({ method: "POST" })
+  .middleware([requireViewerMiddleware])
+  .inputValidator((input: z.infer<typeof exportGeoJsonInputSchema>) =>
+    exportGeoJsonInputSchema.parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { exportGeoJsonForUser } = await import("./geo-segments.server");
+    return exportGeoJsonForUser(context.viewer.user.id, data);
   });

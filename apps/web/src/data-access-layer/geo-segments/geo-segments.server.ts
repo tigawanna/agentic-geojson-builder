@@ -1,8 +1,12 @@
 import "@tanstack/react-start/server-only";
 
 import { pdfPixelToLonLatForUser } from "@/data-access-layer/georeference/georeference.server";
-import { assertMapBelongsToUser } from "@/data-access-layer/maps/maps.server";
+import {
+  assertMapBelongsToUser,
+  getMapWorkspaceForUser,
+} from "@/data-access-layer/maps/maps.server";
 import { db } from "@/lib/drizzle/client.server";
+import { segmentsToFeatureCollection } from "@/lib/geojson/export-segments";
 import {
   geoSegmentTable,
   type GeoSegmentRecord,
@@ -12,6 +16,7 @@ import { and, asc, eq, max } from "drizzle-orm";
 import type {
   ApplyFeaturePatchInput,
   CreateGeoSegmentInput,
+  ExportGeoJsonResult,
   GeoSegmentCoordinateSpace,
   GeoSegmentPathKind,
   GeoSegmentStatus,
@@ -173,6 +178,34 @@ export async function updateGeoSegmentForUser(
     .returning();
 
   return toViewModel(row);
+}
+
+export async function exportGeoJsonForUser(
+  userId: string,
+  input: {
+    mapId: number;
+    segmentGroupId?: string;
+    statuses?: GeoSegmentStatus[];
+  },
+): Promise<ExportGeoJsonResult> {
+  await assertMapBelongsToUser(userId, input.mapId);
+
+  const allowedStatuses = input.statuses ?? ["draft", "needs-review", "accepted"];
+  let segments = await listGeoSegmentsForUser(userId, input.mapId);
+  segments = segments.filter((segment) => allowedStatuses.includes(segment.status));
+
+  if (input.segmentGroupId) {
+    segments = segments.filter((segment) => segment.segmentGroupId === input.segmentGroupId);
+  }
+
+  const map = await getMapWorkspaceForUser(userId, input.mapId);
+
+  return {
+    mapId: input.mapId,
+    mapName: map?.name ?? null,
+    featureCount: segments.length,
+    geojson: segmentsToFeatureCollection(segments),
+  };
 }
 
 export async function applyFeaturePatchForUser(userId: string, input: ApplyFeaturePatchInput) {

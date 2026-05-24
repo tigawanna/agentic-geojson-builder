@@ -18,6 +18,7 @@ import {
 import {
   createGeoSegmentMutationOptions,
   deleteGeoSegmentMutationOptions,
+  exportGeoJsonMutationOptions,
   listGeoSegmentsQueryOptions,
   updateGeoSegmentMutationOptions,
   type GeoSegmentPathKind,
@@ -40,13 +41,18 @@ import {
   type MapHandle,
 } from "./map-handle";
 import { segmentGroupColor, lineStringToLatLngs } from "./segment-utils";
+import { MapAiPanel } from "./MapAiPanel";
 import { useDebouncedValue } from "@/hooks/use-debouncer";
 import { cn } from "@/lib/utils";
 import { unwrapUnknownError } from "@/utils/errors";
+import { downloadJsonFile, sanitizeDownloadFilename } from "@/utils/download-json";
 import { parseMapCoordinates } from "@/utils/parse-map-coordinates";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
+  Bot,
   Crosshair,
+  Download,
   MapPin,
   Pencil,
   RotateCcw,
@@ -177,6 +183,7 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const [referenceMode, setReferenceMode] = useState(false);
   const [traceMode, setTraceMode] = useState(false);
   const [editingSegmentId, setEditingSegmentId] = useState<number | null>(null);
@@ -229,6 +236,7 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
   const updateControlPointMutation = useMutation(updateControlPointMutationOptions());
   const createGeoSegmentMutation = useMutation(createGeoSegmentMutationOptions());
   const updateGeoSegmentMutation = useMutation(updateGeoSegmentMutationOptions());
+  const exportGeoJsonMutation = useMutation(exportGeoJsonMutationOptions());
   const deleteGeoSegmentMutation = useMutation(deleteGeoSegmentMutationOptions());
   const savePdfMutation = useMutation(saveMapPdfMutationOptions());
   const saveWorkspaceMutation = useMutation(updateMapWorkspaceMutationOptions());
@@ -430,6 +438,28 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
 
   function handleDeleteGeoSegment(segmentId: number) {
     deleteGeoSegmentMutation.mutate({ mapId, segmentId });
+  }
+
+  function handleExportGeoJson() {
+    exportGeoJsonMutation.mutate(
+      { mapId },
+      {
+        onSuccess: (result) => {
+          if (result.featureCount === 0) {
+            toast.error("Nothing to export", {
+              description: "Trace at least one trail segment before exporting.",
+            });
+            return;
+          }
+
+          const baseName = sanitizeDownloadFilename(result.mapName ?? mapQuery.data?.name ?? "map");
+          downloadJsonFile(`${baseName}.geojson`, result.geojson);
+          toast.success(
+            `Exported ${result.featureCount} trail${result.featureCount === 1 ? "" : "s"}`,
+          );
+        },
+      },
+    );
   }
 
   function applyMapPinFromInput(rawInput: string) {
@@ -715,6 +745,27 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
           >
             <Pencil className="size-4" />
             Trace trail
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={exportGeoJsonMutation.isPending || (geoSegmentsQuery.data?.length ?? 0) === 0}
+            onClick={handleExportGeoJson}
+            data-test="export-geojson"
+          >
+            <Download className="size-4" />
+            Export GeoJSON
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setAssistantOpen(true)}
+            data-test="map-assistant-open"
+          >
+            <Bot className="size-4" />
+            Assistant
           </Button>
           <Button
             type="button"
@@ -1322,6 +1373,23 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
                 </p>
               )}
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={assistantOpen} onOpenChange={setAssistantOpen}>
+        <DialogContent
+          className="flex max-h-[90vh] max-w-3xl flex-col overflow-hidden sm:max-w-3xl"
+          data-test="map-assistant-dialog"
+        >
+          <DialogHeader className="shrink-0">
+            <DialogTitle>Map assistant</DialogTitle>
+            <DialogDescription>
+              Tool-backed chat for georeference review, trail segments, and export guidance.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <MapAiPanel mapId={mapId} mapName={mapQuery.data.name} />
           </div>
         </DialogContent>
       </Dialog>

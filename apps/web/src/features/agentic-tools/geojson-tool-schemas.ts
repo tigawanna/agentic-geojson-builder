@@ -275,6 +275,43 @@ export const getProjectContextToolOutputSchema = z.object({
   segments: z.array(geoSegmentSummarySchema),
 });
 
+export const exportedFeaturePropertiesSchema = z.object({
+  id: z.string(),
+  name: z.string().optional(),
+  pathKind: pathKindSchema,
+  source: z.literal("manual-trace"),
+  status: segmentStatusSchema,
+  confidence: z.number().optional(),
+  segmentGroupId: z.string(),
+  segmentIndex: z.number().int().nonnegative(),
+  mapId: z.number().int().positive(),
+});
+
+export const exportedGeoJsonSchema = z.object({
+  type: z.literal("FeatureCollection"),
+  features: z.array(
+    z.object({
+      type: z.literal("Feature"),
+      id: z.number().int().positive(),
+      geometry: lineStringGeometrySchema,
+      properties: exportedFeaturePropertiesSchema,
+    }),
+  ),
+});
+
+export const exportGeoJsonToolInputSchema = z.object({
+  mapId: z.number().int().positive(),
+  segmentGroupId: z.string().trim().min(1).max(128).optional(),
+  statuses: z.array(segmentStatusSchema).optional(),
+});
+
+export const exportGeoJsonToolOutputSchema = z.object({
+  mapId: z.number().int().positive(),
+  mapName: z.string().nullable(),
+  featureCount: z.number().int().nonnegative(),
+  geojson: exportedGeoJsonSchema,
+});
+
 export type ListMapsToolInput = z.infer<typeof listMapsToolInputSchema>;
 export type CreateMapToolInput = z.infer<typeof createMapToolInputSchema>;
 export type UpdateMapWorkspaceToolInput = z.infer<typeof updateMapWorkspaceToolInputSchema>;

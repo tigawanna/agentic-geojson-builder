@@ -22,6 +22,7 @@ import { Route as DashboardMapsLayoutRouteImport } from './routes/_dashboard/map
 import { Route as DashboardSettingsIndexRouteImport } from './routes/_dashboard/settings/index'
 import { Route as DashboardMapsIndexRouteImport } from './routes/_dashboard/maps/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiAiMapAssistantRouteImport } from './routes/api/ai/map-assistant'
 import { Route as ApiAgenticSplatRouteImport } from './routes/api/agentic/$'
 import { Route as DashboardMapsNewRouteImport } from './routes/_dashboard/maps/new'
 import { Route as DashboardMapsIdIndexRouteImport } from './routes/_dashboard/maps/$id/index'
@@ -92,6 +93,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAiMapAssistantRoute = ApiAiMapAssistantRouteImport.update({
+  id: '/api/ai/map-assistant',
+  path: '/api/ai/map-assistant',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAgenticSplatRoute = ApiAgenticSplatRouteImport.update({
   id: '/api/agentic/$',
   path: '/api/agentic/$',
@@ -130,6 +136,7 @@ export interface FileRoutesByFullPath {
   '/test/': typeof TestIndexRoute
   '/maps/new': typeof DashboardMapsNewRoute
   '/api/agentic/$': typeof ApiAgenticSplatRoute
+  '/api/ai/map-assistant': typeof ApiAiMapAssistantRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/maps/': typeof DashboardMapsIndexRoute
   '/settings/': typeof DashboardSettingsIndexRoute
@@ -147,6 +154,7 @@ export interface FileRoutesByTo {
   '/test': typeof TestIndexRoute
   '/maps/new': typeof DashboardMapsNewRoute
   '/api/agentic/$': typeof ApiAgenticSplatRoute
+  '/api/ai/map-assistant': typeof ApiAiMapAssistantRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/maps': typeof DashboardMapsIndexRoute
   '/settings': typeof DashboardSettingsIndexRoute
@@ -168,6 +176,7 @@ export interface FileRoutesById {
   '/test/': typeof TestIndexRoute
   '/_dashboard/maps/new': typeof DashboardMapsNewRoute
   '/api/agentic/$': typeof ApiAgenticSplatRoute
+  '/api/ai/map-assistant': typeof ApiAiMapAssistantRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_dashboard/maps/': typeof DashboardMapsIndexRoute
   '/_dashboard/settings/': typeof DashboardSettingsIndexRoute
@@ -189,6 +198,7 @@ export interface FileRouteTypes {
     | '/test/'
     | '/maps/new'
     | '/api/agentic/$'
+    | '/api/ai/map-assistant'
     | '/api/auth/$'
     | '/maps/'
     | '/settings/'
@@ -206,6 +216,7 @@ export interface FileRouteTypes {
     | '/test'
     | '/maps/new'
     | '/api/agentic/$'
+    | '/api/ai/map-assistant'
     | '/api/auth/$'
     | '/maps'
     | '/settings'
@@ -226,6 +237,7 @@ export interface FileRouteTypes {
     | '/test/'
     | '/_dashboard/maps/new'
     | '/api/agentic/$'
+    | '/api/ai/map-assistant'
     | '/api/auth/$'
     | '/_dashboard/maps/'
     | '/_dashboard/settings/'
@@ -241,6 +253,7 @@ export interface RootRouteChildren {
   ApiMcpRoute: typeof ApiMcpRoute
   TestIndexRoute: typeof TestIndexRoute
   ApiAgenticSplatRoute: typeof ApiAgenticSplatRoute
+  ApiAiMapAssistantRoute: typeof ApiAiMapAssistantRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiAgenticOpenapiJsonRoute: typeof ApiAgenticOpenapiJsonRoute
   ApiAgenticRpcSplatRoute: typeof ApiAgenticRpcSplatRoute
@@ -339,6 +352,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/ai/map-assistant': {
+      id: '/api/ai/map-assistant'
+      path: '/api/ai/map-assistant'
+      fullPath: '/api/ai/map-assistant'
+      preLoaderRoute: typeof ApiAiMapAssistantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/agentic/$': {
       id: '/api/agentic/$'
       path: '/api/agentic/$'
@@ -431,6 +451,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiMcpRoute: ApiMcpRoute,
   TestIndexRoute: TestIndexRoute,
   ApiAgenticSplatRoute: ApiAgenticSplatRoute,
+  ApiAiMapAssistantRoute: ApiAiMapAssistantRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiAgenticOpenapiJsonRoute: ApiAgenticOpenapiJsonRoute,
   ApiAgenticRpcSplatRoute: ApiAgenticRpcSplatRoute,

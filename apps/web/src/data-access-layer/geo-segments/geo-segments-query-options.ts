@@ -5,10 +5,16 @@ import { unwrapUnknownError } from "@/utils/errors";
 import {
   createGeoSegmentFn,
   deleteGeoSegmentFn,
+  exportGeoJsonFn,
   listGeoSegmentsFn,
   updateGeoSegmentFn,
 } from "./geo-segments.functions";
-import type { CreateGeoSegmentInput, UpdateGeoSegmentInput } from "./geo-segments.types";
+import type {
+  CreateGeoSegmentInput,
+  ExportGeoJsonInput,
+  ExportGeoJsonResult,
+  UpdateGeoSegmentInput,
+} from "./geo-segments.types";
 
 export type {
   GeoSegmentViewModel,
@@ -72,6 +78,16 @@ export const updateGeoSegmentMutationOptions = () =>
     },
     onError: (err: unknown) => {
       toast.error("Failed to update trail segment", {
+        description: unwrapUnknownError(err).message,
+      });
+    },
+  });
+
+export const exportGeoJsonMutationOptions = () =>
+  mutationOptions({
+    mutationFn: (input: ExportGeoJsonInput) => exportGeoJsonFn({ data: input }),
+    onError: (err: unknown) => {
+      toast.error("Failed to export GeoJSON", {
         description: unwrapUnknownError(err).message,
       });
     },
