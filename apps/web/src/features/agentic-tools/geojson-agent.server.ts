@@ -10,13 +10,27 @@ import {
   applyFeaturePatchToolOutputSchema,
   exportGeoJsonToolInputSchema,
   exportGeoJsonToolOutputSchema,
+  findFeatureGapsToolInputSchema,
+  findFeatureGapsToolOutputSchema,
   getProjectContextToolOutputSchema,
   listFeatureSegmentsToolOutputSchema,
+  mergeFeatureSegmentsToolInputSchema,
+  mergeFeatureSegmentsToolOutputSchema,
+  updateFeatureSegmentStatusToolInputSchema,
+  updateFeatureSegmentStatusToolOutputSchema,
 } from "./geojson-tool-schemas";
 
 const exportMapGeoJsonInputSchema = exportGeoJsonToolInputSchema.omit({ mapId: true });
 
 const applyTrailPatchInputSchema = applyFeaturePatchToolInputSchema.omit({ mapId: true });
+
+const findTrailGapsInputSchema = findFeatureGapsToolInputSchema.omit({ mapId: true });
+
+const mergeTrailSegmentsInputSchema = mergeFeatureSegmentsToolInputSchema.omit({ mapId: true });
+
+const updateTrailSegmentStatusInputSchema = updateFeatureSegmentStatusToolInputSchema.omit({
+  mapId: true,
+});
 
 const getMapProjectContextToolDefinition = toolDefinition({
   name: "get_map_project_context",
@@ -46,6 +60,29 @@ const applyTrailPatchToolDefinition = toolDefinition({
   outputSchema: applyFeaturePatchToolOutputSchema,
 });
 
+const findTrailGapsToolDefinition = toolDefinition({
+  name: "find_trail_gaps",
+  description:
+    "Detect endpoint gaps between consecutive segments in the same trail group. Use before merging or export.",
+  inputSchema: findTrailGapsInputSchema,
+  outputSchema: findFeatureGapsToolOutputSchema,
+});
+
+const mergeTrailSegmentsToolDefinition = toolDefinition({
+  name: "merge_trail_segments",
+  description:
+    "Preview merged LineStrings for each trail group without persisting changes. Use mergeGroups on export to write merged GeoJSON.",
+  inputSchema: mergeTrailSegmentsInputSchema,
+  outputSchema: mergeFeatureSegmentsToolOutputSchema,
+});
+
+const updateTrailSegmentStatusToolDefinition = toolDefinition({
+  name: "update_trail_segment_status",
+  description: "Accept, reject, or mark a trail segment for review on the active map.",
+  inputSchema: updateTrailSegmentStatusInputSchema,
+  outputSchema: updateFeatureSegmentStatusToolOutputSchema,
+});
+
 function buildSystemPrompt(mapId: number): string {
   return [
     "You are an expert geospatial digitization assistant for PDF trail maps.",
@@ -57,6 +94,8 @@ function buildSystemPrompt(mapId: number): string {
     "- Use apply_trail_patch only when the user explicitly asks to create, update, or delete a trail segment.",
     "- When tracing from the PDF, use coordinateSpace pdf-pixels unless the user provides WGS84 coordinates.",
     "- Prefer small, reviewable segment patches over one giant geometry.",
+    "- Use find_trail_gaps to check continuity before merging segments or exporting.",
+    "- Use update_trail_segment_status when the user wants to accept or reject a segment.",
     "- After mutating segments, tell the user they may need to refresh the map workspace to see changes.",
     "- Be practical and concise.",
   ].join("\n\n");
@@ -93,6 +132,8 @@ export async function streamMapAgentChat(input: {
       mapId,
       segmentGroupId: toolInput.segmentGroupId,
       statuses: toolInput.statuses,
+      mergeGroups: toolInput.mergeGroups,
+      snapToleranceMeters: toolInput.snapToleranceMeters,
     }),
   );
 
@@ -103,13 +144,43 @@ export async function streamMapAgentChat(input: {
     }),
   );
 
+  const findTrailGaps = findTrailGapsToolDefinition.server(async (toolInput) =>
+    client.featureSegments.findGaps({
+      mapId,
+      ...toolInput,
+    }),
+  );
+
+  const mergeTrailSegments = mergeTrailSegmentsToolDefinition.server(async (toolInput) =>
+    client.featureSegments.merge({
+      mapId,
+      ...toolInput,
+    }),
+  );
+
+  const updateTrailSegmentStatus = updateTrailSegmentStatusToolDefinition.server(
+    async (toolInput) =>
+      client.featureSegments.updateStatus({
+        mapId,
+        ...toolInput,
+      }),
+  );
+
   return chat({
     adapter: createOpenRouterText(resolveOpenRouterModel(), serverEnv.OPENROUTER_API_KEY, {
       httpReferer: serverEnv.FRONTEND_URL,
     }),
     messages: input.messages,
     systemPrompts: [buildSystemPrompt(mapId)],
-    tools: [getMapProjectContext, listTrailSegments, exportMapGeoJson, applyTrailPatch],
+    tools: [
+      getMapProjectContext,
+      listTrailSegments,
+      findTrailGaps,
+      mergeTrailSegments,
+      exportMapGeoJson,
+      applyTrailPatch,
+      updateTrailSegmentStatus,
+    ],
   });
 }
 

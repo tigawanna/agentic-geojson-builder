@@ -65,6 +65,8 @@ const exportGeoJsonInputSchema = z.object({
   mapId: z.number().int().positive(),
   segmentGroupId: z.string().trim().min(1).max(128).optional(),
   statuses: z.array(segmentStatusSchema).optional(),
+  mergeGroups: z.boolean().optional(),
+  snapToleranceMeters: z.number().positive().optional(),
 });
 
 export const listGeoSegmentsFn = createServerFn({ method: "GET" })

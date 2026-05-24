@@ -6,7 +6,12 @@ import {
   getMapWorkspaceForUser,
 } from "@/data-access-layer/maps/maps.server";
 import { db } from "@/lib/drizzle/client.server";
-import { segmentsToFeatureCollection } from "@/lib/geojson/export-segments";
+import {
+  mergedGroupsToFeatureCollection,
+  segmentsToFeatureCollection,
+} from "@/lib/geojson/export-segments";
+import { findFeatureGaps } from "@/lib/geojson/segment-gaps";
+import { mergeFeatureSegmentGroups } from "@/lib/geojson/merge-segments";
 import {
   geoSegmentTable,
   type GeoSegmentRecord,
@@ -180,12 +185,92 @@ export async function updateGeoSegmentForUser(
   return toViewModel(row);
 }
 
+export async function findFeatureGapsForUser(
+  userId: string,
+  input: {
+    mapId: number;
+    segmentGroupId?: string;
+    snapToleranceMeters?: number;
+    statuses?: GeoSegmentStatus[];
+  },
+) {
+  await assertMapBelongsToUser(userId, input.mapId);
+
+  const allowedStatuses = input.statuses ?? ["draft", "needs-review", "accepted"];
+  let segments = await listGeoSegmentsForUser(userId, input.mapId);
+  segments = segments.filter((segment) => allowedStatuses.includes(segment.status));
+
+  const result = findFeatureGaps(segments, {
+    segmentGroupId: input.segmentGroupId,
+    snapToleranceMeters: input.snapToleranceMeters,
+  });
+
+  return {
+    mapId: input.mapId,
+    ...result,
+  };
+}
+
+export async function mergeFeatureSegmentsForUser(
+  userId: string,
+  input: {
+    mapId: number;
+    segmentGroupId?: string;
+    snapToleranceMeters?: number;
+    statuses?: GeoSegmentStatus[];
+  },
+) {
+  await assertMapBelongsToUser(userId, input.mapId);
+
+  const allowedStatuses = input.statuses ?? ["draft", "needs-review", "accepted"];
+  let segments = await listGeoSegmentsForUser(userId, input.mapId);
+  segments = segments.filter((segment) => allowedStatuses.includes(segment.status));
+
+  const result = mergeFeatureSegmentGroups(segments, {
+    segmentGroupId: input.segmentGroupId,
+    snapToleranceMeters: input.snapToleranceMeters,
+  });
+
+  return {
+    mapId: input.mapId,
+    ...result,
+  };
+}
+
+export async function updateGeoSegmentStatusForUser(
+  userId: string,
+  input: {
+    mapId: number;
+    segmentId: number;
+    status: GeoSegmentStatus;
+  },
+) {
+  await assertMapBelongsToUser(userId, input.mapId);
+
+  const [row] = await db
+    .update(geoSegmentTable)
+    .set({
+      status: input.status,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(geoSegmentTable.id, input.segmentId), eq(geoSegmentTable.mapId, input.mapId)))
+    .returning();
+
+  if (!row) {
+    throw new Error("Segment not found.");
+  }
+
+  return toViewModel(row);
+}
+
 export async function exportGeoJsonForUser(
   userId: string,
   input: {
     mapId: number;
     segmentGroupId?: string;
     statuses?: GeoSegmentStatus[];
+    mergeGroups?: boolean;
+    snapToleranceMeters?: number;
   },
 ): Promise<ExportGeoJsonResult> {
   await assertMapBelongsToUser(userId, input.mapId);
@@ -200,11 +285,19 @@ export async function exportGeoJsonForUser(
 
   const map = await getMapWorkspaceForUser(userId, input.mapId);
 
+  const geojson = input.mergeGroups
+    ? mergedGroupsToFeatureCollection(segments, {
+        segmentGroupId: input.segmentGroupId,
+        snapToleranceMeters: input.snapToleranceMeters,
+        mapId: input.mapId,
+      })
+    : segmentsToFeatureCollection(segments);
+
   return {
     mapId: input.mapId,
     mapName: map?.name ?? null,
-    featureCount: segments.length,
-    geojson: segmentsToFeatureCollection(segments),
+    featureCount: geojson.features.length,
+    geojson,
   };
 }
 

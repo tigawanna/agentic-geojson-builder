@@ -238,6 +238,72 @@ export const geoSegmentSummarySchema = z.object({
   vertexCount: z.number().int().positive(),
 });
 
+export const segmentGroupSummarySchema = z.object({
+  segmentGroupId: z.string(),
+  segmentCount: z.number().int().nonnegative(),
+  gapCount: z.number().int().nonnegative(),
+});
+
+export const segmentGapSchema = z.object({
+  segmentGroupId: z.string(),
+  afterSegmentIndex: z.number().int().nonnegative(),
+  beforeSegmentIndex: z.number().int().nonnegative(),
+  afterSegmentId: z.number().int().positive(),
+  beforeSegmentId: z.number().int().positive(),
+  gapMeters: z.number(),
+  endCoord: z.tuple([z.number(), z.number()]),
+  startCoord: z.tuple([z.number(), z.number()]),
+});
+
+export const findFeatureGapsToolInputSchema = z.object({
+  mapId: z.number().int().positive(),
+  segmentGroupId: z.string().trim().min(1).max(128).optional(),
+  snapToleranceMeters: z.number().positive().optional(),
+  statuses: z.array(segmentStatusSchema).optional(),
+});
+
+export const findFeatureGapsToolOutputSchema = z.object({
+  mapId: z.number().int().positive(),
+  snapToleranceMeters: z.number(),
+  gapCount: z.number().int().nonnegative(),
+  gaps: z.array(segmentGapSchema),
+  groups: z.array(segmentGroupSummarySchema),
+});
+
+export const mergedSegmentSchema = z.object({
+  segmentGroupId: z.string(),
+  name: z.string().nullable(),
+  pathKind: pathKindSchema,
+  status: segmentStatusSchema,
+  sourceSegmentIds: z.array(z.number().int().positive()),
+  vertexCount: z.number().int().positive(),
+  geometry: lineStringGeometrySchema,
+});
+
+export const mergeFeatureSegmentsToolInputSchema = z.object({
+  mapId: z.number().int().positive(),
+  segmentGroupId: z.string().trim().min(1).max(128).optional(),
+  snapToleranceMeters: z.number().positive().optional(),
+  statuses: z.array(segmentStatusSchema).optional(),
+});
+
+export const mergeFeatureSegmentsToolOutputSchema = z.object({
+  mapId: z.number().int().positive(),
+  snapToleranceMeters: z.number(),
+  mergedCount: z.number().int().nonnegative(),
+  merged: z.array(mergedSegmentSchema),
+});
+
+export const updateFeatureSegmentStatusToolInputSchema = z.object({
+  mapId: z.number().int().positive(),
+  segmentId: z.number().int().positive(),
+  status: segmentStatusSchema,
+});
+
+export const updateFeatureSegmentStatusToolOutputSchema = z.object({
+  segment: geoSegmentSchema,
+});
+
 export const listFeatureSegmentsToolOutputSchema = z.object({
   segments: z.array(geoSegmentSchema),
 });
@@ -273,6 +339,8 @@ export const getProjectContextToolOutputSchema = z.object({
   controlPoints: z.array(controlPointSchema),
   georeference: georeferenceSchema,
   segments: z.array(geoSegmentSummarySchema),
+  segmentGroups: z.array(segmentGroupSummarySchema),
+  totalGapCount: z.number().int().nonnegative(),
 });
 
 export const exportedFeaturePropertiesSchema = z.object({
@@ -285,6 +353,8 @@ export const exportedFeaturePropertiesSchema = z.object({
   segmentGroupId: z.string(),
   segmentIndex: z.number().int().nonnegative(),
   mapId: z.number().int().positive(),
+  merged: z.boolean().optional(),
+  sourceSegmentIds: z.array(z.number().int().positive()).optional(),
 });
 
 export const exportedGeoJsonSchema = z.object({
@@ -303,6 +373,8 @@ export const exportGeoJsonToolInputSchema = z.object({
   mapId: z.number().int().positive(),
   segmentGroupId: z.string().trim().min(1).max(128).optional(),
   statuses: z.array(segmentStatusSchema).optional(),
+  mergeGroups: z.boolean().optional(),
+  snapToleranceMeters: z.number().positive().optional(),
 });
 
 export const exportGeoJsonToolOutputSchema = z.object({
@@ -322,3 +394,8 @@ export type DeleteControlPointToolInput = z.infer<typeof deleteControlPointToolI
 export type PdfPixelToolInput = z.infer<typeof pdfPixelToolInputSchema>;
 export type LonLatToolInput = z.infer<typeof lonLatToolInputSchema>;
 export type ApplyFeaturePatchToolInput = z.infer<typeof applyFeaturePatchToolInputSchema>;
+export type FindFeatureGapsToolInput = z.infer<typeof findFeatureGapsToolInputSchema>;
+export type MergeFeatureSegmentsToolInput = z.infer<typeof mergeFeatureSegmentsToolInputSchema>;
+export type UpdateFeatureSegmentStatusToolInput = z.infer<
+  typeof updateFeatureSegmentStatusToolInputSchema
+>;

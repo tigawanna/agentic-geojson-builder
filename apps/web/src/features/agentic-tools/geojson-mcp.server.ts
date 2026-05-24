@@ -9,12 +9,15 @@ import {
   createMapToolInputSchema,
   deleteControlPointToolInputSchema,
   exportGeoJsonToolInputSchema,
+  findFeatureGapsToolInputSchema,
   listMapsToolInputSchema,
   lonLatToolInputSchema,
   mapIdInputSchema,
+  mergeFeatureSegmentsToolInputSchema,
   pdfPixelToolInputSchema,
   saveMapPdfToolInputSchema,
   updateControlPointToolInputSchema,
+  updateFeatureSegmentStatusToolInputSchema,
   updateMapWorkspaceToolInputSchema,
 } from "./geojson-tool-schemas";
 
@@ -200,6 +203,36 @@ export function createGeojsonMcpServer(userId: string): McpServer {
       inputSchema: applyFeaturePatchToolInputSchema.shape,
     },
     async (input) => jsonToolResult(await client.featureSegments.patch(input)),
+  );
+
+  server.registerTool(
+    "find_feature_gaps",
+    {
+      title: "Find Feature Gaps",
+      description: "Detect endpoint gaps between consecutive segments in the same trail group.",
+      inputSchema: findFeatureGapsToolInputSchema.shape,
+    },
+    async (input) => jsonToolResult(await client.featureSegments.findGaps(input)),
+  );
+
+  server.registerTool(
+    "merge_feature_segments",
+    {
+      title: "Merge Feature Segments",
+      description: "Preview merged LineStrings for each trail group without persisting changes.",
+      inputSchema: mergeFeatureSegmentsToolInputSchema.shape,
+    },
+    async (input) => jsonToolResult(await client.featureSegments.merge(input)),
+  );
+
+  server.registerTool(
+    "update_feature_segment_status",
+    {
+      title: "Update Feature Segment Status",
+      description: "Accept, reject, or mark a trail segment for review.",
+      inputSchema: updateFeatureSegmentStatusToolInputSchema.shape,
+    },
+    async (input) => jsonToolResult(await client.featureSegments.updateStatus(input)),
   );
 
   server.registerTool(

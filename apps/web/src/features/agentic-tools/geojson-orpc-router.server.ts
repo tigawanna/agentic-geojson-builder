@@ -16,7 +16,13 @@ import {
   applyFeaturePatchToolOutputSchema,
   exportGeoJsonToolInputSchema,
   exportGeoJsonToolOutputSchema,
+  findFeatureGapsToolInputSchema,
+  findFeatureGapsToolOutputSchema,
   listFeatureSegmentsToolOutputSchema,
+  mergeFeatureSegmentsToolInputSchema,
+  mergeFeatureSegmentsToolOutputSchema,
+  updateFeatureSegmentStatusToolInputSchema,
+  updateFeatureSegmentStatusToolOutputSchema,
   listControlPointsToolOutputSchema,
   listMapsToolInputSchema,
   listMapsToolOutputSchema,
@@ -46,6 +52,7 @@ import {
   deleteControlPointTool,
   deleteMapTool,
   exportGeoJsonTool,
+  findFeatureGapsTool,
   getGeoreferenceTool,
   getMapWorkspaceTool,
   getProjectContextTool,
@@ -54,9 +61,11 @@ import {
   listMapsTool,
   loadMapPdfTool,
   lonLatToPdfPixelTool,
+  mergeFeatureSegmentsTool,
   pdfPixelToLonLatTool,
   saveMapPdfTool,
   updateControlPointTool,
+  updateFeatureSegmentStatusTool,
   updateMapWorkspaceTool,
 } from "./geojson-tools.server";
 
@@ -304,6 +313,49 @@ const applyFeaturePatchProcedure = geojsonUpdateProcedure
   .output(applyFeaturePatchToolOutputSchema)
   .handler(async ({ context, input }) => applyFeaturePatchTool({ userId: context.userId }, input));
 
+const findFeatureGapsProcedure = geojsonReadProcedure
+  .route({
+    method: "POST",
+    path: "/feature-segments/find-gaps",
+    summary: "Find feature gaps",
+    description: "Detect endpoint gaps between consecutive segments in the same trail group.",
+    tags: ["Agentic GeoJSON"],
+    successStatus: 200,
+  })
+  .input(findFeatureGapsToolInputSchema)
+  .output(findFeatureGapsToolOutputSchema)
+  .handler(async ({ context, input }) => findFeatureGapsTool({ userId: context.userId }, input));
+
+const mergeFeatureSegmentsProcedure = geojsonReadProcedure
+  .route({
+    method: "POST",
+    path: "/feature-segments/merge",
+    summary: "Merge feature segments",
+    description: "Preview merged LineStrings for each trail group without persisting changes.",
+    tags: ["Agentic GeoJSON"],
+    successStatus: 200,
+  })
+  .input(mergeFeatureSegmentsToolInputSchema)
+  .output(mergeFeatureSegmentsToolOutputSchema)
+  .handler(async ({ context, input }) =>
+    mergeFeatureSegmentsTool({ userId: context.userId }, input),
+  );
+
+const updateFeatureSegmentStatusProcedure = geojsonUpdateProcedure
+  .route({
+    method: "POST",
+    path: "/feature-segments/update-status",
+    summary: "Update feature segment status",
+    description: "Accept, reject, or mark a trail segment for review.",
+    tags: ["Agentic GeoJSON"],
+    successStatus: 200,
+  })
+  .input(updateFeatureSegmentStatusToolInputSchema)
+  .output(updateFeatureSegmentStatusToolOutputSchema)
+  .handler(async ({ context, input }) =>
+    updateFeatureSegmentStatusTool({ userId: context.userId }, input),
+  );
+
 const exportGeoJsonProcedure = geojsonReadProcedure
   .route({
     method: "POST",
@@ -345,6 +397,9 @@ export const geojsonAgenticRouter = {
   featureSegments: {
     list: listFeatureSegmentsProcedure,
     patch: applyFeaturePatchProcedure,
+    findGaps: findFeatureGapsProcedure,
+    merge: mergeFeatureSegmentsProcedure,
+    updateStatus: updateFeatureSegmentStatusProcedure,
   },
   export: {
     geojson: exportGeoJsonProcedure,

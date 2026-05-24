@@ -11,7 +11,10 @@ import {
   applyFeaturePatchForUser,
   deleteGeoSegmentForUser,
   exportGeoJsonForUser,
+  findFeatureGapsForUser,
   listGeoSegmentsForUser,
+  mergeFeatureSegmentsForUser,
+  updateGeoSegmentStatusForUser,
 } from "@/data-access-layer/geo-segments/geo-segments.server";
 import type { GeoSegmentViewModel } from "@/data-access-layer/geo-segments/geo-segments.types";
 import {
@@ -31,7 +34,12 @@ import {
 } from "@/data-access-layer/maps/maps.server";
 import type { MapWorkspaceState } from "@/data-access-layer/maps/maps.types";
 import type { GeoreferenceViewModel } from "@/data-access-layer/georeference/georeference.types";
-import type { ApplyFeaturePatchToolInput } from "./geojson-tool-schemas";
+import type {
+  ApplyFeaturePatchToolInput,
+  FindFeatureGapsToolInput,
+  MergeFeatureSegmentsToolInput,
+  UpdateFeatureSegmentStatusToolInput,
+} from "./geojson-tool-schemas";
 import type {
   CreateControlPointToolInput,
   CreateMapToolInput,
@@ -205,12 +213,15 @@ export async function getProjectContextTool(context: ToolContext, mapId: number)
   const controlPoints = await listControlPointsForUser(context.userId, mapId);
   const georeference = await getGeoreferenceForUser(context.userId, mapId);
   const segments = await listGeoSegmentsForUser(context.userId, mapId);
+  const gapSummary = await findFeatureGapsForUser(context.userId, { mapId });
 
   return {
     map: serializeMap(map),
     controlPoints: controlPoints.map(serializeControlPoint),
     georeference: serializeGeoreference(georeference),
     segments: segments.map(serializeGeoSegmentSummary),
+    segmentGroups: gapSummary.groups,
+    totalGapCount: gapSummary.gapCount,
   };
 }
 
@@ -265,12 +276,33 @@ export async function applyFeaturePatchTool(
   };
 }
 
+export async function findFeatureGapsTool(context: ToolContext, input: FindFeatureGapsToolInput) {
+  return findFeatureGapsForUser(context.userId, input);
+}
+
+export async function mergeFeatureSegmentsTool(
+  context: ToolContext,
+  input: MergeFeatureSegmentsToolInput,
+) {
+  return mergeFeatureSegmentsForUser(context.userId, input);
+}
+
+export async function updateFeatureSegmentStatusTool(
+  context: ToolContext,
+  input: UpdateFeatureSegmentStatusToolInput,
+) {
+  const segment = await updateGeoSegmentStatusForUser(context.userId, input);
+  return { segment: serializeGeoSegment(segment) };
+}
+
 export async function exportGeoJsonTool(
   context: ToolContext,
   input: {
     mapId: number;
     segmentGroupId?: string;
     statuses?: Array<"draft" | "needs-review" | "accepted" | "rejected">;
+    mergeGroups?: boolean;
+    snapToleranceMeters?: number;
   },
 ) {
   return exportGeoJsonForUser(context.userId, input);

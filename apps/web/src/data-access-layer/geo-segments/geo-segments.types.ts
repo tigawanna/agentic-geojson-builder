@@ -51,6 +51,8 @@ export type ExportGeoJsonInput = {
   mapId: number;
   segmentGroupId?: string;
   statuses?: GeoSegmentStatus[];
+  mergeGroups?: boolean;
+  snapToleranceMeters?: number;
 };
 
 export type ExportGeoJsonResult = {
@@ -73,6 +75,8 @@ export type ExportGeoJsonResult = {
         segmentGroupId: string;
         segmentIndex: number;
         mapId: number;
+        merged?: boolean;
+        sourceSegmentIds?: number[];
       };
     }>;
   };
