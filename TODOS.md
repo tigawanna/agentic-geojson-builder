@@ -176,20 +176,20 @@ Legend: **UI** = exposed via `createServerFn` today · **Agent** = MCP/TanStack 
 
 ### Georeference & features (planned)
 
-| Tool name                   | Purpose                           | UI  | Agent |
-| --------------------------- | --------------------------------- | --- | ----- |
-| `get_project_context`       | Aggregated JSON for agent context | —   | —     |
-| `compute_georeference`      | Affine from 3+ control points     | —   | —     |
-| `pdf_pixel_to_lon_lat`      | PDF pixel → WGS84                 | —   | —     |
-| `lon_lat_to_pdf_pixel`      | Inverse transform                 | —   | —     |
-| `list_feature_segments`     | Chunked path rows                 | —   | —     |
-| `find_feature_gaps`         | Missing links between segments    | —   | —     |
-| `apply_feature_patch`       | Upsert segment draft              | —   | —     |
-| `validate_geojson_features` | Turf validation                   | —   | —     |
-| `merge_feature_segments`    | Stitch segments on accept         | —   | —     |
-| `export_geojson`            | FeatureCollection export          | —   | —     |
-| `explain_feature`           | Feature provenance                | —   | —     |
-| `record_agent_run`          | Tool audit trail                  | —   | —     |
+| Tool name                   | Purpose                           | UI                            | Agent |
+| --------------------------- | --------------------------------- | ----------------------------- | ----- |
+| `get_project_context`       | Aggregated JSON for agent context | —                             | —     |
+| `compute_georeference`      | Affine from 3+ control points     | Yes (`computeGeoreferenceFn`) | —     |
+| `pdf_pixel_to_lon_lat`      | PDF pixel → WGS84                 | Yes (`pdfPixelToLonLatFn`)    | —     |
+| `lon_lat_to_pdf_pixel`      | Inverse transform                 | Yes (`lonLatToPdfPixelFn`)    | —     |
+| `list_feature_segments`     | Chunked path rows                 | —                             | —     |
+| `find_feature_gaps`         | Missing links between segments    | —                             | —     |
+| `apply_feature_patch`       | Upsert segment draft              | —                             | —     |
+| `validate_geojson_features` | Turf validation                   | —                             | —     |
+| `merge_feature_segments`    | Stitch segments on accept         | —                             | —     |
+| `export_geojson`            | FeatureCollection export          | —                             | —     |
+| `explain_feature`           | Feature provenance                | —                             | —     |
+| `record_agent_run`          | Tool audit trail                  | —                             | —     |
 
 ### Verification tools (spec in design doc)
 
@@ -226,7 +226,7 @@ Design detail: [`docs/agent-digitization-design.md`](docs/agent-digitization-des
 
 ## Phase 3 — Product features (after Phase 2 kickoff)
 
-- [ ] **Affine georeference** — `compute_georeference` + transform tools + UI residual error (32 Karura points ready)
+- [x] **Affine georeference** — `compute_georeference` + transform tools + UI residual error
 - [ ] **`get_rendered_map_view` metadata contract** — see design doc
 - [ ] **`geo_segment` table** — chunked patches
 - [ ] **`find_feature_gaps` + merge pipeline** — Turf on accept

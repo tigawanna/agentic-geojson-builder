@@ -1085,6 +1085,7 @@ function LeafletMapPane({
   const initialViewportRef = useRef(initialViewport);
   const hasAppliedInitialStyleRef = useRef(false);
   const suppressViewportSyncRef = useRef(false);
+  const [mapReady, setMapReady] = useState(false);
   const [cursorCoordinates, setCursorCoordinates] = useState<{
     latitude: number;
     longitude: number;
@@ -1176,6 +1177,8 @@ function LeafletMapPane({
         }),
       );
 
+      setMapReady(true);
+
       resizeTimer = window.setTimeout(() => map.invalidateSize(), 100);
 
       if (containerRef.current) {
@@ -1191,6 +1194,7 @@ function LeafletMapPane({
     return () => {
       cancelled = true;
       hasAppliedInitialStyleRef.current = false;
+      setMapReady(false);
       resizeObserver?.disconnect();
       if (resizeTimer !== undefined) {
         window.clearTimeout(resizeTimer);
@@ -1216,15 +1220,29 @@ function LeafletMapPane({
     const L = leafletRef.current;
     const currentLayer = baseLayerRef.current;
 
+    const markersLayer = markersLayerRef.current;
+
     if (!map || !L || !currentLayer) {
       return;
     }
 
+    if (markersLayer) {
+      map.removeLayer(markersLayer);
+    }
+
     map.removeLayer(currentLayer);
     baseLayerRef.current = createBaseLayer(L, baseMapStyle).addTo(map);
+
+    if (markersLayer) {
+      markersLayer.addTo(map);
+    }
   }, [baseMapStyle]);
 
   useEffect(() => {
+    if (!mapReady) {
+      return;
+    }
+
     const map = mapRef.current;
     const L = leafletRef.current;
     const markersLayer = markersLayerRef.current;
@@ -1265,7 +1283,7 @@ function LeafletMapPane({
         fillOpacity: 1,
       }).addTo(markersLayer);
     }
-  }, [controlPoints, pendingMapPoint, selectedControlPointId]);
+  }, [mapReady, controlPoints, pendingMapPoint, selectedControlPointId]);
 
   useEffect(() => {
     const map = mapRef.current;
