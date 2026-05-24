@@ -15,13 +15,13 @@ export function RouterErrorComponent({ error }: RouterErrorComponentProps) {
     }
   };
   return (
-    <div className="bg-base-200 flex h-full min-h-screen w-full flex-col items-center justify-center p-4">
-      <div className="card border-error bg-base-100 w-full max-w-[70%] border shadow-xl">
+    <div className="flex size-full min-h-screen flex-col items-center justify-center bg-base-200 p-4">
+      <div className="card w-full max-w-[70%] border border-error bg-base-100 shadow-xl">
         <div className="card-body w-full">
           <h2 className="card-title text-error">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 shrink-0 stroke-current"
+              className="size-6 shrink-0 stroke-current"
               fill="none"
               viewBox="0 0 24 24"
             >
@@ -36,20 +36,20 @@ export function RouterErrorComponent({ error }: RouterErrorComponentProps) {
           </h2>
           <p className="text-base-content/70">{error.message}</p>
           {error.stack && (
-            <div className="collapse-arrow bg-base-200 collapse mt-2 w-full">
+            <div className="collapse-arrow collapse mt-2 w-full bg-base-200">
               <input type="checkbox" />
               <div className="collapse-title text-sm font-medium">View stack trace</div>
               <div className="collapse-content">
                 <div className="relative">
                   <button
                     onClick={copyStackTrace}
-                    className="btn btn-sm absolute top-2 right-2 z-10"
+                    className="btn absolute top-2 right-2 z-10 btn-sm"
                     title="Copy stack trace"
                   >
                     {copied ? (
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
+                        className="size-4"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -64,7 +64,7 @@ export function RouterErrorComponent({ error }: RouterErrorComponentProps) {
                     ) : (
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
+                        className="size-4"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"

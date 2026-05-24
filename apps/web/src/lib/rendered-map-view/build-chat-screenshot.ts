@@ -20,7 +20,9 @@ function loadImage(base64: string) {
   });
 }
 
-export async function loadScreenshotImage(source: CanvasImageSource | string): Promise<CanvasImageSource> {
+export async function loadScreenshotImage(
+  source: CanvasImageSource | string,
+): Promise<CanvasImageSource> {
   if (typeof source === "string") {
     return loadImage(source);
   }
@@ -45,7 +47,10 @@ export async function buildChatScreenshotBlob(input: BuildChatScreenshotInput) {
 
   const canvas = document.createElement("canvas");
   const headerHeight = 36;
-  canvas.width = loadedPanes.reduce((total, pane, index) => total + pane.width + (index > 0 ? gap : 0), 0);
+  canvas.width = loadedPanes.reduce(
+    (total, pane, index) => total + pane.width + (index > 0 ? gap : 0),
+    0,
+  );
   canvas.height = maxHeight + headerHeight;
 
   const context = canvas.getContext("2d");

@@ -57,7 +57,7 @@ export function DiaDrawer({
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>{trigger ?? <Button variant="outline">Open </Button>}</DrawerTrigger>
       <DrawerContent className="h-fit max-h-[90%] max-w-[100vw] p-2">
-        <div className="flex h-full w-full flex-col items-center justify-center p-5 md:max-w-[60%]">
+        <div className="flex size-full flex-col items-center justify-center p-5 md:max-w-[60%]">
           <DrawerHeader>
             <DrawerTitle>{title}</DrawerTitle>
             <DrawerDescription>{description}</DrawerDescription>

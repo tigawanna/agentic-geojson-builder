@@ -79,14 +79,14 @@ export function DashboardLayout({
         <SidebarRail />
       </Sidebar>
       <SidebarInset className="min-h-0">
-        <header className="bg-base-100 sticky top-0 z-30 flex h-16 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-2 bg-base-100 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
           <div className="flex items-center gap-2 px-4">
             <SidebarTrigger className="-ml-1" />
             <Separator orientation="vertical" className="mr-2 h-4" />
             <TSRBreadCrumbs />
           </div>
         </header>
-        <div className="@container/main flex min-h-0 min-w-0 w-full flex-1 flex-col overflow-auto p-6">
+        <div className="@container/main flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-auto p-6">
           <Outlet />
         </div>
       </SidebarInset>

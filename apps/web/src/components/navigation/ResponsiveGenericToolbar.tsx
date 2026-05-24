@@ -11,9 +11,9 @@ export function ResponsiveGenericToolbar({ children }: ResponsiveGenericToolbarP
   return (
     <div className="drawer w-full" data-test="sidebar-drawer">
       <input id="my-drawer-3" type="checkbox" className="drawer-toggle" />
-      <div className="drawer-content bg-base-100 flex h-full min-h-screen flex-col">
+      <div className="drawer-content flex h-full min-h-screen flex-col bg-base-100">
         {/* Mobile Navbar */}
-        <div className="navbar bg-base-100/80 border-base-300 sticky top-0 z-10 border-b backdrop-blur-md md:hidden px-4 py-2">
+        <div className="navbar sticky top-0 z-10 border-b border-base-300 bg-base-100/80 px-4 py-2 backdrop-blur-md md:hidden">
           <div className="flex-none">
             <label
               htmlFor="my-drawer-3"
@@ -25,7 +25,7 @@ export function ResponsiveGenericToolbar({ children }: ResponsiveGenericToolbarP
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
-                className="inline-block h-5 w-5 stroke-current"
+                className="inline-block size-5 stroke-current"
               >
                 <path
                   strokeLinecap="round"
@@ -39,13 +39,13 @@ export function ResponsiveGenericToolbar({ children }: ResponsiveGenericToolbarP
           <div className="flex-1 px-2">
             <Link
               to="/"
-              className="text-base-content hover:text-primary flex items-center gap-2 text-lg font-bold"
+              className="flex items-center gap-2 text-lg font-bold text-base-content hover:text-primary"
             >
               {(() => {
                 const Icon = AppConfig.icon as any;
                 return <Icon className="size-5" />;
               })()}
-              <span className="hidden xs:inline">{AppConfig.name}</span>
+              <span className="xs:inline hidden">{AppConfig.name}</span>
             </Link>
           </div>
           <div className="flex-none">
@@ -56,12 +56,12 @@ export function ResponsiveGenericToolbar({ children }: ResponsiveGenericToolbarP
         {/* Desktop Navbar */}
         <div
           data-test="homepage-toolbar"
-          className="bg-base-100/80 border-base-300 sticky top-0 z-10 hidden w-full items-center justify-between border-b backdrop-blur-md md:flex px-8 py-2"
+          className="sticky top-0 z-10 hidden w-full items-center justify-between border-b border-base-300 bg-base-100/80 px-8 py-2 backdrop-blur-md md:flex"
         >
           <Link
             to="/"
             data-test="homepage-home-link"
-            className="text-base-content hover:text-primary flex items-center gap-2 text-xl font-bold"
+            className="flex items-center gap-2 text-xl font-bold text-base-content hover:text-primary"
           >
             {(() => {
               const Icon = AppConfig.icon as any;
@@ -78,14 +78,14 @@ export function ResponsiveGenericToolbar({ children }: ResponsiveGenericToolbarP
         <label htmlFor="my-drawer-3" aria-label="close sidebar" className="drawer-overlay"></label>
         <ul
           data-test="homepage-sidebar"
-          className="menu bg-base-100 border-base-300 min-h-full w-64 md:w-80 border-r p-4 text-sm md:text-base"
+          className="menu min-h-full w-64 border-r border-base-300 bg-base-100 p-4 text-sm md:w-80 md:text-base"
         >
           {/* Sidebar Header */}
-          <li className="menu-title mb-4 px-0">
+          <li className="mb-4 menu-title px-0">
             <Link
               to="/"
               data-test="sidebar-homepage-home-link"
-              className="hover:text-primary flex items-center justify-center md:justify-start gap-2 p-3 text-lg md:text-xl font-bold rounded-lg hover:bg-base-200"
+              className="flex items-center justify-center gap-2 rounded-lg p-3 text-lg font-bold hover:bg-base-200 hover:text-primary md:justify-start md:text-xl"
             >
               {(() => {
                 const Icon = AppConfig.icon as any;
@@ -120,7 +120,7 @@ export function ResponsiveGenericToolbar({ children }: ResponsiveGenericToolbarP
           </li>
 
           {/* Theme Toggle for Mobile */}
-          <li className="mt-auto pt-4 border-t border-base-300">
+          <li className="mt-auto border-t border-base-300 pt-4">
             <ThemeToggle />
           </li>
         </ul>

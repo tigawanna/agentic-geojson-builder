@@ -275,7 +275,7 @@ export function TanstackDBColumnFilters<
       <PopoverTrigger asChild>
         {/* Main button that opens the sort menu - icon only on mobile, icon + text on desktop */}
         <Button variant="outline" size="sm" className="gap-2">
-          <SlidersHorizontal className="h-4 w-4" />
+          <SlidersHorizontal className="size-4" />
           <span className="hidden sm:inline">Sort</span>
         </Button>
       </PopoverTrigger>
@@ -309,12 +309,12 @@ export function TanstackDBColumnFilters<
             >
               {currentSortDirection === "asc" ? (
                 <>
-                  <ArrowDownAZ className="h-4 w-4" />
+                  <ArrowDownAZ className="size-4" />
                   Ascending
                 </>
               ) : (
                 <>
-                  <ArrowUpZA className="h-4 w-4" />
+                  <ArrowUpZA className="size-4" />
                   Descending
                 </>
               )}
@@ -413,7 +413,7 @@ export function TanstackDBSortSelect<
       <Button
         variant="ghost"
         size="icon"
-        className="h-9 w-9"
+        className="size-9"
         onClick={() =>
           setSearch({
             sortDirection: currentSortDirection === "asc" ? "desc" : "asc",
@@ -423,9 +423,9 @@ export function TanstackDBSortSelect<
         title={`Sort ${currentSortDirection === "asc" ? "descending" : "ascending"}`}
       >
         {currentSortDirection === "asc" ? (
-          <ArrowDownAZ className="h-4 w-4" /> // Ascending: A→Z
+          <ArrowDownAZ className="size-4" /> // Ascending: A→Z
         ) : (
-          <ArrowUpZA className="h-4 w-4" /> // Descending: Z→A
+          <ArrowUpZA className="size-4" /> // Descending: Z→A
         )}
       </Button>
     </div>

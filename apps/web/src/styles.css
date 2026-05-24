@@ -373,7 +373,7 @@
 
 /* Glass effect */
 .glass-card {
-  @apply bg-base-100/50 border-base-content/10 border backdrop-blur-md;
+  @apply border border-base-content/10 bg-base-100/50 backdrop-blur-md;
 }
 
 @media (prefers-reduced-motion: no-preference) {

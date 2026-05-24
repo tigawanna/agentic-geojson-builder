@@ -96,8 +96,9 @@ export function WorkspaceScreenshotDialog({
         <DialogHeader>
           <DialogTitle>Workspace screenshot</DialogTitle>
           <DialogDescription>
-            Paste the combined image into Cursor chat, or copy the PDF and map panes separately. Refresh
-            the page once if the map side looks like a numbered grid instead of satellite imagery.
+            Paste the combined image into Cursor chat, or copy the PDF and map panes separately.
+            Refresh the page once if the map side looks like a numbered grid instead of satellite
+            imagery.
           </DialogDescription>
         </DialogHeader>
 

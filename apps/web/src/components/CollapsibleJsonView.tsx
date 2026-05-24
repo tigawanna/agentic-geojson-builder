@@ -37,7 +37,7 @@ function JsonPrimitive({ value }: { value: unknown }) {
   if (typeof value === "string") {
     if (value.length <= LONG_STRING) {
       return (
-        <span className="text-foreground wrap-break-word whitespace-pre-wrap">
+        <span className="wrap-break-word whitespace-pre-wrap text-foreground">
           {JSON.stringify(value)}
         </span>
       );
@@ -46,13 +46,13 @@ function JsonPrimitive({ value }: { value: unknown }) {
       <Collapsible defaultOpen={false}>
         <CollapsibleTrigger
           type="button"
-          className="text-foreground hover:bg-muted/50 wrap-break-word max-w-full rounded px-0.5 text-left font-mono text-xs underline-offset-2 hover:underline"
+          className="max-w-full rounded px-0.5 text-left font-mono text-xs wrap-break-word text-foreground underline-offset-2 hover:bg-muted/50 hover:underline"
         >
           {JSON.stringify(value.slice(0, PREVIEW_STRING))}…
-          <span className="text-muted-foreground ml-1 text-[10px] no-underline">(expand)</span>
+          <span className="ml-1 text-[10px] text-muted-foreground no-underline">(expand)</span>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <pre className="bg-muted/30 mt-1 max-h-80 overflow-auto rounded border p-2 font-mono text-xs wrap-break-word whitespace-pre-wrap">
+          <pre className="mt-1 max-h-80 overflow-auto rounded border bg-muted/30 p-2 font-mono text-xs wrap-break-word whitespace-pre-wrap">
             {value}
           </pre>
         </CollapsibleContent>
@@ -117,10 +117,10 @@ function JsonEntry({ name, value, depth }: { name: string; value: unknown; depth
       <div className="flex items-start gap-0.5">
         <CollapsibleTrigger
           type="button"
-          className="hover:bg-muted/40 flex min-w-0 flex-1 items-start gap-1 rounded px-1 py-0.5 text-left font-mono text-xs"
+          className="flex min-w-0 flex-1 items-start gap-1 rounded px-1 py-0.5 text-left font-mono text-xs hover:bg-muted/40"
           data-test={depth === 0 ? `json-node-${name}` : undefined}
         >
-          <ChevronRight className="text-muted-foreground mt-0.5 size-3.5 shrink-0 transition-transform group-data-[state=open]:rotate-90" />
+          <ChevronRight className="mt-0.5 size-3.5 shrink-0 text-muted-foreground transition-transform group-data-[state=open]:rotate-90" />
           <span>
             <span className="text-primary">{JSON.stringify(name)}</span>
             <span className="text-muted-foreground">: </span>
@@ -128,7 +128,7 @@ function JsonEntry({ name, value, depth }: { name: string; value: unknown; depth
           </span>
         </CollapsibleTrigger>
       </div>
-      <CollapsibleContent className="border-border ml-1.5 mt-0.5 space-y-0.5 border-l pl-2">
+      <CollapsibleContent className="mt-0.5 ml-1.5 space-y-0.5 border-l border-border pl-2">
         <JsonInner value={value} depth={depth + 1} />
       </CollapsibleContent>
     </Collapsible>
@@ -146,7 +146,7 @@ export function CollapsibleJsonView({ data }: { data: unknown }) {
 
   return (
     <div
-      className="bg-muted/20 max-h-[min(70vh,560px)] overflow-auto rounded-lg border p-3 font-mono text-xs"
+      className="max-h-[min(70vh,560px)] overflow-auto rounded-lg border bg-muted/20 p-3 font-mono text-xs"
       data-test="collapsible-json-view"
     >
       <JsonInner value={data} depth={0} />

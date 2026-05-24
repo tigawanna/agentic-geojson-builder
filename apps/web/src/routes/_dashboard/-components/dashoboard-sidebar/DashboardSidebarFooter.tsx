@@ -11,7 +11,7 @@ export function DashboardSidebarFooter() {
       {showDev ? (
         <div className="hidden px-2 md:block">
           <select
-            className="select select-bordered select-sm max-w-full"
+            className="select-bordered select max-w-full select-sm"
             onChange={(e) => {
               document.documentElement.dataset.style = e.target.value;
             }}

@@ -39,7 +39,7 @@ function RouteComponent() {
   if (query.isLoading) {
     return (
       <MapsListScafolld showPagination={false}>
-        <div className="flex flex-col gap-4 h-full w-full relative">
+        <div className="relative flex size-full flex-col gap-4">
           <MainLoader />
         </div>
       </MapsListScafolld>
@@ -48,7 +48,7 @@ function RouteComponent() {
   if (query.isError) {
     return (
       <MapsListScafolld showPagination={false}>
-        <div className="flex flex-col items-center justify-center gap-4 h-full">
+        <div className="flex h-full flex-col items-center justify-center gap-4">
           <ErrorOutput error={query.error} className="h-[60%] w-[90%]" />
         </div>
       </MapsListScafolld>
@@ -59,7 +59,7 @@ function RouteComponent() {
   if (!data || (data.items.length === 0 && !sq && !cursor)) {
     return (
       <MapsListScafolld showPagination={false}>
-        <div className="flex flex-col gap-4 h-screen">
+        <div className="flex h-screen flex-col gap-4">
           <Empty>
             <EmptyTitle>No maps found</EmptyTitle>
             <EmptyDescription>Create a new map to get started</EmptyDescription>
@@ -79,16 +79,16 @@ function RouteComponent() {
       nextCursor={data.nextCursor}
       previousCursor={data.previousCursor}
     >
-      <div className="flex flex-col gap-4 h-screen py-4">
+      <div className="flex h-screen flex-col gap-4 py-4">
         {data.items.map((map) => (
           <div
             key={map.id}
-            className="p-4 border rounded bg-base-200 flex items-center justify-between gap-3"
+            className="flex items-center justify-between gap-3 rounded border bg-base-200 p-4"
           >
             <Link to="/maps/$id" params={{ id: String(map.id) }} className="min-w-0 flex-1">
-              <h2 className="text-2xl font-bold truncate">{map.name}</h2>
+              <h2 className="truncate text-2xl font-bold">{map.name}</h2>
               {map.pdfFileName ? (
-                <p className="text-sm text-base-content/65 truncate">{map.pdfFileName}</p>
+                <p className="truncate text-sm text-base-content/65">{map.pdfFileName}</p>
               ) : null}
             </Link>
             <Button variant="outline" size="sm" onClick={() => deleteMapMutation.mutate(map.id)}>

@@ -66,7 +66,7 @@ export function McpConnectSection() {
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-sm text-muted-foreground">
             Model Context Protocol (MCP) lets AI assistants in Cursor and VS Code directly read and
             update your map project data. Authentication uses a standard API key — no OAuth flow
             required.
@@ -84,9 +84,9 @@ export function McpConnectSection() {
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 py-2">
-            <div className="bg-base-200/70 rounded-lg p-4 text-sm">
+            <div className="rounded-lg bg-base-200/70 p-4 text-sm">
               <p className="font-medium">What this key allows</p>
-              <ul className="text-muted-foreground mt-2 list-inside list-disc space-y-1">
+              <ul className="mt-2 list-inside list-disc space-y-1 text-muted-foreground">
                 <li>Read all map project data</li>
                 <li>Create and update GeoJSON features</li>
               </ul>

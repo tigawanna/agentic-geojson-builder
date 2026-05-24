@@ -125,7 +125,7 @@ export function MapAiPanel({ mapId, mapName, onBeforeSend }: MapAiPanelProps) {
         <CardContent className="flex h-full min-h-[24rem] flex-col gap-4 p-4">
           <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto">
             {messages.length === 0 ? (
-              <div className="text-base-content/60 flex flex-1 items-center justify-center rounded-lg border border-dashed border-base-content/15 px-6 py-10 text-center text-sm">
+              <div className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-base-content/15 px-6 py-10 text-center text-sm text-base-content/60">
                 Start with a prompt above or ask a specific question about this map.
               </div>
             ) : (
@@ -138,14 +138,14 @@ export function MapAiPanel({ mapId, mapName, onBeforeSend }: MapAiPanelProps) {
                       : "mr-auto w-full max-w-3xl rounded-xl border border-base-content/10 bg-base-100 p-4"
                   }
                 >
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-base-content/60">
+                  <p className="mb-2 text-xs font-medium tracking-wide text-base-content/60 uppercase">
                     {message.role === "assistant" ? "Assistant" : "You"}
                   </p>
                   <div className="flex flex-col gap-2 text-sm">
                     {message.parts.map((part, index) => {
                       if (part.type === "text") {
                         return (
-                          <p key={index} className="whitespace-pre-wrap leading-6">
+                          <p key={index} className="leading-6 whitespace-pre-wrap">
                             {part.content}
                           </p>
                         );
@@ -153,7 +153,7 @@ export function MapAiPanel({ mapId, mapName, onBeforeSend }: MapAiPanelProps) {
 
                       if (part.type === "thinking") {
                         return (
-                          <p key={index} className="text-xs italic text-base-content/60">
+                          <p key={index} className="text-xs text-base-content/60 italic">
                             Thinking: {part.content}
                           </p>
                         );

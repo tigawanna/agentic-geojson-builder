@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 
 export function RouterNotFoundComponent() {
   return (
-    <div className="flex h-full min-h-screen w-full flex-col items-center justify-center">
+    <div className="flex size-full min-h-screen flex-col items-center justify-center">
       <div className="bg-bg-emphasized flex flex-col items-center justify-center rounded-lg p-[5%]">
         <h1 className="text-9xl font-bold">404</h1>
         <p className="text-2xl">Page Not Found</p>

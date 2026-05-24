@@ -53,17 +53,17 @@ function SettingsPage() {
         <CardContent className="flex flex-col gap-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <p className="text-muted-foreground text-xs font-medium">Email</p>
+              <p className="text-xs font-medium text-muted-foreground">Email</p>
               <p className="mt-1 text-sm font-medium">{viewer.user?.email || "—"}</p>
             </div>
             <div>
-              <p className="text-muted-foreground text-xs font-medium">Name</p>
+              <p className="text-xs font-medium text-muted-foreground">Name</p>
               <p className="mt-1 text-sm font-medium">{viewer.user?.name || "—"}</p>
             </div>
           </div>
           {viewer.user?.image && (
             <div>
-              <p className="text-muted-foreground text-xs font-medium">Avatar</p>
+              <p className="text-xs font-medium text-muted-foreground">Avatar</p>
               <img
                 src={viewer.user.image}
                 alt={viewer.user.name || "User avatar"}
@@ -93,7 +93,7 @@ function SettingsPage() {
         <CardContent className="flex flex-col gap-4">
           <div>
             <h3 className="font-medium">Delete Account</h3>
-            <p className="text-muted-foreground mt-1 text-sm">
+            <p className="mt-1 text-sm text-muted-foreground">
               Once you delete your account, there is no going back. All your projects and data will
               be permanently deleted. This action cannot be undone.
             </p>
@@ -105,7 +105,7 @@ function SettingsPage() {
             </Button>
           ) : (
             <div className="flex flex-col gap-3 rounded-md border border-destructive bg-destructive/5 p-4">
-              <p className="font-medium text-sm">
+              <p className="text-sm font-medium">
                 Are you sure? This will delete your account and all your data.
               </p>
               <div className="flex gap-2">

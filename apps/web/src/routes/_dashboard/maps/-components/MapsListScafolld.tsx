@@ -62,8 +62,8 @@ export function MapsListScafolld({
   }
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center">
-      <div className="w-full flex items-center justify-between gap-4">
+    <div className="flex size-full flex-col items-center justify-center">
+      <div className="flex w-full items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">Maps</h1>
         <SearchBox
           keyword={keyword}

@@ -1,4 +1,12 @@
-import { index, integer, jsonb, pgTable, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
+import {
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  timestamp,
+  uniqueIndex,
+  varchar,
+} from "drizzle-orm/pg-core";
 import type { RenderedMapView } from "@/lib/rendered-map-view/types";
 import { mapTable } from "./map.schema";
 

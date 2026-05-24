@@ -109,7 +109,7 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
   });
 
   return (
-    <div className="flex h-full w-full items-center justify-evenly gap-2 p-5">
+    <div className="flex size-full items-center justify-evenly gap-2 p-5">
       <img src="/logo.svg" alt="logo" className="hidden w-[30%] object-cover md:flex" />
       <form
         autoComplete="on"
@@ -119,20 +119,20 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
 
           void form.handleSubmit();
         }}
-        className="border-border/40 bg-card/30 flex h-full w-[90%] flex-col items-center justify-center gap-6 rounded-lg border p-[2%] shadow-sm md:w-[70%] lg:w-[40%]"
+        className="flex h-full w-[90%] flex-col items-center justify-center gap-6 rounded-lg border border-border/40 bg-card/30 p-[2%] shadow-sm md:w-[70%] lg:w-[40%]"
       >
         <div className="flex w-full flex-col items-center justify-center gap-4">
           {onBackToSessions && (
             <button
               type="button"
               onClick={onBackToSessions}
-              className="text-muted-foreground hover:text-foreground flex items-center gap-1 self-start text-sm transition-colors"
+              className="flex items-center gap-1 self-start text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <ArrowLeft className="size-4" />
               Back to accounts
             </button>
           )}
-          <h1 className="text-foreground text-4xl font-bold">Sign in</h1>
+          <h1 className="text-4xl font-bold text-foreground">Sign in</h1>
 
           <form.AppField
             name="email"
@@ -170,7 +170,7 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
                 id="showPassword"
                 name="showPassword"
                 autoComplete="off"
-                className="checkbox-primary checkbox ring-primary ring-1"
+                className="checkbox checkbox-primary ring-1 ring-primary"
                 checked={showPassword}
                 onChange={() => setShowPassword(!showPassword)}
               />
@@ -183,16 +183,16 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
         </form.AppForm>
 
         <div className="flex w-full items-center gap-3">
-          <div className="via-border h-px flex-1 bg-linear-to-r from-transparent to-transparent" />
-          <span className="text-muted-foreground text-xs font-medium">OR</span>
-          <div className="via-border h-px flex-1 bg-linear-to-r from-transparent to-transparent" />
+          <div className="h-px flex-1 bg-linear-to-r from-transparent via-border to-transparent" />
+          <span className="text-xs font-medium text-muted-foreground">OR</span>
+          <div className="h-px flex-1 bg-linear-to-r from-transparent via-border to-transparent" />
         </div>
 
         <button
           type="button"
           disabled={githubMutation.isPending || mutation.isPending}
           onClick={() => githubMutation.mutate()}
-          className="btn bg-primary/20 text-foreground w-full gap-2"
+          className="btn w-full gap-2 bg-primary/20 text-foreground"
         >
           <Github className="size-5" />
           <span className="font-semibold">Continue with GitHub</span>
@@ -204,7 +204,7 @@ export function SigninComponent({ onBackToSessions }: SigninComponentProps) {
             <Link
               to="/auth/signup"
               search={{ returnTo, callbackURL }}
-              className="link link-primary font-semibold"
+              className="link font-semibold link-primary"
             >
               Sign up
             </Link>

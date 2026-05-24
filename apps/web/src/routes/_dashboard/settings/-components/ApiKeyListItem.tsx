@@ -45,10 +45,10 @@ export function ApiKeyListItem({ apiKey, onDelete, isDeleting }: ApiKeyListItemP
     <Card data-test="api-key-item">
       <CardContent className="flex items-center justify-between gap-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
-          <Key className="text-muted-foreground size-4 shrink-0" />
+          <Key className="size-4 shrink-0 text-muted-foreground" />
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{apiKey.name ?? "Unnamed key"}</p>
-            <p className="text-muted-foreground font-mono text-xs">{displayKey}</p>
+            <p className="font-mono text-xs text-muted-foreground">{displayKey}</p>
           </div>
         </div>
 
@@ -56,7 +56,7 @@ export function ApiKeyListItem({ apiKey, onDelete, isDeleting }: ApiKeyListItemP
           <Badge variant="secondary" className="hidden sm:inline-flex">
             {permLabel}
           </Badge>
-          <p className="text-muted-foreground hidden text-xs lg:block">{createdDate}</p>
+          <p className="hidden text-xs text-muted-foreground lg:block">{createdDate}</p>
 
           {confirmDelete ? (
             <div className="flex items-center gap-1">

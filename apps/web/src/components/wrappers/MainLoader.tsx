@@ -28,7 +28,7 @@ export function MainLoader({
   return (
     <div
       className={cn(
-        "flex min-h-screen w-full flex-col items-center justify-center gap-2 relative overflow-hidden",
+        "relative flex min-h-screen w-full flex-col items-center justify-center gap-2 overflow-hidden",
         className,
       )}
     >

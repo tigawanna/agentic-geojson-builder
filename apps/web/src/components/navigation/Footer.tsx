@@ -9,16 +9,16 @@ export function Footer() {
   return (
     <footer className="bg-base-200 text-base-content">
       <div className="px-4 py-8 sm:px-6 md:px-10 md:py-12">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6 mb-8">
-            <div className="flex flex-col items-center md:items-start gap-3 text-center md:text-left">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-8 grid grid-cols-1 gap-8 md:grid-cols-3 md:gap-6">
+            <div className="flex flex-col items-center gap-3 text-center md:items-start md:text-left">
               {(() => {
                 const Icon = AppConfig.icon as any;
-                return <Icon className="text-primary size-10 md:size-12" />;
+                return <Icon className="size-10 text-primary md:size-12" />;
               })()}
               <div>
-                <h3 className="text-lg md:text-xl font-bold">{AppConfig.name}</h3>
-                <p className="text-xs md:text-sm text-base-content/70 leading-relaxed max-w-xs">
+                <h3 className="text-lg font-bold md:text-xl">{AppConfig.name}</h3>
+                <p className="max-w-xs text-xs leading-relaxed text-base-content/70 md:text-sm">
                   {AppConfig.brief}
                 </p>
               </div>
@@ -29,7 +29,7 @@ export function Footer() {
                 href={AppConfig.links.github}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn btn-ghost btn-square btn-sm md:btn-md"
+                className="btn btn-square btn-ghost btn-sm md:btn-md"
                 aria-label="GitHub"
               >
                 <Github className="size-5" />
@@ -38,14 +38,14 @@ export function Footer() {
                 href="https://twitter.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn btn-ghost btn-square btn-sm md:btn-md"
+                className="btn btn-square btn-ghost btn-sm md:btn-md"
                 aria-label="Twitter"
               >
                 <Twitter className="size-5" />
               </a>
               <a
                 href={AppConfig.links.mail}
-                className="btn btn-ghost btn-square btn-sm md:btn-md"
+                className="btn btn-square btn-ghost btn-sm md:btn-md"
                 aria-label="Email"
               >
                 <Mail className="size-5" />
@@ -53,7 +53,7 @@ export function Footer() {
             </div>
 
             <nav aria-label="footer-navigation" className="flex justify-center md:justify-end">
-              <ul className="flex flex-col items-center md:items-end gap-2 text-sm md:text-base">
+              <ul className="flex flex-col items-center gap-2 text-sm md:items-end md:text-base">
                 <li>
                   <Link to="/" className="link link-hover">
                     Home
@@ -77,7 +77,7 @@ export function Footer() {
           <div className="divider my-0" />
 
           {/* Copyright */}
-          <div className="text-center text-xs md:text-sm text-base-content/60 py-4">
+          <div className="py-4 text-center text-xs text-base-content/60 md:text-sm">
             <p>
               Copyright © {currentYear} {AppConfig.name}. All rights reserved.
             </p>

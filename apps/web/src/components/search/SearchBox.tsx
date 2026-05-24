@@ -18,7 +18,7 @@ export function SearchBox({ isDebouncing, setKeyword, keyword, inputProps }: Sea
         <Input
           ref={inputRef}
           placeholder="Search"
-          className="bg-muted w-full"
+          className="w-full bg-muted"
           value={keyword}
           onChange={(e) => {
             setKeyword(e.target.value);

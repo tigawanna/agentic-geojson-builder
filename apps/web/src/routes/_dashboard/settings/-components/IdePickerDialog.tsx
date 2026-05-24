@@ -85,40 +85,40 @@ export function IdePickerDialog({ open, onOpenChange, apiKey }: IdePickerDialogP
         <div className="flex flex-col gap-3 py-2">
           <a
             href={buildCursorDeepLink(mcpUrl, serverName, apiKey)}
-            className="btn btn-ghost bg-base-200 hover:bg-base-300 flex w-full items-center justify-between rounded-lg px-4 py-3"
+            className="btn flex w-full items-center justify-between rounded-lg bg-base-200 px-4 py-3 btn-ghost hover:bg-base-300"
             data-test="ide-picker-cursor"
           >
             <div className="flex items-center gap-3">
-              <div className="bg-primary/10 flex size-10 items-center justify-center rounded-lg">
-                <span className="text-primary text-lg font-bold">C</span>
+              <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+                <span className="text-lg font-bold text-primary">C</span>
               </div>
               <div className="text-left">
                 <p className="text-sm font-medium">Cursor</p>
-                <p className="text-muted-foreground text-xs">Open and configure automatically</p>
+                <p className="text-xs text-muted-foreground">Open and configure automatically</p>
               </div>
             </div>
-            <ExternalLink className="text-muted-foreground size-4" />
+            <ExternalLink className="size-4 text-muted-foreground" />
           </a>
 
           <a
             href={buildVsCodeDeepLink(mcpUrl, serverName, apiKey)}
-            className="btn btn-ghost bg-base-200 hover:bg-base-300 flex w-full items-center justify-between rounded-lg px-4 py-3"
+            className="btn flex w-full items-center justify-between rounded-lg bg-base-200 px-4 py-3 btn-ghost hover:bg-base-300"
             data-test="ide-picker-vscode"
           >
             <div className="flex items-center gap-3">
-              <div className="bg-primary/10 flex size-10 items-center justify-center rounded-lg">
-                <span className="text-primary text-lg font-bold">VS</span>
+              <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+                <span className="text-lg font-bold text-primary">VS</span>
               </div>
               <div className="text-left">
                 <p className="text-sm font-medium">VS Code</p>
-                <p className="text-muted-foreground text-xs">Open and configure automatically</p>
+                <p className="text-xs text-muted-foreground">Open and configure automatically</p>
               </div>
             </div>
-            <ExternalLink className="text-muted-foreground size-4" />
+            <ExternalLink className="size-4 text-muted-foreground" />
           </a>
         </div>
 
-        <div className="bg-base-200/70 rounded-lg p-4">
+        <div className="rounded-lg bg-base-200/70 p-4">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-xs font-medium">Manual config</p>
             <Button
@@ -139,7 +139,7 @@ export function IdePickerDialog({ open, onOpenChange, apiKey }: IdePickerDialogP
               )}
             </Button>
           </div>
-          <pre className="text-muted-foreground overflow-x-auto text-xs leading-relaxed">
+          <pre className="overflow-x-auto text-xs leading-relaxed text-muted-foreground">
             {buildManualConfig(mcpUrl, serverName, apiKey)}
           </pre>
         </div>

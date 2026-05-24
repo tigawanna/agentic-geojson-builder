@@ -40,7 +40,7 @@ export function GenericTable<T extends Record<string, any>>({
   }
   return (
     <div className="w-full overflow-x-auto">
-      <table className="table-zebra table-lg sticky top-0 table w-full">
+      <table className="table sticky top-0 w-full table-zebra table-lg">
         <thead>
           <tr>
             {columns.map((column) => (
@@ -86,7 +86,7 @@ export function GenericTable<T extends Record<string, any>>({
                   name={column.accessor}
                   type={column.type}
                   placeholder={`Enter ${column.label}`}
-                  className="input input-bordered w-full"
+                  className="input-bordered input w-full"
                 />
               </div>
             ))}
@@ -94,13 +94,13 @@ export function GenericTable<T extends Record<string, any>>({
 
           <div className="modal-action flex w-full items-center justify-center">
             {updateItem && (
-              <button type="button" className="btn btn-primary btn-sm btn-wide">
+              <button type="button" className="btn btn-wide btn-sm btn-primary">
                 save {mutation.isPending && <Loader className="size-4 animate-spin" />}
               </button>
             )}
             <form method="dialog">
               {/* if there is a button in form, it will close the modal */}
-              <button className="btn btn-error btn-sm">Close</button>
+              <button className="btn btn-sm btn-error">Close</button>
             </form>
           </div>
         </div>

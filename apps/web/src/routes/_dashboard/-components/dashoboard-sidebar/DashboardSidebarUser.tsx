@@ -112,7 +112,7 @@ export function DashboardSidebarUser() {
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
+                <Avatar className="size-8 rounded-lg">
                   {avatarImage ? <AvatarImage src={avatarImage} alt={viewer.user?.name} /> : null}
                   <AvatarFallback className="rounded-lg">
                     {viewer.user?.name?.slice(0, 2)}
@@ -128,7 +128,7 @@ export function DashboardSidebarUser() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
+              <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
                 Switch account
               </DropdownMenuLabel>
               {otherSessions.map(({ session, user }) => (
@@ -146,7 +146,7 @@ export function DashboardSidebarUser() {
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm">
                     <span className="truncate font-medium">{user.name}</span>
-                    <span className="text-muted-foreground truncate text-xs">{user.email}</span>
+                    <span className="truncate text-xs text-muted-foreground">{user.email}</span>
                   </div>
                   {setActiveMutation.isPending && setActiveMutation.variables === session.token && (
                     <Spinner className="size-4" />

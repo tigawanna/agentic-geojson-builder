@@ -70,22 +70,22 @@ export function SessionPicker({ onUseAnotherAccount }: SessionPickerProps) {
   };
 
   return (
-    <div className="flex h-full w-full flex-1 items-center justify-center p-5">
+    <div className="flex size-full flex-1 items-center justify-center p-5">
       <div className="flex w-full max-w-md flex-col items-center gap-6">
         <div className="flex flex-col items-center gap-2">
-          <img src="/logo.svg" alt="demo" className="h-12 w-12 object-contain" />
+          <img src="/logo.svg" alt="demo" className="size-12 object-contain" />
           <h1 className="text-2xl font-bold">Choose an account</h1>
-          <p className="text-muted-foreground text-sm">to continue to demo</p>
+          <p className="text-sm text-muted-foreground">to continue to demo</p>
         </div>
 
-        <div className="bg-card w-full overflow-hidden rounded-xl border shadow-sm">
+        <div className="w-full overflow-hidden rounded-xl border bg-card shadow-sm">
           {sessions.map(({ session, user }) => (
             <button
               key={session.id}
               type="button"
               disabled={setActiveMutation.isPending}
               onClick={() => handleSelectSession(session.token)}
-              className="hover:bg-accent flex w-full items-center gap-4 border-b px-4 py-3 transition-colors last:border-b-0 disabled:opacity-50"
+              className="flex w-full items-center gap-4 border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-accent disabled:opacity-50"
             >
               <Avatar size="lg">
                 {user.image && <AvatarImage src={user.image} alt={user.name} />}
@@ -93,7 +93,7 @@ export function SessionPicker({ onUseAnotherAccount }: SessionPickerProps) {
               </Avatar>
               <div className="flex flex-col items-start text-left">
                 <span className="text-sm font-medium">{user.name}</span>
-                <span className="text-muted-foreground text-xs">{user.email}</span>
+                <span className="text-xs text-muted-foreground">{user.email}</span>
               </div>
               {setActiveMutation.isPending && setActiveMutation.variables === session.token && (
                 <Spinner className="ml-auto" />
@@ -104,10 +104,10 @@ export function SessionPicker({ onUseAnotherAccount }: SessionPickerProps) {
           <button
             type="button"
             onClick={onUseAnotherAccount}
-            className="hover:bg-accent flex w-full items-center gap-4 px-4 py-3 transition-colors"
+            className="flex w-full items-center gap-4 px-4 py-3 transition-colors hover:bg-accent"
           >
-            <div className="bg-muted flex size-10 items-center justify-center rounded-full">
-              <UserPlus className="text-muted-foreground size-5" />
+            <div className="flex size-10 items-center justify-center rounded-full bg-muted">
+              <UserPlus className="size-5 text-muted-foreground" />
             </div>
             <span className="text-sm font-medium">Use another account</span>
           </button>

@@ -59,13 +59,13 @@ export function CurrentUser(_props: CurrentUserProps) {
       <DropdownMenuContent className="w-72 border-none p-3">
         {/* <DropdownMenuLabel>My Account</DropdownMenuLabel> */}
         <DropdownMenuSeparator />
-        <div className="flex h-full w-full gap-3">
+        <div className="flex size-full gap-3">
           <Avatar>
             {avatarImage ? <AvatarImage src={avatarImage} alt={viewer.user?.name} /> : null}
             <AvatarFallback>{viewer.user?.name.slice(0, 2)}</AvatarFallback>
           </Avatar>
-          <div className="flex h-full w-full flex-col p-1">
-            <div className="i flex h-full w-full items-center gap-1">
+          <div className="flex size-full flex-col p-1">
+            <div className="i flex size-full items-center gap-1">
               <Mail className="size-3" />
               <span className="text-xs">{viewer.user?.email}</span>
             </div>
@@ -75,23 +75,23 @@ export function CurrentUser(_props: CurrentUserProps) {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem>
-            <User className="mr-2 h-4 w-4" />
+            <User className="mr-2 size-4" />
             <span>Profile</span>
             <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <Settings className="mr-2 h-4 w-4" />
+            <Settings className="mr-2 size-4" />
             <span>Settings</span>
             <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem>
-            <Keyboard className="mr-2 h-4 w-4" />
+            <Keyboard className="mr-2 size-4" />
             <span>Keyboard shortcuts</span>
             <DropdownMenuShortcut>⌘K</DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <div className="flex h-full w-full items-center justify-center gap-3">
+        <div className="flex size-full items-center justify-center gap-3">
           <MutationButton
             className="btn-error"
             onClick={() => logoutMutation.mutate()}

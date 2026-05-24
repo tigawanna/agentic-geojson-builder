@@ -37,10 +37,7 @@ function drawPdfControlPoints(
   });
 }
 
-export function capturePdfPaneToCanvas(
-  canvas: HTMLCanvasElement,
-  options?: CapturePdfPaneOptions,
-) {
+export function capturePdfPaneToCanvas(canvas: HTMLCanvasElement, options?: CapturePdfPaneOptions) {
   const outputCanvas = document.createElement("canvas");
   outputCanvas.width = canvas.width;
   outputCanvas.height = canvas.height;

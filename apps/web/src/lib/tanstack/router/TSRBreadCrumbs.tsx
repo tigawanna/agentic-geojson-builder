@@ -21,7 +21,7 @@ export function TSRBreadCrumbs(_props: TSRBreadCrumbsProps) {
             if (breadcrumb_routes.length - 1 === breadcrumb_routes?.indexOf(crumb)) {
               return (
                 <BreadcrumbItem key={crumb.path}>
-                  <BreadcrumbPage className="hover:text-accent-text hover:animate-in hover:fade-in line-clamp-1 cursor-pointer text-xs hover:max-w-fit hover:duration-300">
+                  <BreadcrumbPage className="hover:text-accent-text line-clamp-1 cursor-pointer text-xs hover:max-w-fit hover:animate-in hover:duration-300 hover:fade-in">
                     {crumb.name}
                   </BreadcrumbPage>
                 </BreadcrumbItem>
@@ -32,7 +32,7 @@ export function TSRBreadCrumbs(_props: TSRBreadCrumbsProps) {
                 <BreadcrumbItem key={crumb.path}>
                   <Link
                     to={crumb.path}
-                    className="hover:text-accent-text hover:animate-in hover:fade-in line-clamp-1 cursor-pointer text-xs hover:max-w-fit hover:duration-300"
+                    className="hover:text-accent-text line-clamp-1 cursor-pointer text-xs hover:max-w-fit hover:animate-in hover:duration-300 hover:fade-in"
                   >
                     {crumb.name}
                   </Link>

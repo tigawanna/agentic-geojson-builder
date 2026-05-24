@@ -22,7 +22,7 @@ export function ThemeToggle(_props: ThemeToggleProps) {
       <div className="hidden md:flex">
         {import.meta.env.DEV && (
           <select
-            className="select select-bordered select-sm max-w-xs"
+            className="select-bordered select max-w-xs select-sm"
             onChange={(e) => (document.documentElement.dataset.style = e.target.value)}
           >
             <option value="default">Default</option>

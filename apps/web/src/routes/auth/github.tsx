@@ -55,15 +55,15 @@ function RouteComponent() {
     <div className="flex min-h-screen flex-col items-center justify-center">
       <ResponsiveGenericToolbar>
         <div className="relative flex min-h-screen items-center justify-center px-4 py-10">
-          <div className="bg-base-300/40 pointer-events-none absolute inset-0 backdrop-blur-[2px]" />
+          <div className="pointer-events-none absolute inset-0 bg-base-300/40 backdrop-blur-[2px]" />
 
-          <div className="bg-base-100/95 border-base-content/10 relative w-full max-w-md rounded-2xl border p-8 shadow-[0_22px_48px_rgba(0,0,0,0.12)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_24px_56px_rgba(16,185,129,0.18)]">
+          <div className="relative w-full max-w-md rounded-2xl border border-base-content/10 bg-base-100/95 p-8 shadow-[0_22px_48px_rgba(0,0,0,0.12)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_24px_56px_rgba(16,185,129,0.18)]">
             <div className="flex flex-col items-center gap-3 text-center">
-              <div className="bg-base-200 text-base-content grid size-14 place-items-center rounded-full">
+              <div className="grid size-14 place-items-center rounded-full bg-base-200 text-base-content">
                 <GithubIcon className="size-7" />
               </div>
               <h1 className="text-2xl font-semibold tracking-tight">Sign in with GitHub</h1>
-              <p className="text-base-content/70 text-sm">
+              <p className="text-sm text-base-content/70">
                 Connect your account to access your GeoJSON map workspace.
               </p>
             </div>
@@ -72,7 +72,7 @@ function RouteComponent() {
               type="button"
               data-test="github-signin-btn"
               disabled={mutation.isPending}
-              className="btn btn-primary mt-7 w-full"
+              className="btn mt-7 w-full btn-primary"
               onClick={handleGitHubSignin}
             >
               <GithubIcon className="size-4" />

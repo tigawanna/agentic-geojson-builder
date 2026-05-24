@@ -927,7 +927,7 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
         <div className="flex shrink-0 items-center gap-2">
           <Label
             htmlFor="source-pdf"
-            className="btn btn-primary btn-sm cursor-pointer"
+            className="btn cursor-pointer btn-sm btn-primary"
             data-test="pdf-upload-label"
           >
             <Upload className="size-4" />
@@ -1128,7 +1128,7 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
                 <Label htmlFor="trace-path-kind">Path kind</Label>
                 <select
                   id="trace-path-kind"
-                  className="select select-bordered select-sm w-full"
+                  className="select-bordered select w-full select-sm"
                   value={segmentPathKind}
                   onChange={(event) =>
                     setSegmentPathKind(event.currentTarget.value as GeoSegmentPathKind)
@@ -1735,7 +1735,7 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
 
 function PanelLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="pointer-events-none absolute left-3 top-3 z-10 rounded-md border border-base-content/10 bg-base-100/90 px-2 py-1 text-xs font-medium text-base-content/80 shadow-sm backdrop-blur">
+    <div className="pointer-events-none absolute top-3 left-3 z-10 rounded-md border border-base-content/10 bg-base-100/90 px-2 py-1 text-xs font-medium text-base-content/80 shadow-sm backdrop-blur">
       {children}
     </div>
   );
@@ -2228,7 +2228,7 @@ function LeafletMapPane({
       {cursorCoordinatesLabel ? (
         <button
           type="button"
-          className="absolute bottom-8 right-3 z-[500] rounded-md border border-base-content/10 bg-base-100/95 px-2 py-1 font-mono text-xs text-base-content shadow-sm backdrop-blur hover:bg-base-100"
+          className="absolute right-3 bottom-8 z-500 rounded-md border border-base-content/10 bg-base-100/95 px-2 py-1 font-mono text-xs text-base-content shadow-sm backdrop-blur hover:bg-base-100"
           title="Click to copy cursor coordinates"
           onClick={() => {
             if (!cursorCoordinates) {
@@ -2525,7 +2525,7 @@ function PdfPreviewPane({
     <div
       ref={viewportRef}
       className={cn(
-        "absolute inset-0 overflow-hidden touch-none select-none",
+        "absolute inset-0 touch-none overflow-hidden select-none",
         canPickPdfPoint && pickModifierHeld
           ? "cursor-crosshair"
           : isDragging
@@ -2540,7 +2540,7 @@ function PdfPreviewPane({
       onPointerCancel={handlePointerUp}
       data-test="pdf-preview-pane"
     >
-      <div className="absolute left-1/2 top-1/2">
+      <div className="absolute top-1/2 left-1/2">
         <div
           className="relative inline-block"
           style={{
@@ -2573,7 +2573,7 @@ function PdfPreviewPane({
               <div
                 key={point.id}
                 className={cn(
-                  "absolute flex size-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white touch-none select-none cursor-grab active:cursor-grabbing",
+                  "absolute flex size-4 -translate-x-1/2 -translate-y-1/2 cursor-grab touch-none items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white select-none active:cursor-grabbing",
                   selectedControlPointId === point.id ? "size-5 bg-blue-600" : "bg-primary",
                 )}
                 style={{ left: displayX, top: displayY }}

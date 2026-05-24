@@ -239,13 +239,13 @@ export function AsyncSelect<T>({
             />
             {isLoading && filteredOptions.length > 0 && (
               <div className="absolute top-1/2 right-2 flex -translate-y-1/2 transform items-center">
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="size-4 animate-spin" />
               </div>
             )}
           </div>
           <CommandList>
             {error && (
-              <div className="text-destructive p-4 text-center">
+              <div className="p-4 text-center text-destructive">
                 {error instanceof Error ? error.message : "Failed to fetch options"}
               </div>
             )}
@@ -270,7 +270,7 @@ export function AsyncSelect<T>({
                   {renderOption(option)}
                   <Check
                     className={cn(
-                      "ml-auto h-3 w-3",
+                      "ml-auto size-3",
                       selectedValue === getOptionValue(option) ? "opacity-100" : "opacity-0",
                     )}
                   />
@@ -290,10 +290,10 @@ function DefaultLoadingSkeleton() {
       {[1, 2, 3].map((i) => (
         <CommandItem key={i} disabled>
           <div className="flex w-full items-center gap-2">
-            <div className="bg-muted h-6 w-6 animate-pulse rounded-full" />
+            <div className="size-6 animate-pulse rounded-full bg-muted" />
             <div className="flex flex-1 flex-col gap-1">
-              <div className="bg-muted h-4 w-24 animate-pulse rounded" />
-              <div className="bg-muted h-3 w-16 animate-pulse rounded" />
+              <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+              <div className="h-3 w-16 animate-pulse rounded bg-muted" />
             </div>
           </div>
         </CommandItem>

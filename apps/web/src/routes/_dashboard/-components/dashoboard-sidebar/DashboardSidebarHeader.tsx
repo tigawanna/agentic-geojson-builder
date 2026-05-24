@@ -17,9 +17,9 @@ export function DashboardSidebarHeader() {
           <SidebarMenuButton size="lg" asChild onClick={() => setOpenMobile(false)}>
             <Link
               to="/"
-              className="hover:bg-primary/10 cursor-pointer rounded-sm flex justify-center items-center"
+              className="flex cursor-pointer items-center justify-center rounded-sm hover:bg-primary/10"
             >
-              <AppConfig.icon className="text-primary size-6" />
+              <AppConfig.icon className="size-6 text-primary" />
               {state === "expanded" || isMobile ? (
                 <span className="font-serif text-xl tracking-tight">
                   {AppConfig.wordmark}
