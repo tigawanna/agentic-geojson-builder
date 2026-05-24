@@ -2,6 +2,8 @@
 
 Living inventory of what exists today in the map alignment workflow. Use this when writing user-facing documentation later.
 
+**Related docs:** [`docs/README.md`](README.md) · [`TODOS.md`](../TODOS.md) · [`agent-digitization-design.md`](agent-digitization-design.md)
+
 **Primary UI:** `apps/web/src/routes/_dashboard/maps/new/-components/MapAlignmentWorkspace.tsx`  
 **Map imperative API:** `apps/web/src/routes/_dashboard/maps/new/-components/map-handle.ts`  
 **Route:** `/maps/$id` (creating a map via `/maps/new` redirects to a new id)
@@ -14,21 +16,22 @@ Living inventory of what exists today in the map alignment workflow. Use this wh
 - Empty state with link to create a new map.
 - Delete map from the list.
 - Each map row links to its workspace and shows the uploaded PDF file name when present.
+- List scoped to the signed-in user (`owner_id`).
 
 ---
 
 ## Map creation and persistence
 
-- `/maps/new` creates an untitled map record in browser PGLite and redirects to `/maps/$id`.
+- `/maps/new` creates an untitled map record in **server Postgres** and redirects to `/maps/$id`.
 - Workspace state is persisted per map record:
   - Location search query text
   - Base map style (`satellite`, `outline`, `standard`)
   - PDF view transform (scale, rotation, pan X/Y)
   - PDF page count
   - Map viewport (center lat/lng, zoom)
-- PDF binary stored in PGLite (`pdf_data`) with file name and page count.
+- PDF binary stored in Postgres (`map.pdf_data` bytea) with file name and page count.
 - Debounced auto-save (800 ms) of workspace preferences after hydration.
-- PDF reloads from PGLite when reopening a map that already has a PDF.
+- PDF reloads from Postgres when reopening a map that already has a PDF.
 
 ---
 
@@ -106,7 +109,7 @@ Living inventory of what exists today in the map alignment workflow. Use this wh
 
 ## Reference points (control points)
 
-Georeferencing pairs link **PDF pixel coordinates** ↔ **WGS84 map coordinates**, stored in PGLite `control_point` with PostGIS point geometry.
+Georeferencing pairs link **PDF pixel coordinates** ↔ **WGS84 map coordinates**, stored in Postgres `control_point` with PostGIS point geometry.
 
 ### Add reference workflow
 
@@ -153,17 +156,19 @@ Opened via **Controls** in the header. Sections:
 
 ---
 
-## Data layer (PGLite)
+## Data layer (Postgres)
 
-| Table           | Purpose                                                              |
-| --------------- | -------------------------------------------------------------------- |
-| `map`           | Map metadata, PDF blob, viewport, transform prefs, base map style    |
-| `control_point` | Reference pairs: `image_x`, `image_y`, `location` (point, SRID 4326) |
+| Table           | Purpose                                                                       |
+| --------------- | ----------------------------------------------------------------------------- |
+| `map`           | Map metadata, PDF blob, viewport, transform prefs, base map style, `owner_id` |
+| `control_point` | Reference pairs: `image_x`, `image_y`, `location` (point, SRID 4326)          |
 
-Query/mutation modules:
+Server modules:
 
-- `apps/web/src/data-access-layer/pglite/maps-query-options.ts`
-- `apps/web/src/data-access-layer/pglite/control-points-query-options.ts`
+- `apps/web/src/data-access-layer/maps/` — `maps.server.ts`, `maps.functions.ts`, `maps-query-options.ts`
+- `apps/web/src/data-access-layer/control-points/` — same pattern
+
+Recovery import: `pnpm --filter web db:import-stash` (see `scripts/import-data-stash.mjs`).
 
 ---
 
@@ -184,9 +189,9 @@ Also exports base map tile config, default viewport, geocoding helper, coordinat
 
 - Affine georeference transform from control points (`compute_georeference`)
 - Feature tracing / GeoJSON segments / merge-on-export
-- Agent tools (`get_project_context`, `propose_feature_patch`, etc.)
+- Agent/MCP tools (`get_project_context`, `propose_feature_patch`, etc.)
 - Export GeoJSON
 - Multi-page PDF support (only page 1 rendered)
-- Server-side Postgres + external MCP (replacing browser PGLite)
+- External MCP endpoint (`/api/mcp`)
 
 Planned agent workflow, chunking strategies, reference-point correction, and **vision vs coordinates (JSON + tools, not screenshot-only)**: [`agent-digitization-design.md`](agent-digitization-design.md).

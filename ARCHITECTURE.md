@@ -12,55 +12,103 @@ Branding and copy live in `apps/web/src/utils/system.tsx` (`AppConfig`).
 
 ## Repository layout
 
-| Path         | Role                                                               |
-| ------------ | ------------------------------------------------------------------ |
-| `apps/web`   | TanStack Start app: UI, auth, project workspace, future map editor |
-| `legacy/`    | Archived copied app/schema code; excluded from active checks       |
-| `packages/*` | Shared libraries, types, configs                                   |
-| Root         | `package.json` scripts, Turbo pipeline, Vite+ CLI (`vp`)           |
+| Path         | Role                                                           |
+| ------------ | -------------------------------------------------------------- |
+| `apps/web`   | TanStack Start app: UI, auth, map workspace, server data layer |
+| `docs/`      | Feature inventory, agent design, handoff docs                  |
+| `legacy/`    | Archived copied app/schema code; excluded from active checks   |
+| `packages/*` | Shared libraries, types, configs                               |
+| Root         | `package.json` scripts, Turbo pipeline, Vite+ CLI (`vp`)       |
+
+---
+
+## Data layer (current)
+
+Single **PostgreSQL** database with PostGIS. Better Auth and map workspace share `DATABASE_URL`.
+
+| Table                              | Purpose                                             |
+| ---------------------------------- | --------------------------------------------------- |
+| Auth tables (`user`, `session`, …) | Better Auth                                         |
+| `map`                              | Map project: workspace prefs, PDF bytea, `owner_id` |
+| `control_point`                    | Georeferencing pairs (PDF pixels ↔ WGS84)           |
+
+Access pattern:
+
+```
+UI (React Query)
+  → *-query-options.ts
+  → *.functions.ts (createServerFn + session middleware)
+  → *.server.ts (Drizzle + ownership checks)
+  → lib/drizzle/client.server.ts
+```
+
+Schema: `apps/web/src/lib/drizzle/schema/`  
+Migrations: `apps/web/drizzle/migrations/` (`db:generate`, `db:migrate`)
+
+**Not in DB yet:** `georeference`, `geo_segment`, `geo_feature`, `agent_run`
+
+**Removed:** browser PGLite (was IndexedDB-only; removed so MCP/agents share server state). May return for Electron offline later.
 
 ---
 
 ## Frontend
 
 - **TanStack Router** - File-based routes under `src/routes/`; `routeTree.gen.ts` is generated.
-- **TanStack Query** - Data fetching; SSR integration via `@tanstack/react-router-ssr-query`.
+- **TanStack Query** - Data fetching via server functions.
 - **Styling** - Tailwind CSS v4, shadcn-style UI, DaisyUI theme tokens where needed.
-- **Auth** - Better Auth; dashboard routes can be protected with `beforeLoad` / middleware.
+- **Auth** - Better Auth; dashboard routes protected via `viewerMiddleware` / `beforeLoad`.
 
-Planned product modules:
+### Live routes
 
-- **Project workspace** - upload source maps, store metadata, manage versions.
-- **Georeferencing** - collect control points, transform image coordinates into map coordinates.
-- **Map editor** - draw LineString, Polygon, Point, and Multi\* features with snapping and vertex editing.
-- **Feature schema** - validate GeoJSON plus app-specific properties such as path type, confidence, source, and review status.
-- **Agent review loop** - agent drafts become editable features with confidence and provenance.
-- **Export** - GeoJSON FeatureCollection first, with later support for GPX, MBTiles, or vector tiles if needed.
+- `/maps` — list (paginated, user-scoped)
+- `/maps/new` — create map, redirect to `/maps/$id`
+- `/maps/$id` — alignment workspace (`MapAlignmentWorkspace`)
+
+### Planned product modules
+
+- **Georeferencing** — affine transform from control points (next)
+- **Map editor** — trace LineString/Polygon features
+- **Agent review loop** — draft segments, human accept
+- **Export** — GeoJSON FeatureCollection
+
+See [`docs/map-workspace-features.md`](docs/map-workspace-features.md) for implemented UI detail.
+
+---
+
+## Agent / MCP (planned)
+
+Thin adapters over the same server logic as the UI. Design: [`docs/agent-digitization-design.md`](docs/agent-digitization-design.md). Checklist: [`TODOS.md`](TODOS.md) Phase 2–4.
+
+Reference implementation: `legacy/apps-web-copied-resume-app/features/agentic-tools/` and external [`agentic-json-resume`](../agentic-json-resume/apps/web/src/features/agentic-tools/).
 
 ---
 
 ## Tooling
 
 - **`vp`** - Install, dev, build, lint, format, test where supported.
-- Prefer repo scripts over ad hoc tool invocations.
-- Keep server-only code in `*.server.ts` files and inside TanStack Start server function boundaries.
+- Keep server-only code in `*.server.ts` and inside TanStack Start server function handlers.
+- Dynamic `import()` of `*.server.ts` inside `createServerFn` handlers to satisfy import protection.
 
 ---
 
 ## Environment
 
 ```bash
-DATABASE_URL=postgresql://user:pass@localhost:5432/app?sslmode=require
-# Add secrets for auth, upload storage, tile providers, and OpenRouter as needed
+DATABASE_URL=postgresql://user:pass@localhost:5432/agentic_geojson_builder
+# Better Auth, GitHub OAuth, FRONTEND_URL — see apps/web/.env
 ```
 
 ---
 
-## Customization
+## Documentation
 
-1. Set `AppConfig` and absolute OG URLs in `apps/web/src/routes/__root.tsx` when you have a production domain.
-2. Implement shared GeoJSON/project schemas under `packages/isomorphic`.
-3. Build the map workspace in `apps/web` before adding public sharing or heavier agent flows.
+| Doc                                                                      | Contents                                            |
+| ------------------------------------------------------------------------ | --------------------------------------------------- |
+| [`TODOS.md`](TODOS.md)                                                   | Phased checklist, tool inventory, what's next       |
+| [`docs/map-workspace-features.md`](docs/map-workspace-features.md)       | Implemented UI features                             |
+| [`docs/agent-digitization-design.md`](docs/agent-digitization-design.md) | Agent chunking, vision vs coordinates, verification |
+| [`GAMEPLAN.md`](GAMEPLAN.md)                                             | Product workflow and modules                        |
+| [`VISION.md`](VISION.md)                                                 | Problem statement and vision                        |
 
 ---
 

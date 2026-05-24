@@ -15,6 +15,13 @@
       "when": 1779598132116,
       "tag": "0001_tense_franklin_richards",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779602389885,
+      "tag": "0002_steep_hellion",
+      "breakpoints": true
     }
   ]
 }

@@ -6,4 +6,5 @@ export const queryKeyPrefixes = {
   experiments: "experiments",
   maps: "maps",
   controlPoints: "controlPoints",
+  georeference: "georeference",
 } as const;

@@ -1,8 +1,29 @@
 # Agent-assisted digitization — design handoff
 
-Design decisions for how agents (in-app chat, MCP, external cloud tools) help turn PDF trail maps into georeferenced GeoJSON. Complements [`TODOS.md`](../TODOS.md) and [`map-workspace-features.md`](map-workspace-features.md).
+Design decisions for how agents (in-app chat, MCP, external cloud tools) help turn PDF trail maps into georeferenced GeoJSON.
+
+**Related docs:** [`docs/README.md`](README.md) · [`TODOS.md`](../TODOS.md) (tool inventory) · [`map-workspace-features.md`](map-workspace-features.md) (UI today)
 
 Reference case: **Karura Forest** PDF — multiple colored loops (5 km yellow, 10 km blue, bike track red, etc.).
+
+---
+
+## Implementation status
+
+What exists in code today vs what this doc specifies for agents/MCP.
+
+| Area                          | Status    | Notes                                                                                         |
+| ----------------------------- | --------- | --------------------------------------------------------------------------------------------- |
+| **Postgres persistence**      | Done      | `map` + `control_point` on server; `owner_id` scoping; PGLite removed                         |
+| **UI CRUD (maps, refs, PDF)** | Done      | `createServerFn` layer in `data-access-layer/maps/` and `control-points/`                     |
+| **Control point tools (UI)**  | Done      | `createControlPointFn`, `updateControlPointFn`, `deleteControlPointFn`, `listControlPointsFn` |
+| **Georeference**              | Not built | `compute_georeference`, `georeference` table, transform tools                                 |
+| **Segments / features**       | Not built | `geo_segment`, `geo_feature`, `apply_feature_patch`                                           |
+| **Agent context / vision**    | Not built | `get_project_context`, `get_rendered_map_view`                                                |
+| **Verification tools**        | Not built | Spec only (see below)                                                                         |
+| **MCP / agent tool layer**    | Not built | No `features/agentic-tools/` yet; UI server fns are not MCP-registered                        |
+
+When this doc names a tool (e.g. `create_control_point`), treat it as the **agent/MCP contract** unless marked “UI (done)”. The UI already persists control points via server functions with the same semantics.
 
 ---
 
@@ -661,19 +682,20 @@ Add these to `geojson-tool-schemas.ts` / `geojson-tools.server.ts` alongside wri
 
 Reference points are the grounding layer. Both humans and agents may need to adjust them.
 
-### Human (already built)
+### Human (already built — UI server)
 
-- Drag markers on PDF or map (auto-save)
+- Drag markers on PDF or map (auto-save via `updateControlPointFn`)
 - Edit PDF X/Y and lat/lng in controls modal
 - Delete and re-add pairs
+- Scoped to signed-in user’s maps (`owner_id`)
 
-### Agent-assisted (planned tools)
+### Agent-assisted (planned MCP/agent tools)
 
-| Tool                                | Purpose                                                                                  |
-| ----------------------------------- | ---------------------------------------------------------------------------------------- |
-| `update_control_point`              | Nudge PDF or map side when agent detects misalignment (e.g. gate icon off center)        |
-| `suggest_control_point_adjustments` | Return proposed deltas + rationale from overlay vs satellite comparison — human confirms |
-| `compute_georeference`              | Re-run affine after control point changes; surface residual error                        |
+| Tool                                | Purpose                                                           | UI server today?             |
+| ----------------------------------- | ----------------------------------------------------------------- | ---------------------------- |
+| `update_control_point`              | Nudge PDF or map side when misaligned                             | Yes (`updateControlPointFn`) |
+| `suggest_control_point_adjustments` | Proposed deltas + rationale; human confirms                       | No                           |
+| `compute_georeference`              | Re-run affine after control point changes; surface residual error | No                           |
 
 After any control point change:
 
@@ -713,20 +735,27 @@ Simplify on export even if raw vertices are stored internally.
 
 ---
 
-## Data model (target tables)
+## Data model
 
-Align with Phase 1 Postgres migration in `TODOS.md`:
+### Implemented (Postgres)
 
-| Table           | Role                                                      |
-| --------------- | --------------------------------------------------------- |
-| `map`           | Project + workspace prefs + PDF ref + `owner_id`          |
-| `control_point` | PDF ↔ WGS84 pairs                                         |
-| `georeference`  | Affine/projective transform JSON + RMS error              |
-| `geo_segment`   | Chunk geometry + `segmentGroupId` + order + status        |
-| `geo_feature`   | Merged accepted geometry (optional cache of merge output) |
-| `agent_run`     | Tool name, input snapshot ids, status, model              |
+| Table           | Role                                               | Module                              |
+| --------------- | -------------------------------------------------- | ----------------------------------- |
+| `map`           | Project + workspace prefs + PDF bytea + `owner_id` | `data-access-layer/maps/`           |
+| `control_point` | PDF ↔ WGS84 pairs (PostGIS point)                  | `data-access-layer/control-points/` |
 
-Start with `map` + `control_point`; add `geo_segment` before agent tracing ships.
+Schema: `apps/web/src/lib/drizzle/schema/maps/`
+
+### Planned (agent digitization)
+
+| Table          | Role                                                      |
+| -------------- | --------------------------------------------------------- |
+| `georeference` | Affine/projective transform JSON + RMS error              |
+| `geo_segment`  | Chunk geometry + `segmentGroupId` + order + status        |
+| `geo_feature`  | Merged accepted geometry (optional cache of merge output) |
+| `agent_run`    | Tool name, input snapshot ids, status, model              |
+
+Add `geo_segment` before agent tracing ships. Karura map id 1 already has 32 control points imported for georeference work.
 
 ---
 

@@ -15,6 +15,7 @@ import {
   updateControlPointMutationOptions,
   type ControlPointViewModel,
 } from "@/data-access-layer/control-points/control-points-query-options";
+import { getGeoreferenceQueryOptions } from "@/data-access-layer/georeference/georeference-query-options";
 import {
   getMapWorkspaceQueryOptions,
   loadMapPdfFile,
@@ -137,6 +138,26 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
   });
   const controlPointsQuery = useQuery({
     ...listControlPointsQueryOptions(mapId),
+  });
+  const controlPoints = controlPointsQuery.data ?? [];
+  const controlPointSignature =
+    controlPoints.length >= 3
+      ? controlPoints
+          .map(
+            (point) =>
+              `${point.id}:${point.imageX.toFixed(3)}:${point.imageY.toFixed(3)}:${point.latitude.toFixed(6)}:${point.longitude.toFixed(6)}`,
+          )
+          .join("|")
+      : null;
+  const { debouncedValue: debouncedControlPointSignature } = useDebouncedValue(
+    controlPointSignature ?? "",
+    600,
+  );
+  const georeferenceQuery = useQuery({
+    ...getGeoreferenceQueryOptions(
+      mapId,
+      debouncedControlPointSignature.length > 0 ? debouncedControlPointSignature : null,
+    ),
   });
   const createControlPointMutation = useMutation(createControlPointMutationOptions());
   const deleteControlPointMutation = useMutation(deleteControlPointMutationOptions());
@@ -656,11 +677,42 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
           </DialogHeader>
 
           <div className="grid gap-5">
+            <div className="space-y-2 rounded-md border border-base-content/10 bg-base-200 px-3 py-3">
+              <div className="space-y-1">
+                <h2 className="text-sm font-semibold">Georeference</h2>
+                <p className="text-sm text-base-content/70">
+                  Affine transform from saved reference points (PDF pixels to map coordinates).
+                </p>
+              </div>
+              {georeferenceQuery.isLoading || georeferenceQuery.isFetching ? (
+                <p className="text-sm text-base-content/60" data-test="georeference-status">
+                  Computing transform…
+                </p>
+              ) : georeferenceQuery.data?.ready ? (
+                <div className="space-y-1 text-sm" data-test="georeference-status">
+                  <p className="font-medium text-success">Ready</p>
+                  <p className="text-base-content/70">
+                    RMS error {georeferenceQuery.data.residualErrorMeters.toFixed(1)} m · max{" "}
+                    {georeferenceQuery.data.maxErrorMeters.toFixed(1)} m ·{" "}
+                    {georeferenceQuery.data.controlPointCount} reference points
+                  </p>
+                </div>
+              ) : (
+                <p className="text-sm text-base-content/60" data-test="georeference-status">
+                  {georeferenceQuery.data?.reason === "insufficient_control_points"
+                    ? `Need at least 3 reference points (${georeferenceQuery.data.controlPointCount} saved).`
+                    : georeferenceQuery.data?.reason === "singular_transform"
+                      ? "Reference points do not form a valid affine transform."
+                      : "Georeference not ready."}
+                </p>
+              )}
+            </div>
+
             <div className="space-y-3">
               <div className="space-y-1">
                 <h2 className="text-sm font-semibold">Reference points</h2>
                 <p className="text-sm text-base-content/70">
-                  Saved links between PDF pixels and map coordinates in PGLite.
+                  Saved links between PDF pixels and map coordinates in Postgres.
                 </p>
               </div>
 

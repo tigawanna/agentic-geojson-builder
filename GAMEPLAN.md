@@ -2,18 +2,34 @@
 
 ## Goal
 
-Turn this copied full-stack TypeScript workspace into a focused foundation for an app that converts map images and PDFs into georeferenced, editable GeoJSON. The Karura Forest PDF is the reference case: a human can trace paths, an agent can propose drafts, and the final output is reviewable structured spatial data.
+Turn this workspace into a focused app that converts map images and PDFs into georeferenced, editable GeoJSON. The Karura Forest PDF is the reference case: a human can trace paths, an agent can propose drafts, and the final output is reviewable structured spatial data.
 
 ## Product Workflow
 
-1. Create a project and upload a source map image or PDF.
-2. Pick a base map mode: Leaflet/OpenStreetMap first, optional Google Maps when imagery or labels help more.
-3. Georeference the source asset by placing control points between the image and real map coordinates.
+1. Create a map and upload a source PDF.
+2. Pick a base map style (satellite default, outline, standard).
+3. Georeference by placing control points between the PDF and real map coordinates.
 4. Trace or import GeoJSON features on top of the aligned overlay.
 5. Let an agent inspect the overlay and base map to propose draft paths, labels, and feature properties.
 6. Review, edit, validate, and export a GeoJSON FeatureCollection.
 
-## Core TypeScript Modules
+## Implementation status (maps module)
+
+| Module (plan)    | Current code                  | Status                                |
+| ---------------- | ----------------------------- | ------------------------------------- |
+| `projects`       | `map` table + `/maps` routes  | Done (named `map`, not `map_project`) |
+| `assets`         | PDF in `map.pdf_data` bytea   | Done (single PDF per map)             |
+| `georeferencing` | `control_point` + UI workflow | Done (no affine transform yet)        |
+| `features`       | —                             | Not started                           |
+| `editor-session` | Workspace prefs on `map` row  | Partial (viewport, PDF transform)     |
+| `agent-runs`     | —                             | Not started                           |
+| `exports`        | —                             | Not started                           |
+
+Routes: **`/maps`**, not `/map-projects`. Persistence: **Postgres**, not browser PGLite.
+
+Details: [`docs/map-workspace-features.md`](docs/map-workspace-features.md) · Next steps: [`TODOS.md`](TODOS.md)
+
+## Core TypeScript Modules (target)
 
 | Module           | Responsibility                                                      |
 | ---------------- | ------------------------------------------------------------------- |
@@ -25,61 +41,65 @@ Turn this copied full-stack TypeScript workspace into a focused foundation for a
 | `agent-runs`     | Agent requests, proposed features, provenance, acceptance state     |
 | `exports`        | GeoJSON snapshots and later GPX/vector tile outputs                 |
 
-Keep shared schemas in `packages/isomorphic` with Zod v4. Client and server code should import the same schema types instead of duplicating contracts.
+Keep shared schemas in `packages/isomorphic` with Zod v4.
 
 ## Map And GIS Tooling
 
-- **Map display:** Leaflet via React bindings or direct Leaflet integration inside a route component.
-- **Drawing/editing:** start with Leaflet-Geoman or Leaflet.Draw; prefer a proven editor over hand-written vertex math.
-- **Geometry validation:** `@turf/turf` modules for bounds, length, simplification, nearest point, line splitting, and sanity checks.
-- **PDF rasterization:** server-side Poppler or PDF.js rendering into page images; keep originals and rendered previews separate.
-- **Coordinate transforms:** start with affine transform from 3+ control points; later add thin plate spline or projective transform if scans are warped.
-- **Elevation:** optional later pass using a DEM/elevation API per traced LineString, stored as derived metadata rather than blocking initial tracing.
+- **Map display:** Leaflet in `MapAlignmentWorkspace` + `map-handle.ts`
+- **Drawing/editing:** Leaflet-Geoman or Leaflet.Draw (planned for trace mode)
+- **Geometry validation:** `@turf/turf` (planned)
+- **PDF rasterization:** PDF.js client-side, page 1 at 1.5× scale
+- **Coordinate transforms:** affine from 3+ control points (planned)
 
 ## Human Tools
 
-- Upload PDF/image.
-- Choose base map provider.
-- Add/edit georeferencing control points.
-- Draw Point, LineString, Polygon, and MultiLineString features.
-- Snap vertices, split/merge paths, simplify geometry, and edit properties.
-- Toggle overlay opacity, source layer visibility, and base map style.
-- Export validated GeoJSON.
+Implemented today — see [`docs/map-workspace-features.md`](docs/map-workspace-features.md):
+
+- Upload PDF, base map styles, control points, paste Google Maps coords
+- Drag refs on PDF and map, edit/delete, workspace auto-save
+
+Not yet:
+
+- Draw/trace LineString features, export GeoJSON, multi-page PDF
 
 ## Agent Tools
 
-Agent tools should be thin wrappers around the same project state used by the UI:
+Agent tools should be thin wrappers around the same project state used by the UI. Several **UI server functions already exist**; MCP/agent registration is Phase 2.
 
-| Tool                            | Purpose                                                                        |
-| ------------------------------- | ------------------------------------------------------------------------------ |
-| `get_project_context`           | Return asset metadata, control points, bounds, existing features               |
-| `get_rendered_map_view`         | Return PDF + map viewport PNGs **and** bounds/canvas metadata (see design doc) |
-| `pdf_pixel_to_lon_lat`          | Convert traced PDF pixels to WGS84 using stored georeference                   |
-| `lon_lat_to_pdf_pixel`          | Inverse transform for map-side reference work                                  |
-| `propose_features_from_overlay` | Draft GeoJSON features from overlay and labels (prefer pdf-pixels output)      |
-| `validate_geojson_features`     | Check geometry validity, properties, duplicates, and suspicious segments       |
-| `apply_feature_patch`           | Add/update/delete draft features through a typed patch format                  |
-| `explain_feature`               | Explain why a proposed feature exists and what visual evidence supports it     |
+| Tool                                          | Purpose                   | UI server today? |
+| --------------------------------------------- | ------------------------- | ---------------- |
+| `list_maps` / `get_map_workspace` / CRUD maps | Map workspace             | Yes              |
+| `list_control_points` / CRUD control points   | Georeferencing            | Yes              |
+| `get_project_context`                         | Agent context JSON        | No               |
+| `get_rendered_map_view`                       | PDF + map PNGs + metadata | No               |
+| `compute_georeference` / transform tools      | PDF ↔ WGS84               | No               |
+| `apply_feature_patch`                         | Draft segments            | No               |
+| `propose_features_from_overlay`               | Vision tracing            | No               |
 
-Expose these first through server functions/oRPC. MCP can wrap the same operations once auth and project permissions are solid.
+Full inventory: [`TODOS.md`](TODOS.md). Vision vs coordinates: [`docs/agent-digitization-design.md`](docs/agent-digitization-design.md).
 
-**Vision vs coordinates:** agents get location from JSON context + transform tools, not from screenshots alone. Images are for tracing and QA; lat/lng come from control points, bounds metadata, and server-side conversion. See [`docs/agent-digitization-design.md`](docs/agent-digitization-design.md).
+Expose agent tools through `features/agentic-tools/` + oRPC + MCP (mirror json-resume).
 
 ## AI Chat Direction
 
-If an in-app chat is useful, use TanStack AI with OpenRouter. The chat should be project-aware and tool-first: it should ask for viewport/context, propose feature patches, and explain uncertainty. It should not directly mutate final GeoJSON without creating a reviewable draft.
+TanStack AI with OpenRouter. Tool-first, project-aware, draft-only writes. Route: `routes/api/ai/map-assistant.ts` (planned).
 
-## Data Model Sketch
+## Data Model
 
-- `project`: owner, name, location hint, default CRS, created/updated timestamps.
-- `source_asset`: project id, type, original file key, rendered page keys, dimensions.
-- `control_point`: project id, asset id, image x/y, longitude, latitude, residual error.
-- `geo_feature`: project id, GeoJSON geometry, properties JSON, source, status, confidence.
-- `agent_run`: project id, model, prompt summary, input snapshot ids, output status.
-- `feature_revision`: project id, feature id, patch, actor, created timestamp.
+### Implemented (Postgres)
 
-Do schema changes through Drizzle schema files and commands only. Do not hand-edit migrations.
+- `map`: `owner_id`, name, viewport, PDF transform, `pdf_data`, etc.
+- `control_point`: `map_id`, `image_x`, `image_y`, PostGIS `location`
+
+### Planned
+
+- `georeference`: transform JSON, residual error
+- `geo_segment`: chunked agent patches
+- `geo_feature`: merged accepted geometry
+- `agent_run`: audit trail
+
+Schema changes via Drizzle only (`pnpm --filter web db:generate`).
 
 ## Cleanup Notes
 
-Copied app and schema code now lives under `legacy/`, and both TypeScript and Vite+ checks ignore that archive. The active workspace is narrowed to `apps/web` and `packages/*`; future cleanup should delete or externalize the archive once the new GeoJSON data layer has enough of its own shape.
+Copied app code lives under `legacy/`. Active workspace: `apps/web` + `packages/*`. PGLite removed from web app; server Postgres is authoritative.

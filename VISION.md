@@ -14,10 +14,15 @@ The near-term workflow is manual but structured: georeference, draw, label, vali
 
 ## Near-term priority
 
-Ship the builder foundation: project records, asset upload, image/PDF preview, map overlay calibration, manual drawing tools, GeoJSON validation, and export. Agent and MCP tools should be designed around the same project state so automation and human edits converge on one source of truth.
+1. **Done:** Map workspace on server Postgres — upload PDF, place control points, persist per user.
+2. **Next:** Affine georeference from control points; agent/MCP tool layer on same server state.
+3. **Then:** Segment-based tracing, agent vision loop, GeoJSON export.
+
+All automation and human edits must converge on **one Postgres source of truth** (MCP-ready). See [`TODOS.md`](TODOS.md) and [`docs/agent-digitization-design.md`](docs/agent-digitization-design.md).
 
 ## Non-goals (for now)
 
 - Fully automatic extraction with no human review
 - Owning base map data or replacing Leaflet/Google Maps
 - Solving every GIS format before GeoJSON is excellent
+- Browser-only database sync (PGLite removed from web; may return for Electron offline)

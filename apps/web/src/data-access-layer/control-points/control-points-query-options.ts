@@ -39,6 +39,9 @@ export const createControlPointMutationOptions = () =>
       void ctx.client.invalidateQueries({
         queryKey: [queryKeyPrefixes.controlPoints, point.mapId],
       });
+      void ctx.client.invalidateQueries({
+        queryKey: [queryKeyPrefixes.georeference, point.mapId],
+      });
       toast.success("Reference point saved");
     },
     onError: (err: unknown) => {
@@ -56,6 +59,9 @@ export const deleteControlPointMutationOptions = () =>
       void ctx.client.invalidateQueries({
         queryKey: [queryKeyPrefixes.controlPoints, variables.mapId],
       });
+      void ctx.client.invalidateQueries({
+        queryKey: [queryKeyPrefixes.georeference, variables.mapId],
+      });
       toast.success("Reference point removed");
     },
     onError: (err: unknown) => {
@@ -71,6 +77,9 @@ export const updateControlPointMutationOptions = () =>
     onSuccess: (point, variables, __, ctx) => {
       void ctx.client.invalidateQueries({
         queryKey: [queryKeyPrefixes.controlPoints, point.mapId],
+      });
+      void ctx.client.invalidateQueries({
+        queryKey: [queryKeyPrefixes.georeference, point.mapId],
       });
       if (!variables.silent) {
         toast.success("Reference point updated");
