@@ -10,7 +10,7 @@ import { multiSession } from "better-auth/plugins/multi-session";
 import { organization } from "better-auth/plugins/organization";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { db } from "./drizzle/client.server";
-import * as authSchema from "./drizzle/scheam/auth-schema";
+import * as authSchema from "./drizzle/schema/auth-schema";
 import { serverEnv } from "./server-env";
 
 export const auth = betterAuth({
