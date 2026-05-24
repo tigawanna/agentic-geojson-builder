@@ -17,21 +17,13 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:pglite:generate": "drizzle-kit generate --config drizzle.pglite.config.ts",
-    "db:pglite:migrate": "drizzle-kit migrate --config drizzle.pglite.config.ts",
-    "db:pglite:push": "drizzle-kit push --config drizzle.pglite.config.ts",
-    "db:pglite:studio": "drizzle-kit studio --config drizzle.pglite.config.ts",
-    "db:pglite:custom-migrations": "pnpm drizzle-kit generate --custom --name=extensions --config drizzle.pglite.config.ts"
+    "db:import-stash": "node scripts/import-data-stash.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.1.0",
     "@better-auth/api-key": "^1.6.11",
     "@better-auth/oauth-provider": "^1.6.11",
-    "@electric-sql/pglite": "^0.4.5",
-    "@electric-sql/pglite-postgis": "^0.0.7",
     "@hookform/resolvers": "^5.2.2",
-    "@libsql/client": "^0.17.2",
-    "@proj-airi/drizzle-orm-browser-migrator": "^0.1.6",
     "@repo/isomorphic": "workspace:*",
     "@tailwindcss/vite": "^4.3.0",
     "@tanem/react-nprogress": "^5.0.56",
@@ -83,7 +75,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
-    "@proj-airi/unplugin-drizzle-orm-migrations": "^0.1.6",
     "@tanstack/devtools-vite": "^0.7.0",
     "@tanstack/react-devtools": "^0.10.5",
     "@tanstack/react-pacer-devtools": "^0.7.1",

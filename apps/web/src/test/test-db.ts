@@ -1,53 +1,50 @@
-import { createClient, type Client } from "@libsql/client";
-import { readdirSync, readFileSync, rmSync } from "node:fs";
-import { mkdtemp } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { readdirSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import pg from "pg";
 import { vi } from "vitest";
 
 export type TestDatabase = {
-  databasePath: string;
   databaseUrl: string;
-  tempDir: string;
-  cleanup: () => void;
+  cleanup: () => Promise<void>;
 };
 
-export async function runDrizzleMigrations(client: Client): Promise<void> {
-  const migrationDir = new URL("../../drizzle/migrations/", import.meta.url);
+async function runPostgresMigrations(client: pg.Client) {
+  const migrationDir = fileURLToPath(new URL("../../drizzle/migrations/", import.meta.url));
   const migrationFiles = readdirSync(migrationDir)
     .filter((file) => file.endsWith(".sql"))
     .sort();
 
   for (const file of migrationFiles) {
-    const migration = readFileSync(new URL(file, migrationDir), "utf8");
+    const migration = readFileSync(`${migrationDir}/${file}`, "utf8");
     const statements = migration
       .split("--> statement-breakpoint")
       .map((statement) => statement.trim())
       .filter((statement) => statement.length > 0);
 
     for (const statement of statements) {
-      await client.execute(statement);
+      await client.query(statement);
     }
   }
 }
 
-export async function createMigratedTestDatabase(prefix = "agb-test-"): Promise<TestDatabase> {
-  const tempDir = await mkdtemp(join(tmpdir(), prefix));
-  const databasePath = join(tempDir, "test.sqlite");
-  const databaseUrl = `file:${databasePath}`;
-  const client = createClient({ url: databaseUrl });
+export async function createMigratedTestDatabase(): Promise<TestDatabase> {
+  const databaseUrl = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error("TEST_DATABASE_URL or DATABASE_URL is required for test database setup.");
+  }
+
+  const client = new pg.Client({ connectionString: databaseUrl });
+  await client.connect();
 
   try {
-    await runDrizzleMigrations(client);
+    await runPostgresMigrations(client);
   } finally {
-    client.close();
+    await client.end();
   }
 
   return {
-    databasePath,
     databaseUrl,
-    tempDir,
-    cleanup: () => rmSync(tempDir, { recursive: true, force: true }),
+    cleanup: async () => {},
   };
 }
 

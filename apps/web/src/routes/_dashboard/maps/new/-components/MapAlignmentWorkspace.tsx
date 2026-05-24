@@ -14,14 +14,14 @@ import {
   listControlPointsQueryOptions,
   updateControlPointMutationOptions,
   type ControlPointViewModel,
-} from "@/data-access-layer/pglite/control-points-query-options";
+} from "@/data-access-layer/control-points/control-points-query-options";
 import {
   getMapWorkspaceQueryOptions,
   loadMapPdfFile,
   saveMapPdfMutationOptions,
   updateMapWorkspaceMutationOptions,
   type MapViewport,
-} from "@/data-access-layer/pglite/maps-query-options";
+} from "@/data-access-layer/maps/maps-query-options";
 import {
   copyMapCoordinates,
   createBaseLayer,
@@ -31,7 +31,6 @@ import {
   type MapHandle,
 } from "./map-handle";
 import { useDebouncedValue } from "@/hooks/use-debouncer";
-import { usePglite } from "@/lib/pglite/components/PgliteProvider";
 import { cn } from "@/lib/utils";
 import { unwrapUnknownError } from "@/utils/errors";
 import { parseMapCoordinates } from "@/utils/parse-map-coordinates";
@@ -112,7 +111,6 @@ function getImageCoordinatesFromPointer(
 }
 
 export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
-  const { db } = usePglite();
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [pageCount, setPageCount] = useState<number | null>(null);
@@ -135,16 +133,16 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
   const mapHandleRef = useRef<MapHandle | null>(null);
 
   const mapQuery = useQuery({
-    ...getMapWorkspaceQueryOptions(db, mapId),
+    ...getMapWorkspaceQueryOptions(mapId),
   });
   const controlPointsQuery = useQuery({
-    ...listControlPointsQueryOptions(db, mapId),
+    ...listControlPointsQueryOptions(mapId),
   });
-  const createControlPointMutation = useMutation(createControlPointMutationOptions(db));
-  const deleteControlPointMutation = useMutation(deleteControlPointMutationOptions(db));
-  const updateControlPointMutation = useMutation(updateControlPointMutationOptions(db));
-  const savePdfMutation = useMutation(saveMapPdfMutationOptions(db));
-  const saveWorkspaceMutation = useMutation(updateMapWorkspaceMutationOptions(db));
+  const createControlPointMutation = useMutation(createControlPointMutationOptions());
+  const deleteControlPointMutation = useMutation(deleteControlPointMutationOptions());
+  const updateControlPointMutation = useMutation(updateControlPointMutationOptions());
+  const savePdfMutation = useMutation(saveMapPdfMutationOptions());
+  const saveWorkspaceMutation = useMutation(updateMapWorkspaceMutationOptions());
 
   const workspaceSnapshot = useMemo(
     () => ({
@@ -197,7 +195,7 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
 
     let cancelled = false;
 
-    void loadMapPdfFile(db, mapId).then((file) => {
+    void loadMapPdfFile(mapId).then((file) => {
       if (!cancelled && file) {
         setPdfFile(file);
       }
@@ -206,7 +204,7 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
     return () => {
       cancelled = true;
     };
-  }, [db, isHydrated, mapId, mapQuery.data?.hasPdf]);
+  }, [isHydrated, mapId, mapQuery.data?.hasPdf]);
 
   useEffect(() => {
     if (!isHydrated) {

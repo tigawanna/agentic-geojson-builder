@@ -1,21 +1,12 @@
-import { createClient } from "@libsql/client";
-import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
-import { dirname, isAbsolute, join } from "node:path";
+import "dotenv/config";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import pg from "pg";
 
 const appDir = fileURLToPath(new URL("../", import.meta.url));
-const defaultDatabasePath = join(appDir, ".test", "db", "e2e.sqlite");
-const databaseUrl = process.env.DATABASE_URL ?? `file:${defaultDatabasePath}`;
+const databaseUrl = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
 const resetDatabase = process.env.TEST_DB_RESET !== "false";
-
-function toFilePath(url) {
-  if (!url.startsWith("file:")) {
-    throw new Error(`setup-test-db only supports file: DATABASE_URL values. Received: ${url}`);
-  }
-
-  const rawPath = url.slice("file:".length);
-  return isAbsolute(rawPath) ? rawPath : join(appDir, rawPath);
-}
 
 function readMigrationStatements() {
   const migrationDir = join(appDir, "drizzle", "migrations");
@@ -31,22 +22,28 @@ function readMigrationStatements() {
     });
 }
 
-const databasePath = toFilePath(databaseUrl);
-mkdirSync(dirname(databasePath), { recursive: true });
-
-if (resetDatabase && existsSync(databasePath)) {
-  rmSync(databasePath, { force: true });
-  rmSync(`${databasePath}-shm`, { force: true });
-  rmSync(`${databasePath}-wal`, { force: true });
+if (!databaseUrl) {
+  throw new Error("TEST_DATABASE_URL or DATABASE_URL is required for setup-test-db.");
 }
 
-const client = createClient({ url: databaseUrl, authToken: process.env.DATABASE_AUTH_TOKEN ?? "" });
+const client = new pg.Client({ connectionString: databaseUrl });
 
 try {
-  for (const statement of readMigrationStatements()) {
-    await client.execute(statement);
+  await client.connect();
+
+  if (resetDatabase) {
+    await client.query(`
+      DROP SCHEMA IF EXISTS public CASCADE;
+      CREATE SCHEMA public;
+      GRANT ALL ON SCHEMA public TO public;
+    `);
   }
-  console.log(`Prepared test database at ${databasePath}`);
+
+  for (const statement of readMigrationStatements()) {
+    await client.query(statement);
+  }
+
+  console.log(`Prepared test database at ${databaseUrl}`);
 } finally {
-  client.close();
+  await client.end();
 }

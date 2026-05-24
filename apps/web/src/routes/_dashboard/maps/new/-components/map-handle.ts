@@ -1,7 +1,4 @@
-import {
-  type MapBaseMapStyle,
-  type MapViewport,
-} from "@/data-access-layer/pglite/maps-query-options";
+import { type MapBaseMapStyle, type MapViewport } from "@/data-access-layer/maps/maps.types";
 import { unwrapUnknownError } from "@/utils/errors";
 import { toast } from "sonner";
 import type * as Leaflet from "leaflet";

@@ -3,8 +3,7 @@ import { Empty, EmptyContent, EmptyDescription, EmptyTitle } from "@/components/
 import {
   deleteMapMutationOptions,
   listMapsQueryOptions,
-} from "@/data-access-layer/pglite/maps-query-options";
-import { usePglite } from "@/lib/pglite/components/PgliteProvider";
+} from "@/data-access-layer/maps/maps-query-options";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Trash2 } from "lucide-react";
@@ -26,13 +25,12 @@ export const Route = createFileRoute("/_dashboard/maps/")({
 });
 
 function RouteComponent() {
-  const { db } = usePglite();
   const { sq, cursor, dir } = Route.useSearch();
   const deleteMapMutation = useMutation({
-    ...deleteMapMutationOptions(db),
+    ...deleteMapMutationOptions(),
   });
   const query = useQuery({
-    ...listMapsQueryOptions(db, {
+    ...listMapsQueryOptions({
       keyword: sq,
       cursor,
       direction: dir,
