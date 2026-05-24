@@ -52,11 +52,13 @@ Key paths:
 
 ### Agent / MCP
 
-- `/api/mcp` — **missing** (404)
-- MCP settings UI — commented out
-- No TanStack AI chat route yet
-- No `features/agentic-tools/` folder yet
-- Legacy resume MCP/oRPC stack preserved under `legacy/apps-web-copied-resume-app/features/agentic-tools/`
+- `/api/mcp` — **live** (API key auth, 16 tools)
+- `/api/agentic/*` — OpenAPI HTTP routes
+- `/api/agentic/rpc/*` — typed oRPC
+- `/api/agentic/openapi/json` — OpenAPI spec
+- MCP settings UI — **enabled** in Settings
+- No TanStack AI chat route yet (`map-assistant.ts`)
+- Tool layer: `apps/web/src/features/agentic-tools/`
 
 ### Historical notes (do not revive)
 
@@ -122,66 +124,45 @@ PDF storage: **bytea in Postgres** (option A). Large-file filesystem storage def
 
 ---
 
-## Phase 2 — Shared agent tool layer (next priority)
+## Phase 2 — Shared agent tool layer ✅ core complete
 
-Wrap existing server logic in `features/agentic-tools/` (mirror json-resume):
-
-```
-packages/isomorphic (Zod contracts)
-        ↓
-geojson-tool-schemas.ts
-        ↓
-geojson-tools.server.ts          ← delegates to maps.* / control-points.* / georeference.*
-        ↓
-geojson-orpc-router.server.ts
-        ↓
-┌─────────────────┬──────────────────────┬─────────────────────────┐
-geojson-mcp       /api/agentic/*         geojson-agent.server.ts
-```
-
-Create folder: `apps/web/src/features/agentic-tools/` (see json-resume reference)
-
-Wire routes:
-
-- `apps/web/src/routes/api/mcp.ts`
-- `apps/web/src/routes/api/agentic/$.ts`
-- `apps/web/src/routes/api/agentic/rpc/$.ts`
-- `apps/web/src/routes/api/agentic/openapi.json.ts`
-- `apps/web/src/routes/api/ai/map-assistant.ts`
-
-Re-enable `McpConnectSection` in settings once `/api/mcp` exists.
+- [x] `features/agentic-tools/` — schemas, tools, oRPC router, MCP server
+- [x] `/api/mcp` streamable HTTP + API key auth
+- [x] `/api/agentic/*`, `/api/agentic/rpc/*`, `/api/agentic/openapi/json`
+- [x] Re-enable `McpConnectSection` in settings
+- [ ] In-app agent chat — `routes/api/ai/map-assistant.ts` + TanStack AI tab
 
 ---
 
 ## Tool inventory
 
-Legend: **UI** = exposed via `createServerFn` today · **Agent** = MCP/TanStack AI registration (planned) · **—** = not built
+Legend: **UI** = `createServerFn` · **Agent** = MCP + oRPC registered
 
 ### Maps & control points
 
 | Tool name                           | Purpose                                   | UI                           | Agent |
 | ----------------------------------- | ----------------------------------------- | ---------------------------- | ----- |
-| `list_maps`                         | Paginated maps for user                   | Yes (`listMapsFn`)           | —     |
-| `get_map_workspace`                 | Map metadata + workspace prefs            | Yes (`getMapWorkspaceFn`)    | —     |
-| `create_map`                        | New map                                   | Yes (`createMapFn`)          | —     |
-| `update_map_workspace`              | Viewport, transform, base map style       | Yes (`updateMapWorkspaceFn`) | —     |
-| `delete_map`                        | Delete map + cascade control points       | Yes (`deleteMapFn`)          | —     |
-| `save_map_pdf`                      | Upload/replace PDF bytea                  | Yes (`saveMapPdfFn`)         | —     |
-| `load_map_pdf`                      | Download PDF for client `File`            | Yes (`loadMapPdfFn`)         | —     |
-| `list_control_points`               | Control points for a map                  | Yes (`listControlPointsFn`)  | —     |
-| `create_control_point`              | PDF pixel ↔ lat/lng pair                  | Yes (`createControlPointFn`) | —     |
-| `update_control_point`              | Edit or drag-sync a point                 | Yes (`updateControlPointFn`) | —     |
-| `delete_control_point`              | Remove reference point                    | Yes (`deleteControlPointFn`) | —     |
+| `list_maps`                         | Paginated maps for user                   | Yes (`listMapsFn`)           | Yes   |
+| `get_map_workspace`                 | Map metadata + workspace prefs            | Yes (`getMapWorkspaceFn`)    | Yes   |
+| `create_map`                        | New map                                   | Yes (`createMapFn`)          | Yes   |
+| `update_map_workspace`              | Viewport, transform, base map style       | Yes (`updateMapWorkspaceFn`) | Yes   |
+| `delete_map`                        | Delete map + cascade control points       | Yes (`deleteMapFn`)          | Yes   |
+| `save_map_pdf`                      | Upload/replace PDF bytea                  | Yes (`saveMapPdfFn`)         | Yes   |
+| `load_map_pdf`                      | Download PDF for client `File`            | Yes (`loadMapPdfFn`)         | Yes   |
+| `list_control_points`               | Control points for a map                  | Yes (`listControlPointsFn`)  | Yes   |
+| `create_control_point`              | PDF pixel ↔ lat/lng pair                  | Yes (`createControlPointFn`) | Yes   |
+| `update_control_point`              | Edit or drag-sync a point                 | Yes (`updateControlPointFn`) | Yes   |
+| `delete_control_point`              | Remove reference point                    | Yes (`deleteControlPointFn`) | Yes   |
 | `suggest_control_point_adjustments` | Proposed nudges from overlay vs satellite | —                            | —     |
 
 ### Georeference & features (planned)
 
 | Tool name                   | Purpose                           | UI                            | Agent |
 | --------------------------- | --------------------------------- | ----------------------------- | ----- |
-| `get_project_context`       | Aggregated JSON for agent context | —                             | —     |
-| `compute_georeference`      | Affine from 3+ control points     | Yes (`computeGeoreferenceFn`) | —     |
-| `pdf_pixel_to_lon_lat`      | PDF pixel → WGS84                 | Yes (`pdfPixelToLonLatFn`)    | —     |
-| `lon_lat_to_pdf_pixel`      | Inverse transform                 | Yes (`lonLatToPdfPixelFn`)    | —     |
+| `get_project_context`       | Aggregated JSON for agent context | —                             | Yes   |
+| `compute_georeference`      | Affine from 3+ control points     | Yes (`computeGeoreferenceFn`) | Yes   |
+| `pdf_pixel_to_lon_lat`      | PDF pixel → WGS84                 | Yes (`pdfPixelToLonLatFn`)    | Yes   |
+| `lon_lat_to_pdf_pixel`      | Inverse transform                 | Yes (`lonLatToPdfPixelFn`)    | Yes   |
 | `list_feature_segments`     | Chunked path rows                 | —                             | —     |
 | `find_feature_gaps`         | Missing links between segments    | —                             | —     |
 | `apply_feature_patch`       | Upsert segment draft              | —                             | —     |
@@ -240,12 +221,12 @@ Design detail: [`docs/agent-digitization-design.md`](docs/agent-digitization-des
 
 ---
 
-## Phase 4 — MCP & external agents
+## Phase 4 — MCP & external agents ✅ (except docs polish)
 
-- [ ] `geojson-mcp.server.ts` tool registration
-- [ ] `/api/mcp` streamable HTTP + API key auth
-- [ ] Re-enable `McpConnectSection`
-- [ ] `/api/agentic/openapi/json`
+- [x] `geojson-mcp.server.ts` tool registration
+- [x] `/api/mcp` streamable HTTP + API key auth
+- [x] Re-enable `McpConnectSection`
+- [x] `/api/agentic/openapi/json`
 
 ---
 

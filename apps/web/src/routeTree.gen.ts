@@ -16,13 +16,17 @@ import { Route as TestIndexRouteImport } from './routes/test/index'
 import { Route as AuthIndexRouteImport } from './routes/auth/index'
 import { Route as AuthSignupRouteImport } from './routes/auth/signup'
 import { Route as AuthGithubRouteImport } from './routes/auth/github'
+import { Route as ApiMcpRouteImport } from './routes/api/mcp'
 import { Route as DashboardDashboardRouteImport } from './routes/_dashboard/dashboard'
 import { Route as DashboardMapsLayoutRouteImport } from './routes/_dashboard/maps/layout'
 import { Route as DashboardSettingsIndexRouteImport } from './routes/_dashboard/settings/index'
 import { Route as DashboardMapsIndexRouteImport } from './routes/_dashboard/maps/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiAgenticSplatRouteImport } from './routes/api/agentic/$'
 import { Route as DashboardMapsNewRouteImport } from './routes/_dashboard/maps/new'
 import { Route as DashboardMapsIdIndexRouteImport } from './routes/_dashboard/maps/$id/index'
+import { Route as ApiAgenticRpcSplatRouteImport } from './routes/api/agentic/rpc/$'
+import { Route as ApiAgenticOpenapiJsonRouteImport } from './routes/api/agentic/openapi.json'
 
 const AuthLayoutRoute = AuthLayoutRouteImport.update({
   id: '/auth',
@@ -58,6 +62,11 @@ const AuthGithubRoute = AuthGithubRouteImport.update({
   path: '/github',
   getParentRoute: () => AuthLayoutRoute,
 } as any)
+const ApiMcpRoute = ApiMcpRouteImport.update({
+  id: '/api/mcp',
+  path: '/api/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardDashboardRoute = DashboardDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -83,6 +92,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAgenticSplatRoute = ApiAgenticSplatRouteImport.update({
+  id: '/api/agentic/$',
+  path: '/api/agentic/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardMapsNewRoute = DashboardMapsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -93,33 +107,51 @@ const DashboardMapsIdIndexRoute = DashboardMapsIdIndexRouteImport.update({
   path: '/$id/',
   getParentRoute: () => DashboardMapsLayoutRoute,
 } as any)
+const ApiAgenticRpcSplatRoute = ApiAgenticRpcSplatRouteImport.update({
+  id: '/api/agentic/rpc/$',
+  path: '/api/agentic/rpc/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAgenticOpenapiJsonRoute = ApiAgenticOpenapiJsonRouteImport.update({
+  id: '/api/agentic/openapi/json',
+  path: '/api/agentic/openapi/json',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthLayoutRouteWithChildren
   '/maps': typeof DashboardMapsLayoutRouteWithChildren
   '/dashboard': typeof DashboardDashboardRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/auth/github': typeof AuthGithubRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
   '/test/': typeof TestIndexRoute
   '/maps/new': typeof DashboardMapsNewRoute
+  '/api/agentic/$': typeof ApiAgenticSplatRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/maps/': typeof DashboardMapsIndexRoute
   '/settings/': typeof DashboardSettingsIndexRoute
+  '/api/agentic/openapi/json': typeof ApiAgenticOpenapiJsonRoute
+  '/api/agentic/rpc/$': typeof ApiAgenticRpcSplatRoute
   '/maps/$id/': typeof DashboardMapsIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardDashboardRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/auth/github': typeof AuthGithubRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth': typeof AuthIndexRoute
   '/test': typeof TestIndexRoute
   '/maps/new': typeof DashboardMapsNewRoute
+  '/api/agentic/$': typeof ApiAgenticSplatRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/maps': typeof DashboardMapsIndexRoute
   '/settings': typeof DashboardSettingsIndexRoute
+  '/api/agentic/openapi/json': typeof ApiAgenticOpenapiJsonRoute
+  '/api/agentic/rpc/$': typeof ApiAgenticRpcSplatRoute
   '/maps/$id': typeof DashboardMapsIdIndexRoute
 }
 export interface FileRoutesById {
@@ -129,14 +161,18 @@ export interface FileRoutesById {
   '/auth': typeof AuthLayoutRouteWithChildren
   '/_dashboard/maps': typeof DashboardMapsLayoutRouteWithChildren
   '/_dashboard/dashboard': typeof DashboardDashboardRoute
+  '/api/mcp': typeof ApiMcpRoute
   '/auth/github': typeof AuthGithubRoute
   '/auth/signup': typeof AuthSignupRoute
   '/auth/': typeof AuthIndexRoute
   '/test/': typeof TestIndexRoute
   '/_dashboard/maps/new': typeof DashboardMapsNewRoute
+  '/api/agentic/$': typeof ApiAgenticSplatRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_dashboard/maps/': typeof DashboardMapsIndexRoute
   '/_dashboard/settings/': typeof DashboardSettingsIndexRoute
+  '/api/agentic/openapi/json': typeof ApiAgenticOpenapiJsonRoute
+  '/api/agentic/rpc/$': typeof ApiAgenticRpcSplatRoute
   '/_dashboard/maps/$id/': typeof DashboardMapsIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -146,27 +182,35 @@ export interface FileRouteTypes {
     | '/auth'
     | '/maps'
     | '/dashboard'
+    | '/api/mcp'
     | '/auth/github'
     | '/auth/signup'
     | '/auth/'
     | '/test/'
     | '/maps/new'
+    | '/api/agentic/$'
     | '/api/auth/$'
     | '/maps/'
     | '/settings/'
+    | '/api/agentic/openapi/json'
+    | '/api/agentic/rpc/$'
     | '/maps/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/dashboard'
+    | '/api/mcp'
     | '/auth/github'
     | '/auth/signup'
     | '/auth'
     | '/test'
     | '/maps/new'
+    | '/api/agentic/$'
     | '/api/auth/$'
     | '/maps'
     | '/settings'
+    | '/api/agentic/openapi/json'
+    | '/api/agentic/rpc/$'
     | '/maps/$id'
   id:
     | '__root__'
@@ -175,14 +219,18 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_dashboard/maps'
     | '/_dashboard/dashboard'
+    | '/api/mcp'
     | '/auth/github'
     | '/auth/signup'
     | '/auth/'
     | '/test/'
     | '/_dashboard/maps/new'
+    | '/api/agentic/$'
     | '/api/auth/$'
     | '/_dashboard/maps/'
     | '/_dashboard/settings/'
+    | '/api/agentic/openapi/json'
+    | '/api/agentic/rpc/$'
     | '/_dashboard/maps/$id/'
   fileRoutesById: FileRoutesById
 }
@@ -190,8 +238,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardLayoutRoute: typeof DashboardLayoutRouteWithChildren
   AuthLayoutRoute: typeof AuthLayoutRouteWithChildren
+  ApiMcpRoute: typeof ApiMcpRoute
   TestIndexRoute: typeof TestIndexRoute
+  ApiAgenticSplatRoute: typeof ApiAgenticSplatRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiAgenticOpenapiJsonRoute: typeof ApiAgenticOpenapiJsonRoute
+  ApiAgenticRpcSplatRoute: typeof ApiAgenticRpcSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -245,6 +297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthGithubRouteImport
       parentRoute: typeof AuthLayoutRoute
     }
+    '/api/mcp': {
+      id: '/api/mcp'
+      path: '/api/mcp'
+      fullPath: '/api/mcp'
+      preLoaderRoute: typeof ApiMcpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_dashboard/dashboard': {
       id: '/_dashboard/dashboard'
       path: '/dashboard'
@@ -280,6 +339,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/agentic/$': {
+      id: '/api/agentic/$'
+      path: '/api/agentic/$'
+      fullPath: '/api/agentic/$'
+      preLoaderRoute: typeof ApiAgenticSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_dashboard/maps/new': {
       id: '/_dashboard/maps/new'
       path: '/new'
@@ -293,6 +359,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/maps/$id/'
       preLoaderRoute: typeof DashboardMapsIdIndexRouteImport
       parentRoute: typeof DashboardMapsLayoutRoute
+    }
+    '/api/agentic/rpc/$': {
+      id: '/api/agentic/rpc/$'
+      path: '/api/agentic/rpc/$'
+      fullPath: '/api/agentic/rpc/$'
+      preLoaderRoute: typeof ApiAgenticRpcSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/agentic/openapi/json': {
+      id: '/api/agentic/openapi/json'
+      path: '/api/agentic/openapi/json'
+      fullPath: '/api/agentic/openapi/json'
+      preLoaderRoute: typeof ApiAgenticOpenapiJsonRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -348,8 +428,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardLayoutRoute: DashboardLayoutRouteWithChildren,
   AuthLayoutRoute: AuthLayoutRouteWithChildren,
+  ApiMcpRoute: ApiMcpRoute,
   TestIndexRoute: TestIndexRoute,
+  ApiAgenticSplatRoute: ApiAgenticSplatRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiAgenticOpenapiJsonRoute: ApiAgenticOpenapiJsonRoute,
+  ApiAgenticRpcSplatRoute: ApiAgenticRpcSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -21,25 +21,43 @@ function getMcpServerUrl(): string {
   return `${window.location.origin}/api/mcp`;
 }
 
-function buildServerConfig(mcpUrl: string, apiKey: string): object {
+function buildServerTransport(mcpUrl: string, apiKey: string) {
   return {
     url: mcpUrl,
-    headers: { Authorization: `Bearer ${apiKey}` },
+    headers: {
+      "x-api-key": apiKey,
+    },
   };
 }
 
+function buildMcpServersConfig(name: string, mcpUrl: string, apiKey: string) {
+  return {
+    [name]: buildServerTransport(mcpUrl, apiKey),
+  };
+}
+
+function encodeBase64Json(value: unknown) {
+  const json = JSON.stringify(value);
+  const bytes = new TextEncoder().encode(json);
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return btoa(binary);
+}
+
 function buildCursorDeepLink(mcpUrl: string, name: string, apiKey: string): string {
-  const config = JSON.stringify(buildServerConfig(mcpUrl, apiKey));
+  const config = encodeBase64Json(buildMcpServersConfig(name, mcpUrl, apiKey));
   return `cursor://anysphere.cursor-deeplink/mcp/install?name=${encodeURIComponent(name)}&config=${encodeURIComponent(config)}`;
 }
 
 function buildVsCodeDeepLink(mcpUrl: string, name: string, apiKey: string): string {
-  const config = JSON.stringify(buildServerConfig(mcpUrl, apiKey));
+  const config = encodeBase64Json(buildMcpServersConfig(name, mcpUrl, apiKey));
   return `vscode://ms-vscode.vscode-mcp/install?name=${encodeURIComponent(name)}&config=${encodeURIComponent(config)}`;
 }
 
 function buildManualConfig(mcpUrl: string, name: string, apiKey: string): string {
-  return JSON.stringify({ mcpServers: { [name]: buildServerConfig(mcpUrl, apiKey) } }, null, 2);
+  return JSON.stringify({ mcpServers: buildMcpServersConfig(name, mcpUrl, apiKey) }, null, 2);
 }
 
 export function IdePickerDialog({ open, onOpenChange, apiKey }: IdePickerDialogProps) {
@@ -59,8 +77,8 @@ export function IdePickerDialog({ open, onOpenChange, apiKey }: IdePickerDialogP
         <DialogHeader>
           <DialogTitle>Open in your IDE</DialogTitle>
           <DialogDescription>
-            Choose your editor to configure the MCP server automatically, or copy the config
-            manually.
+            Choose your editor to configure the MCP server automatically, or copy the config into{" "}
+            <code className="text-xs">~/.cursor/mcp.json</code> if auto-install fails.
           </DialogDescription>
         </DialogHeader>
 
