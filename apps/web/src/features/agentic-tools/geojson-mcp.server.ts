@@ -4,6 +4,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { createGeojsonAgenticServerClient } from "./geojson-orpc-client.server";
 import {
+  applyFeaturePatchToolInputSchema,
   createControlPointToolInputSchema,
   createMapToolInputSchema,
   deleteControlPointToolInputSchema,
@@ -178,6 +179,26 @@ export function createGeojsonMcpServer(userId: string): McpServer {
       inputSchema: lonLatToolInputSchema.shape,
     },
     async (input) => jsonToolResult(await client.georeference.lonLatToPdfPixel(input)),
+  );
+
+  server.registerTool(
+    "list_feature_segments",
+    {
+      title: "List Feature Segments",
+      description: "List trail segment rows for a map.",
+      inputSchema: mapIdInputSchema.shape,
+    },
+    async (input) => jsonToolResult(await client.featureSegments.list(input)),
+  );
+
+  server.registerTool(
+    "apply_feature_patch",
+    {
+      title: "Apply Feature Patch",
+      description: "Upsert or delete a trail segment. Prefer pdf-pixels for agent traces.",
+      inputSchema: applyFeaturePatchToolInputSchema.shape,
+    },
+    async (input) => jsonToolResult(await client.featureSegments.patch(input)),
   );
 
   return server;

@@ -12,6 +12,9 @@ import {
   georeferenceToolOutputSchema,
   getMapWorkspaceToolOutputSchema,
   getProjectContextToolOutputSchema,
+  applyFeaturePatchToolInputSchema,
+  applyFeaturePatchToolOutputSchema,
+  listFeatureSegmentsToolOutputSchema,
   listControlPointsToolOutputSchema,
   listMapsToolInputSchema,
   listMapsToolOutputSchema,
@@ -34,6 +37,7 @@ import {
   geojsonUpdateProcedure,
 } from "./geojson-orpc-base.server";
 import {
+  applyFeaturePatchTool,
   computeGeoreferenceTool,
   createControlPointTool,
   createMapTool,
@@ -42,6 +46,7 @@ import {
   getGeoreferenceTool,
   getMapWorkspaceTool,
   getProjectContextTool,
+  listFeatureSegmentsTool,
   listControlPointsTool,
   listMapsTool,
   loadMapPdfTool,
@@ -268,6 +273,34 @@ const getProjectContextProcedure = geojsonReadProcedure
     getProjectContextTool({ userId: context.userId }, input.mapId),
   );
 
+const listFeatureSegmentsProcedure = geojsonReadProcedure
+  .route({
+    method: "POST",
+    path: "/feature-segments/list",
+    summary: "List feature segments",
+    description: "List draft and accepted trail segments for a map.",
+    tags: ["Agentic GeoJSON"],
+    successStatus: 200,
+  })
+  .input(mapIdInputSchema)
+  .output(listFeatureSegmentsToolOutputSchema)
+  .handler(async ({ context, input }) =>
+    listFeatureSegmentsTool({ userId: context.userId }, input.mapId),
+  );
+
+const applyFeaturePatchProcedure = geojsonUpdateProcedure
+  .route({
+    method: "POST",
+    path: "/feature-segments/patch",
+    summary: "Apply feature patch",
+    description: "Upsert or delete a trail segment. PDF pixel geometry is converted to WGS84.",
+    tags: ["Agentic GeoJSON"],
+    successStatus: 200,
+  })
+  .input(applyFeaturePatchToolInputSchema)
+  .output(applyFeaturePatchToolOutputSchema)
+  .handler(async ({ context, input }) => applyFeaturePatchTool({ userId: context.userId }, input));
+
 export const geojsonAgenticRouter = {
   maps: {
     list: listMapsProcedure,
@@ -292,6 +325,10 @@ export const geojsonAgenticRouter = {
   },
   project: {
     context: getProjectContextProcedure,
+  },
+  featureSegments: {
+    list: listFeatureSegmentsProcedure,
+    patch: applyFeaturePatchProcedure,
   },
 };
 

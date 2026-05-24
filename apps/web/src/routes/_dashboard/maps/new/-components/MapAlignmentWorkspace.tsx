@@ -15,6 +15,13 @@ import {
   updateControlPointMutationOptions,
   type ControlPointViewModel,
 } from "@/data-access-layer/control-points/control-points-query-options";
+import {
+  createGeoSegmentMutationOptions,
+  deleteGeoSegmentMutationOptions,
+  listGeoSegmentsQueryOptions,
+  type GeoSegmentPathKind,
+  type GeoSegmentViewModel,
+} from "@/data-access-layer/geo-segments/geo-segments-query-options";
 import { getGeoreferenceQueryOptions } from "@/data-access-layer/georeference/georeference-query-options";
 import {
   getMapWorkspaceQueryOptions,
@@ -31,6 +38,7 @@ import {
   type BaseMapStyle,
   type MapHandle,
 } from "./map-handle";
+import { segmentGroupColor, lineStringToLatLngs } from "./segment-utils";
 import { useDebouncedValue } from "@/hooks/use-debouncer";
 import { cn } from "@/lib/utils";
 import { unwrapUnknownError } from "@/utils/errors";
@@ -64,6 +72,21 @@ type PendingMapPoint = {
   latitude: number;
   longitude: number;
 };
+
+type PendingTracePoint = {
+  latitude: number;
+  longitude: number;
+};
+
+const SEGMENT_PATH_KINDS: GeoSegmentPathKind[] = [
+  "walking-trail",
+  "bike-path",
+  "dog-path",
+  "service-road",
+  "boundary",
+  "landmark",
+  "unknown",
+];
 
 type ControlPointEditDraft = {
   imageX: string;
@@ -122,6 +145,11 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
   const [referenceMode, setReferenceMode] = useState(false);
+  const [traceMode, setTraceMode] = useState(false);
+  const [pendingTracePoints, setPendingTracePoints] = useState<PendingTracePoint[]>([]);
+  const [segmentGroupId, setSegmentGroupId] = useState("10k-blue");
+  const [segmentName, setSegmentName] = useState("");
+  const [segmentPathKind, setSegmentPathKind] = useState<GeoSegmentPathKind>("walking-trail");
   const [pendingMapPoint, setPendingMapPoint] = useState<PendingMapPoint | null>(null);
   const [pinCoordinateInput, setPinCoordinateInput] = useState("");
   const [pinCoordinateError, setPinCoordinateError] = useState<string | null>(null);
@@ -159,9 +187,14 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
       debouncedControlPointSignature.length > 0 ? debouncedControlPointSignature : null,
     ),
   });
+  const geoSegmentsQuery = useQuery({
+    ...listGeoSegmentsQueryOptions(mapId),
+  });
   const createControlPointMutation = useMutation(createControlPointMutationOptions());
   const deleteControlPointMutation = useMutation(deleteControlPointMutationOptions());
   const updateControlPointMutation = useMutation(updateControlPointMutationOptions());
+  const createGeoSegmentMutation = useMutation(createGeoSegmentMutationOptions());
+  const deleteGeoSegmentMutation = useMutation(deleteGeoSegmentMutationOptions());
   const savePdfMutation = useMutation(saveMapPdfMutationOptions());
   const saveWorkspaceMutation = useMutation(updateMapWorkspaceMutationOptions());
 
@@ -275,6 +308,51 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
     setReferenceMode(false);
     setPendingMapPoint(null);
     setPinCoordinateError(null);
+  }
+
+  function stopTraceMode() {
+    setTraceMode(false);
+    setPendingTracePoints([]);
+  }
+
+  function handleTracePointAdd(latitude: number, longitude: number) {
+    setPendingTracePoints((current) => [...current, { latitude, longitude }]);
+  }
+
+  function handleUndoTracePoint() {
+    setPendingTracePoints((current) => current.slice(0, -1));
+  }
+
+  function handleFinishTrace() {
+    if (pendingTracePoints.length < 2) {
+      return;
+    }
+
+    const groupId = segmentGroupId.trim() || `trail-${Date.now()}`;
+
+    createGeoSegmentMutation.mutate(
+      {
+        mapId,
+        segmentGroupId: groupId,
+        name: segmentName.trim() || undefined,
+        pathKind: segmentPathKind,
+        geometry: {
+          type: "LineString",
+          coordinates: pendingTracePoints.map(
+            (point) => [point.longitude, point.latitude] as [number, number],
+          ),
+        },
+      },
+      {
+        onSuccess: () => {
+          setPendingTracePoints([]);
+        },
+      },
+    );
+  }
+
+  function handleDeleteGeoSegment(segmentId: number) {
+    deleteGeoSegmentMutation.mutate({ mapId, segmentId });
   }
 
   function applyMapPinFromInput(rawInput: string) {
@@ -534,6 +612,7 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
                 stopReferenceMode();
                 return;
               }
+              stopTraceMode();
               setReferenceMode(true);
               setPendingMapPoint(null);
             }}
@@ -541,6 +620,23 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
           >
             <Crosshair className="size-4" />
             Add reference
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={traceMode ? "default" : "outline"}
+            onClick={() => {
+              if (traceMode) {
+                stopTraceMode();
+                return;
+              }
+              stopReferenceMode();
+              setTraceMode(true);
+            }}
+            data-test="trace-mode-toggle"
+          >
+            <Pencil className="size-4" />
+            Trace trail
           </Button>
           <Button
             type="button"
@@ -612,6 +708,85 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
         </div>
       ) : null}
 
+      {traceMode ? (
+        <div
+          className="flex shrink-0 flex-col gap-3 border-b border-secondary/20 bg-secondary/10 px-4 py-3 text-sm lg:flex-row lg:items-end lg:justify-between"
+          data-test="trace-mode-hint"
+        >
+          <div className="space-y-2">
+            <p>
+              Click the base map to add vertices. Finish when you have at least 2 points (
+              {pendingTracePoints.length} added).
+            </p>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <div className="space-y-1">
+                <Label htmlFor="trace-group-id">Trail group</Label>
+                <Input
+                  id="trace-group-id"
+                  value={segmentGroupId}
+                  onChange={(event) => setSegmentGroupId(event.currentTarget.value)}
+                  placeholder="10k-blue"
+                  data-test="trace-group-id"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="trace-name">Name</Label>
+                <Input
+                  id="trace-name"
+                  value={segmentName}
+                  onChange={(event) => setSegmentName(event.currentTarget.value)}
+                  placeholder="10 km Blue Loop"
+                  data-test="trace-name"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="trace-path-kind">Path kind</Label>
+                <select
+                  id="trace-path-kind"
+                  className="select select-bordered select-sm w-full"
+                  value={segmentPathKind}
+                  onChange={(event) =>
+                    setSegmentPathKind(event.currentTarget.value as GeoSegmentPathKind)
+                  }
+                  data-test="trace-path-kind"
+                >
+                  {SEGMENT_PATH_KINDS.map((kind) => (
+                    <option key={kind} value={kind}>
+                      {kind}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={pendingTracePoints.length === 0}
+              onClick={handleUndoTracePoint}
+              data-test="trace-undo-point"
+            >
+              Undo point
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={pendingTracePoints.length < 2 || createGeoSegmentMutation.isPending}
+              onClick={handleFinishTrace}
+              data-test="trace-finish"
+            >
+              Finish segment
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={stopTraceMode}>
+              <X className="size-3.5" />
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       <div
         className="grid min-h-0 flex-1 grid-cols-1 divide-y divide-base-content/10 lg:grid-cols-2 lg:divide-x lg:divide-y-0"
         data-test="map-alignment-stage"
@@ -645,14 +820,18 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
           <LeafletMapPane
             baseMapStyle={baseMapStyle}
             controlPoints={controlPointsQuery.data ?? []}
+            geoSegments={geoSegmentsQuery.data ?? []}
             pendingMapPoint={pendingMapPoint}
-            referenceMode={referenceMode}
+            pendingTracePoints={pendingTracePoints}
+            traceMode={traceMode}
             canPickMapPoint={referenceMode && pendingMapPoint === null}
+            canPickTracePoint={traceMode}
             selectedControlPointId={selectedControlPointId}
             initialViewport={mapViewport}
             onReady={registerMapHandle}
             onMapLocationPick={handleMapLocationPick}
             onControlPointMapMove={handleControlPointMapMove}
+            onTracePointAdd={handleTracePointAdd}
             onViewportChange={setMapViewport}
           />
         </section>
@@ -704,6 +883,60 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
                     : georeferenceQuery.data?.reason === "singular_transform"
                       ? "Reference points do not form a valid affine transform."
                       : "Georeference not ready."}
+                </p>
+              )}
+            </div>
+
+            <div className="space-y-3 border-t border-base-content/10 pt-5">
+              <div className="space-y-1">
+                <h2 className="text-sm font-semibold">Trail segments</h2>
+                <p className="text-sm text-base-content/70">
+                  Saved LineStrings traced on the base map. Use Trace trail in the header to add
+                  more.
+                </p>
+              </div>
+              {geoSegmentsQuery.data && geoSegmentsQuery.data.length > 0 ? (
+                <ul className="space-y-2" data-test="geo-segment-list">
+                  {geoSegmentsQuery.data.map((segment) => (
+                    <li
+                      key={segment.id}
+                      className="rounded-md border border-base-content/10 bg-base-200 px-3 py-2 text-sm"
+                      data-test={`geo-segment-${segment.id}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="inline-block size-2.5 shrink-0 rounded-full"
+                              style={{ backgroundColor: segmentGroupColor(segment.segmentGroupId) }}
+                            />
+                            <span className="font-medium">
+                              {segment.name ??
+                                `${segment.segmentGroupId} #${segment.segmentIndex + 1}`}
+                            </span>
+                          </div>
+                          <div className="mt-1 text-xs text-base-content/70">
+                            {segment.pathKind} · {segment.geometry.coordinates.length} vertices ·{" "}
+                            {segment.status}
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          size="icon-sm"
+                          variant="ghost"
+                          disabled={deleteGeoSegmentMutation.isPending}
+                          onClick={() => handleDeleteGeoSegment(segment.id)}
+                          data-test={`geo-segment-delete-${segment.id}`}
+                        >
+                          <Trash2 className="size-4" />
+                        </Button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-base-content/60" data-test="geo-segment-empty">
+                  No trail segments saved yet.
                 </p>
               )}
             </div>
@@ -1049,28 +1282,36 @@ function RangeControl({
 type LeafletMapPaneProps = {
   baseMapStyle: BaseMapStyle;
   controlPoints: ControlPointViewModel[];
+  geoSegments: GeoSegmentViewModel[];
   pendingMapPoint: PendingMapPoint | null;
-  referenceMode: boolean;
+  pendingTracePoints: PendingTracePoint[];
+  traceMode: boolean;
   canPickMapPoint: boolean;
+  canPickTracePoint: boolean;
   selectedControlPointId: number | null;
   initialViewport: MapViewport;
   onReady: (handle: MapHandle) => void;
   onMapLocationPick: (latitude: number, longitude: number) => void;
   onControlPointMapMove: (controlPointId: number, latitude: number, longitude: number) => void;
+  onTracePointAdd: (latitude: number, longitude: number) => void;
   onViewportChange: (viewport: MapViewport) => void;
 };
 
 function LeafletMapPane({
   baseMapStyle,
   controlPoints,
+  geoSegments,
   pendingMapPoint,
-  referenceMode,
+  pendingTracePoints,
+  traceMode,
   canPickMapPoint,
+  canPickTracePoint,
   selectedControlPointId,
   initialViewport,
   onReady,
   onMapLocationPick,
   onControlPointMapMove,
+  onTracePointAdd,
   onViewportChange,
 }: LeafletMapPaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -1078,9 +1319,11 @@ function LeafletMapPane({
   const leafletRef = useRef<typeof Leaflet | null>(null);
   const baseLayerRef = useRef<Leaflet.TileLayer | null>(null);
   const markersLayerRef = useRef<Leaflet.LayerGroup | null>(null);
+  const segmentsLayerRef = useRef<Leaflet.LayerGroup | null>(null);
   const onReadyRef = useRef(onReady);
   const onMapLocationPickRef = useRef(onMapLocationPick);
   const onControlPointMapMoveRef = useRef(onControlPointMapMove);
+  const onTracePointAddRef = useRef(onTracePointAdd);
   const onViewportChangeRef = useRef(onViewportChange);
   const initialViewportRef = useRef(initialViewport);
   const hasAppliedInitialStyleRef = useRef(false);
@@ -1098,6 +1341,7 @@ function LeafletMapPane({
   onReadyRef.current = onReady;
   onMapLocationPickRef.current = onMapLocationPick;
   onControlPointMapMoveRef.current = onControlPointMapMove;
+  onTracePointAddRef.current = onTracePointAdd;
   onViewportChangeRef.current = onViewportChange;
   initialViewportRef.current = initialViewport;
 
@@ -1125,6 +1369,7 @@ function LeafletMapPane({
 
       baseLayerRef.current = createBaseLayer(L, baseMapStyle).addTo(map);
       markersLayerRef.current = L.layerGroup().addTo(map);
+      segmentsLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
       hasAppliedInitialStyleRef.current = true;
 
@@ -1206,6 +1451,7 @@ function LeafletMapPane({
       mapRef.current = null;
       baseLayerRef.current = null;
       markersLayerRef.current = null;
+      segmentsLayerRef.current = null;
       leafletRef.current = null;
       setCursorCoordinatesRef.current(null);
     };
@@ -1221,6 +1467,7 @@ function LeafletMapPane({
     const currentLayer = baseLayerRef.current;
 
     const markersLayer = markersLayerRef.current;
+    const segmentsLayer = segmentsLayerRef.current;
 
     if (!map || !L || !currentLayer) {
       return;
@@ -1229,10 +1476,16 @@ function LeafletMapPane({
     if (markersLayer) {
       map.removeLayer(markersLayer);
     }
+    if (segmentsLayer) {
+      map.removeLayer(segmentsLayer);
+    }
 
     map.removeLayer(currentLayer);
     baseLayerRef.current = createBaseLayer(L, baseMapStyle).addTo(map);
 
+    if (segmentsLayer) {
+      segmentsLayer.addTo(map);
+    }
     if (markersLayer) {
       markersLayer.addTo(map);
     }
@@ -1286,12 +1539,72 @@ function LeafletMapPane({
   }, [mapReady, controlPoints, pendingMapPoint, selectedControlPointId]);
 
   useEffect(() => {
+    if (!mapReady) {
+      return;
+    }
+
+    const map = mapRef.current;
+    const L = leafletRef.current;
+    const segmentsLayer = segmentsLayerRef.current;
+
+    if (!map || !L || !segmentsLayer) {
+      return;
+    }
+
+    segmentsLayer.clearLayers();
+
+    geoSegments.forEach((segment) => {
+      const latlngs = lineStringToLatLngs(segment.geometry.coordinates);
+      L.polyline(latlngs, {
+        color: segmentGroupColor(segment.segmentGroupId),
+        weight: 4,
+        opacity: 0.85,
+      })
+        .bindTooltip(segment.name ?? `${segment.segmentGroupId} #${segment.segmentIndex + 1}`)
+        .addTo(segmentsLayer);
+    });
+
+    if (pendingTracePoints.length > 0) {
+      const pendingLatLngs = pendingTracePoints.map((point) => ({
+        lat: point.latitude,
+        lng: point.longitude,
+      }));
+
+      if (pendingLatLngs.length >= 2) {
+        L.polyline(pendingLatLngs, {
+          color: "#f59e0b",
+          weight: 4,
+          dashArray: "8 8",
+          opacity: 0.9,
+        }).addTo(segmentsLayer);
+      }
+
+      pendingTracePoints.forEach((point, index) => {
+        L.circleMarker([point.latitude, point.longitude], {
+          radius: 6,
+          color: "#ffffff",
+          weight: 2,
+          fillColor: "#f59e0b",
+          fillOpacity: 1,
+        })
+          .bindTooltip(`Vertex ${index + 1}`)
+          .addTo(segmentsLayer);
+      });
+    }
+  }, [mapReady, geoSegments, pendingTracePoints]);
+
+  useEffect(() => {
     const map = mapRef.current;
     if (!map) {
       return;
     }
 
     function handleClick(event: Leaflet.LeafletMouseEvent) {
+      if (canPickTracePoint) {
+        onTracePointAddRef.current(event.latlng.lat, event.latlng.lng);
+        return;
+      }
+
       if (!canPickMapPoint) {
         return;
       }
@@ -1308,11 +1621,7 @@ function LeafletMapPane({
     map.on("click", handleClick);
 
     if (containerRef.current) {
-      containerRef.current.style.cursor = canPickMapPoint
-        ? "crosshair"
-        : referenceMode
-          ? "default"
-          : "";
+      containerRef.current.style.cursor = canPickTracePoint || canPickMapPoint ? "crosshair" : "";
     }
 
     return () => {
@@ -1324,7 +1633,7 @@ function LeafletMapPane({
         containerRef.current.style.cursor = "";
       }
     };
-  }, [canPickMapPoint, referenceMode]);
+  }, [canPickMapPoint, canPickTracePoint]);
 
   const cursorCoordinatesLabel = cursorCoordinates
     ? `${cursorCoordinates.latitude.toFixed(5)}, ${cursorCoordinates.longitude.toFixed(5)}`
@@ -1334,7 +1643,9 @@ function LeafletMapPane({
     <div className="absolute inset-0 z-0">
       <div ref={containerRef} className="absolute inset-0" data-test="leaflet-map" />
       <div className="pointer-events-none absolute bottom-8 left-3 z-[500] rounded-md border border-base-content/10 bg-base-100/90 px-2 py-1 text-xs text-base-content/70 shadow-sm backdrop-blur">
-        Double-click to copy · drag refs to move
+        {traceMode
+          ? "Click to add trail vertices · Finish when done"
+          : "Double-click to copy · drag refs to move"}
       </div>
       {cursorCoordinatesLabel ? (
         <button

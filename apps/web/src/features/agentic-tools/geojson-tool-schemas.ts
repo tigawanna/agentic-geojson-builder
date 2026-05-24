@@ -196,10 +196,83 @@ export const pdfPixelConversionOutputSchema = z.object({
   imageY: z.number(),
 });
 
+export const lineStringGeometrySchema = z.object({
+  type: z.literal("LineString"),
+  coordinates: z.array(z.tuple([z.number(), z.number()])).min(2),
+});
+
+export const pathKindSchema = z.enum([
+  "bike-path",
+  "dog-path",
+  "walking-trail",
+  "service-road",
+  "boundary",
+  "landmark",
+  "unknown",
+]);
+
+export const segmentStatusSchema = z.enum(["draft", "needs-review", "accepted", "rejected"]);
+
+export const geoSegmentSchema = z.object({
+  id: z.number().int().positive(),
+  mapId: z.number().int().positive(),
+  segmentGroupId: z.string(),
+  segmentIndex: z.number().int().nonnegative(),
+  name: z.string().nullable(),
+  pathKind: pathKindSchema,
+  status: segmentStatusSchema,
+  coordinateSpace: z.enum(["wgs84", "pdf-pixels"]),
+  geometry: lineStringGeometrySchema,
+  confidence: z.number().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const geoSegmentSummarySchema = z.object({
+  id: z.number().int().positive(),
+  segmentGroupId: z.string(),
+  segmentIndex: z.number().int().nonnegative(),
+  name: z.string().nullable(),
+  pathKind: pathKindSchema,
+  status: segmentStatusSchema,
+  vertexCount: z.number().int().positive(),
+});
+
+export const listFeatureSegmentsToolOutputSchema = z.object({
+  segments: z.array(geoSegmentSchema),
+});
+
+export const applyFeaturePatchToolInputSchema = z.object({
+  mapId: z.number().int().positive(),
+  op: z.enum(["upsert_segment", "delete_segment"]),
+  segmentGroupId: z.string().trim().min(1).max(128),
+  segmentIndex: z.number().int().nonnegative().optional(),
+  segmentId: z.number().int().positive().optional(),
+  name: z.string().trim().max(255).optional(),
+  pathKind: pathKindSchema.optional(),
+  status: segmentStatusSchema.optional(),
+  coordinateSpace: z.enum(["wgs84", "pdf-pixels"]).optional(),
+  geometry: lineStringGeometrySchema.optional(),
+  confidence: z.number().min(0).max(1).optional(),
+});
+
+export const applyFeaturePatchToolOutputSchema = z.union([
+  z.object({
+    op: z.literal("upsert_segment"),
+    segment: geoSegmentSchema,
+  }),
+  z.object({
+    op: z.literal("delete_segment"),
+    deleted: z.literal(true),
+    segmentId: z.number().int().positive(),
+  }),
+]);
+
 export const getProjectContextToolOutputSchema = z.object({
   map: mapWorkspaceSchema,
   controlPoints: z.array(controlPointSchema),
   georeference: georeferenceSchema,
+  segments: z.array(geoSegmentSummarySchema),
 });
 
 export type ListMapsToolInput = z.infer<typeof listMapsToolInputSchema>;
@@ -211,3 +284,4 @@ export type UpdateControlPointToolInput = z.infer<typeof updateControlPointToolI
 export type DeleteControlPointToolInput = z.infer<typeof deleteControlPointToolInputSchema>;
 export type PdfPixelToolInput = z.infer<typeof pdfPixelToolInputSchema>;
 export type LonLatToolInput = z.infer<typeof lonLatToolInputSchema>;
+export type ApplyFeaturePatchToolInput = z.infer<typeof applyFeaturePatchToolInputSchema>;

@@ -8,12 +8,17 @@ import {
 } from "@/data-access-layer/control-points/control-points.server";
 import type { ControlPointViewModel } from "@/data-access-layer/control-points/control-points.types";
 import {
+  applyFeaturePatchForUser,
+  deleteGeoSegmentForUser,
+  listGeoSegmentsForUser,
+} from "@/data-access-layer/geo-segments/geo-segments.server";
+import type { GeoSegmentViewModel } from "@/data-access-layer/geo-segments/geo-segments.types";
+import {
   computeGeoreferenceForUser,
   getGeoreferenceForUser,
   lonLatToPdfPixelForUser,
   pdfPixelToLonLatForUser,
 } from "@/data-access-layer/georeference/georeference.server";
-import type { GeoreferenceViewModel } from "@/data-access-layer/georeference/georeference.types";
 import {
   createMapForUser,
   deleteMapForUser,
@@ -24,6 +29,8 @@ import {
   updateMapWorkspaceForUser,
 } from "@/data-access-layer/maps/maps.server";
 import type { MapWorkspaceState } from "@/data-access-layer/maps/maps.types";
+import type { GeoreferenceViewModel } from "@/data-access-layer/georeference/georeference.types";
+import type { ApplyFeaturePatchToolInput } from "./geojson-tool-schemas";
 import type {
   CreateControlPointToolInput,
   CreateMapToolInput,
@@ -59,6 +66,22 @@ function serializeControlPoint(point: ControlPointViewModel) {
 
 function serializeGeoreference(georeference: GeoreferenceViewModel) {
   return georeference;
+}
+
+function serializeGeoSegment(segment: GeoSegmentViewModel) {
+  return segment;
+}
+
+function serializeGeoSegmentSummary(segment: GeoSegmentViewModel) {
+  return {
+    id: segment.id,
+    segmentGroupId: segment.segmentGroupId,
+    segmentIndex: segment.segmentIndex,
+    name: segment.name,
+    pathKind: segment.pathKind,
+    status: segment.status,
+    vertexCount: segment.geometry.coordinates.length,
+  };
 }
 
 export async function listMapsTool(context: ToolContext, input: ListMapsToolInput) {
@@ -180,10 +203,63 @@ export async function getProjectContextTool(context: ToolContext, mapId: number)
 
   const controlPoints = await listControlPointsForUser(context.userId, mapId);
   const georeference = await getGeoreferenceForUser(context.userId, mapId);
+  const segments = await listGeoSegmentsForUser(context.userId, mapId);
 
   return {
     map: serializeMap(map),
     controlPoints: controlPoints.map(serializeControlPoint),
     georeference: serializeGeoreference(georeference),
+    segments: segments.map(serializeGeoSegmentSummary),
+  };
+}
+
+export async function listFeatureSegmentsTool(context: ToolContext, mapId: number) {
+  const segments = await listGeoSegmentsForUser(context.userId, mapId);
+  return {
+    segments: segments.map(serializeGeoSegment),
+  };
+}
+
+export async function applyFeaturePatchTool(
+  context: ToolContext,
+  input: ApplyFeaturePatchToolInput,
+) {
+  if (input.op === "delete_segment") {
+    if (input.segmentId === undefined) {
+      throw new Error("segmentId is required for delete_segment.");
+    }
+    await deleteGeoSegmentForUser(context.userId, input.mapId, input.segmentId);
+    return {
+      op: "delete_segment" as const,
+      deleted: true as const,
+      segmentId: input.segmentId,
+    };
+  }
+
+  if (!input.geometry) {
+    throw new Error("geometry is required for upsert_segment.");
+  }
+
+  const result = await applyFeaturePatchForUser(context.userId, {
+    mapId: input.mapId,
+    op: "upsert_segment",
+    segmentGroupId: input.segmentGroupId,
+    segmentIndex: input.segmentIndex,
+    segmentId: input.segmentId,
+    name: input.name,
+    pathKind: input.pathKind,
+    status: input.status,
+    coordinateSpace: input.coordinateSpace,
+    geometry: input.geometry,
+    confidence: input.confidence,
+  });
+
+  if (!("segment" in result) || !result.segment) {
+    throw new Error("Failed to upsert segment.");
+  }
+
+  return {
+    op: "upsert_segment" as const,
+    segment: serializeGeoSegment(result.segment),
   };
 }
