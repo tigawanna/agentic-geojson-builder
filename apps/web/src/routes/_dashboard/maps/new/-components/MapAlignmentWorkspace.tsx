@@ -942,6 +942,111 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
           </DialogHeader>
 
           <div className="grid gap-5">
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <h2 className="text-sm font-semibold">Map area</h2>
+                <p className="text-sm text-base-content/70">
+                  Jump the base map to the place your PDF covers.
+                </p>
+              </div>
+              <form className="flex gap-2" onSubmit={handleLocationSearch}>
+                <Input
+                  value={locationQuery}
+                  onChange={(event) => setLocationQuery(event.currentTarget.value)}
+                  placeholder="Karura Forest, Nairobi"
+                  aria-label="Search map location"
+                  data-test="map-location-search"
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={isSearchingLocation || locationQuery.trim().length === 0}
+                  data-test="map-location-search-submit"
+                >
+                  <Search className="size-4" />
+                  Go
+                </Button>
+              </form>
+              {locationError ? (
+                <p className="text-sm text-error" data-test="map-location-search-error">
+                  {locationError}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="space-y-2 border-t border-base-content/10 pt-5">
+              <Label>Base map style</Label>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={baseMapStyle === "satellite" ? "default" : "outline"}
+                  onClick={() => setBaseMapStyle("satellite")}
+                  data-test="base-map-satellite"
+                >
+                  Satellite
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={baseMapStyle === "outline" ? "default" : "outline"}
+                  onClick={() => setBaseMapStyle("outline")}
+                  data-test="base-map-outline"
+                >
+                  Outline
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={baseMapStyle === "standard" ? "default" : "outline"}
+                  onClick={() => setBaseMapStyle("standard")}
+                  data-test="base-map-standard"
+                >
+                  Standard
+                </Button>
+              </div>
+              <p className="text-xs text-base-content/60">
+                Use Satellite for forest areas. Zoom to 15–16 and anchor on roads or gates, not
+                trails.
+              </p>
+            </div>
+
+            <div className="grid gap-4 border-t border-base-content/10 pt-5">
+              <RangeControl
+                label="PDF scale"
+                value={transform.scale}
+                min={MIN_PDF_SCALE}
+                max={MAX_PDF_SCALE}
+                step={0.01}
+                displayValue={`${transform.scale.toFixed(2)}x`}
+                onChange={(value) => updateTransform({ scale: value })}
+                dataTest="pdf-scale"
+              />
+              <RangeControl
+                label="PDF rotation"
+                value={transform.rotation}
+                min={-180}
+                max={180}
+                step={0.25}
+                displayValue={`${transform.rotation.toFixed(2)}deg`}
+                onChange={(value) => updateTransform({ rotation: value })}
+                dataTest="pdf-rotation"
+              />
+            </div>
+
+            <div className="border-t border-base-content/10 pt-5">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setTransform(DEFAULT_TRANSFORM)}
+                data-test="overlay-reset"
+              >
+                <RotateCcw className="size-4" />
+                Reset PDF view
+              </Button>
+            </div>
+
             <div className="space-y-2 rounded-md border border-base-content/10 bg-base-200 px-3 py-3">
               <div className="space-y-1">
                 <h2 className="text-sm font-semibold">Georeference</h2>
@@ -1216,111 +1321,6 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
                   No reference points saved yet.
                 </p>
               )}
-            </div>
-
-            <div className="space-y-3 border-t border-base-content/10 pt-5">
-              <div className="space-y-1">
-                <h2 className="text-sm font-semibold">Map area</h2>
-                <p className="text-sm text-base-content/70">
-                  Jump the base map to the place your PDF covers.
-                </p>
-              </div>
-              <form className="flex gap-2" onSubmit={handleLocationSearch}>
-                <Input
-                  value={locationQuery}
-                  onChange={(event) => setLocationQuery(event.currentTarget.value)}
-                  placeholder="Karura Forest, Nairobi"
-                  aria-label="Search map location"
-                  data-test="map-location-search"
-                />
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={isSearchingLocation || locationQuery.trim().length === 0}
-                  data-test="map-location-search-submit"
-                >
-                  <Search className="size-4" />
-                  Go
-                </Button>
-              </form>
-              {locationError ? (
-                <p className="text-sm text-error" data-test="map-location-search-error">
-                  {locationError}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="space-y-2 border-t border-base-content/10 pt-5">
-              <Label>Base map style</Label>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={baseMapStyle === "satellite" ? "default" : "outline"}
-                  onClick={() => setBaseMapStyle("satellite")}
-                  data-test="base-map-satellite"
-                >
-                  Satellite
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={baseMapStyle === "outline" ? "default" : "outline"}
-                  onClick={() => setBaseMapStyle("outline")}
-                  data-test="base-map-outline"
-                >
-                  Outline
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={baseMapStyle === "standard" ? "default" : "outline"}
-                  onClick={() => setBaseMapStyle("standard")}
-                  data-test="base-map-standard"
-                >
-                  Standard
-                </Button>
-              </div>
-              <p className="text-xs text-base-content/60">
-                Use Satellite for forest areas. Zoom to 15–16 and anchor on roads or gates, not
-                trails.
-              </p>
-            </div>
-
-            <div className="grid gap-4 border-t border-base-content/10 pt-5">
-              <RangeControl
-                label="PDF scale"
-                value={transform.scale}
-                min={MIN_PDF_SCALE}
-                max={MAX_PDF_SCALE}
-                step={0.01}
-                displayValue={`${transform.scale.toFixed(2)}x`}
-                onChange={(value) => updateTransform({ scale: value })}
-                dataTest="pdf-scale"
-              />
-              <RangeControl
-                label="PDF rotation"
-                value={transform.rotation}
-                min={-180}
-                max={180}
-                step={0.25}
-                displayValue={`${transform.rotation.toFixed(2)}deg`}
-                onChange={(value) => updateTransform({ rotation: value })}
-                dataTest="pdf-rotation"
-              />
-            </div>
-
-            <div className="border-t border-base-content/10 pt-5">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setTransform(DEFAULT_TRANSFORM)}
-                data-test="overlay-reset"
-              >
-                <RotateCcw className="size-4" />
-                Reset PDF view
-              </Button>
             </div>
           </div>
         </DialogContent>
