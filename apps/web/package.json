@@ -59,6 +59,7 @@
     "embla-carousel-react": "^8.6.0",
     "evlog": "^2.16.0",
     "hono": "^4.12.18",
+    "html-to-image": "^1.11.13",
     "input-otp": "^1.4.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.561.0",

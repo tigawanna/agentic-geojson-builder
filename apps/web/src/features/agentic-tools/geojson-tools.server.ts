@@ -34,6 +34,7 @@ import {
 } from "@/data-access-layer/maps/maps.server";
 import type { MapWorkspaceState } from "@/data-access-layer/maps/maps.types";
 import type { GeoreferenceViewModel } from "@/data-access-layer/georeference/georeference.types";
+import { getRenderedMapViewForUser } from "@/data-access-layer/map-snapshots/map-snapshots.server";
 import type {
   ApplyFeaturePatchToolInput,
   FindFeatureGapsToolInput,
@@ -293,6 +294,10 @@ export async function updateFeatureSegmentStatusTool(
 ) {
   const segment = await updateGeoSegmentStatusForUser(context.userId, input);
   return { segment: serializeGeoSegment(segment) };
+}
+
+export async function getRenderedMapViewTool(context: ToolContext, mapId: number) {
+  return getRenderedMapViewForUser(context.userId, mapId);
 }
 
 export async function exportGeoJsonTool(

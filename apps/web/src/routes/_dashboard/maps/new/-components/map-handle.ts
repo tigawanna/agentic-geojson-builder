@@ -2,10 +2,13 @@ import { type MapBaseMapStyle, type MapViewport } from "@/data-access-layer/maps
 import { unwrapUnknownError } from "@/utils/errors";
 import { toast } from "sonner";
 import type * as Leaflet from "leaflet";
+import type { MapCaptureOverlayInput, RenderedMapViewMapPane } from "@/lib/rendered-map-view/types";
+import { captureMapPaneFromDom } from "@/lib/rendered-map-view/capture-map-pane";
 
 export type MapHandle = {
   panToQuery: (query: string) => Promise<{ error?: string }>;
   setViewport: (viewport: MapViewport) => void;
+  captureView: (overlays: MapCaptureOverlayInput) => Promise<RenderedMapViewMapPane>;
 };
 
 export type BaseMapStyle = MapBaseMapStyle;
@@ -106,6 +109,7 @@ export function createBaseLayer(L: typeof Leaflet, style: BaseMapStyle) {
   return L.tileLayer(config.url, {
     maxZoom: config.maxZoom,
     attribution: config.attribution,
+    crossOrigin: "anonymous",
   });
 }
 
@@ -143,5 +147,6 @@ export function createMapHandle(map: Leaflet.Map, options: CreateMapHandleOption
       map.setView([viewport.latitude, viewport.longitude], viewport.zoom, { animate: false });
       setSuppressViewportSync(false);
     },
+    captureView: (overlays) => captureMapPaneFromDom(map, overlays),
   };
 }

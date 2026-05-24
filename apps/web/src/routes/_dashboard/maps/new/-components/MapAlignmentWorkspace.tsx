@@ -24,6 +24,7 @@ import {
   type GeoSegmentPathKind,
   type GeoSegmentViewModel,
 } from "@/data-access-layer/geo-segments/geo-segments-query-options";
+import { saveRenderedMapViewFn } from "@/data-access-layer/map-snapshots/map-snapshots.functions";
 import { getGeoreferenceQueryOptions } from "@/data-access-layer/georeference/georeference-query-options";
 import {
   getMapWorkspaceQueryOptions,
@@ -42,6 +43,11 @@ import {
 } from "./map-handle";
 import { segmentGroupColor, lineStringToLatLngs } from "./segment-utils";
 import { MapAiPanel } from "./MapAiPanel";
+import { WorkspaceScreenshotDialog } from "./WorkspaceScreenshotDialog";
+import { buildChatScreenshotBlob } from "@/lib/rendered-map-view/build-chat-screenshot";
+import { capturePdfPanePngBlob, capturePdfPaneToCanvas } from "@/lib/rendered-map-view/capture-pdf-pane";
+import { captureWorkspaceView } from "@/lib/rendered-map-view/capture-workspace-view";
+import { PDF_RENDER_SCALE } from "@/lib/rendered-map-view/constants";
 import { useDebouncedValue } from "@/hooks/use-debouncer";
 import { cn } from "@/lib/utils";
 import { unwrapUnknownError } from "@/utils/errors";
@@ -51,8 +57,10 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Bot,
+  Camera,
   Crosshair,
   Download,
+  Image,
   MapPin,
   Pencil,
   RotateCcw,
@@ -184,6 +192,12 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
+  const [screenshotDialogOpen, setScreenshotDialogOpen] = useState(false);
+  const [screenshotPreviewUrl, setScreenshotPreviewUrl] = useState<string | null>(null);
+  const [screenshotCombinedBlob, setScreenshotCombinedBlob] = useState<Blob | null>(null);
+  const [screenshotPdfBlob, setScreenshotPdfBlob] = useState<Blob | null>(null);
+  const [screenshotMapBlob, setScreenshotMapBlob] = useState<Blob | null>(null);
+  const [isTakingScreenshot, setIsTakingScreenshot] = useState(false);
   const [referenceMode, setReferenceMode] = useState(false);
   const [traceMode, setTraceMode] = useState(false);
   const [editingSegmentId, setEditingSegmentId] = useState<number | null>(null);
@@ -201,6 +215,7 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
   const [mapViewport, setMapViewport] = useState<MapViewport>(DEFAULT_MAP_VIEWPORT);
   const [isHydrated, setIsHydrated] = useState(false);
   const mapHandleRef = useRef<MapHandle | null>(null);
+  const pdfCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const mapQuery = useQuery({
     ...getMapWorkspaceQueryOptions(mapId),
@@ -240,6 +255,10 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
   const deleteGeoSegmentMutation = useMutation(deleteGeoSegmentMutationOptions());
   const savePdfMutation = useMutation(saveMapPdfMutationOptions());
   const saveWorkspaceMutation = useMutation(updateMapWorkspaceMutationOptions());
+  const saveSnapshotMutation = useMutation({
+    mutationFn: (snapshot: ReturnType<typeof captureWorkspaceView>) =>
+      saveRenderedMapViewFn({ data: { mapId, snapshot } }),
+  });
 
   const workspaceSnapshot = useMemo(
     () => ({
@@ -316,6 +335,146 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
 
   function registerMapHandle(handle: MapHandle) {
     mapHandleRef.current = handle;
+  }
+
+  async function captureWorkspaceSnapshot(options?: { silent?: boolean }) {
+    const handle = mapHandleRef.current;
+    if (!handle) {
+      if (!options?.silent) {
+        toast.error("Map is not ready yet.");
+      }
+      return null;
+    }
+
+    try {
+      const geoSegments = geoSegmentsQuery.data ?? [];
+      const snapshot = captureWorkspaceView({
+        mapId,
+        pdfCanvas: pdfCanvasRef.current,
+        pdfTransform: transform,
+        controlPoints: controlPoints.map((point) => ({
+          id: point.id,
+          imageX: point.imageX,
+          imageY: point.imageY,
+        })),
+        selectedControlPointId,
+        mapPane: await handle.captureView({
+          controlPoints,
+          geoSegments,
+          pendingMapPoint,
+          pendingTracePoints,
+          baseMapStyle,
+        }),
+        controlPointsVisible: true,
+        overlays: {
+          pendingMapPin: pendingMapPoint,
+          draftSegmentsDrawn:
+            pendingTracePoints.length >= 2 || geoSegments.some((segment) => segment.status === "draft"),
+        },
+      });
+
+      await saveSnapshotMutation.mutateAsync(snapshot);
+
+      if (!options?.silent) {
+        toast.success("Workspace view captured for agents.");
+      }
+
+      return snapshot;
+    } catch (err: unknown) {
+      if (!options?.silent) {
+        toast.error(unwrapUnknownError(err).message);
+      }
+      return null;
+    }
+  }
+
+  useEffect(() => {
+    if (!assistantOpen) {
+      return;
+    }
+
+    void captureWorkspaceSnapshot({ silent: true });
+  }, [assistantOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (screenshotPreviewUrl) {
+        URL.revokeObjectURL(screenshotPreviewUrl);
+      }
+    };
+  }, [screenshotPreviewUrl]);
+
+  async function takeWorkspaceScreenshot() {
+    const handle = mapHandleRef.current;
+    const pdfCanvas = pdfCanvasRef.current;
+
+    if (!handle || !pdfCanvas) {
+      toast.error("Load the PDF and wait for the map to finish rendering.");
+      return;
+    }
+
+    setIsTakingScreenshot(true);
+
+    try {
+      const geoSegments = geoSegmentsQuery.data ?? [];
+      const mapPane = await handle.captureView({
+        controlPoints,
+        geoSegments,
+        pendingMapPoint,
+        pendingTracePoints,
+        baseMapStyle,
+      });
+
+      const pdfCaptureOptions = {
+        controlPoints: controlPoints.map((point) => ({
+          id: point.id,
+          imageX: point.imageX,
+          imageY: point.imageY,
+        })),
+        selectedControlPointId,
+      };
+      const pdfCaptureCanvas = capturePdfPaneToCanvas(pdfCanvas, pdfCaptureOptions);
+      const pdfBlob = await capturePdfPanePngBlob(pdfCanvas, pdfCaptureOptions);
+      const mapBlob = await fetch(`data:image/png;base64,${mapPane.imageBase64}`).then((response) =>
+        response.blob(),
+      );
+      const combinedBlob = await buildChatScreenshotBlob({
+        panes: [
+          {
+            label: "Source PDF",
+            image: pdfCaptureCanvas,
+            width: pdfCaptureCanvas.width,
+            height: pdfCaptureCanvas.height,
+          },
+          {
+            label: "Base map",
+            image: mapPane.imageBase64,
+            width: mapPane.containerWidth,
+            height: mapPane.containerHeight,
+          },
+        ],
+      });
+
+      if (screenshotPreviewUrl) {
+        URL.revokeObjectURL(screenshotPreviewUrl);
+      }
+
+      setScreenshotPdfBlob(pdfBlob);
+      setScreenshotMapBlob(mapBlob);
+      setScreenshotCombinedBlob(combinedBlob);
+      setScreenshotPreviewUrl(URL.createObjectURL(combinedBlob));
+      setScreenshotDialogOpen(true);
+
+      if (mapPane.captureMode === "schematic-overlays") {
+        toast.warning("Map screenshot used schematic fallback.", {
+          description: "Refresh the page once, then try again to capture satellite tiles.",
+        });
+      }
+    } catch (err: unknown) {
+      toast.error(unwrapUnknownError(err).message);
+    } finally {
+      setIsTakingScreenshot(false);
+    }
   }
 
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -759,6 +918,28 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
           </Button>
           <Button
             type="button"
+            size="sm"
+            variant="outline"
+            disabled={!pdfFile || isTakingScreenshot}
+            onClick={() => void takeWorkspaceScreenshot()}
+            data-test="workspace-screenshot"
+          >
+            <Image className="size-4" />
+            Screenshot
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={!pdfFile || saveSnapshotMutation.isPending}
+            onClick={() => void captureWorkspaceSnapshot()}
+            data-test="capture-workspace-view"
+          >
+            <Camera className="size-4" />
+            Capture view
+          </Button>
+          <Button
+            type="button"
             variant="outline"
             size="sm"
             onClick={() => setAssistantOpen(true)}
@@ -940,6 +1121,9 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
             onPdfLocationPick={handlePdfLocationPick}
             onControlPointPdfMove={handleControlPointPdfMove}
             onTransformChange={updateTransform}
+            onCanvasReady={(canvas) => {
+              pdfCanvasRef.current = canvas;
+            }}
           />
           {!pdfFile ? (
             <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6">
@@ -1389,10 +1573,24 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
             </DialogDescription>
           </DialogHeader>
           <div className="min-h-0 flex-1 overflow-hidden">
-            <MapAiPanel mapId={mapId} mapName={mapQuery.data.name} />
+            <MapAiPanel
+              mapId={mapId}
+              mapName={mapQuery.data.name}
+              onBeforeSend={() => captureWorkspaceSnapshot({ silent: true })}
+            />
           </div>
         </DialogContent>
       </Dialog>
+
+      <WorkspaceScreenshotDialog
+        open={screenshotDialogOpen}
+        onOpenChange={setScreenshotDialogOpen}
+        mapName={mapQuery.data.name}
+        previewUrl={screenshotPreviewUrl}
+        combinedBlob={screenshotCombinedBlob}
+        pdfBlob={screenshotPdfBlob}
+        mapBlob={screenshotMapBlob}
+      />
     </div>
   );
 }
@@ -1879,6 +2077,7 @@ type PdfPreviewPaneProps = {
   onPdfLocationPick: (imageX: number, imageY: number) => void;
   onControlPointPdfMove: (controlPointId: number, imageX: number, imageY: number) => void;
   onTransformChange: (patch: Partial<PdfViewTransform>) => void;
+  onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
 };
 
 function PdfPreviewPane({
@@ -1893,6 +2092,7 @@ function PdfPreviewPane({
   onPdfLocationPick,
   onControlPointPdfMove,
   onTransformChange,
+  onCanvasReady,
 }: PdfPreviewPaneProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -1906,6 +2106,9 @@ function PdfPreviewPane({
   const transformRef = useRef(transform);
   const onTransformChangeRef = useRef(onTransformChange);
   const onControlPointPdfMoveRef = useRef(onControlPointPdfMove);
+  const onCanvasReadyRef = useRef(onCanvasReady);
+  const onErrorRef = useRef(onError);
+  const onPageCountChangeRef = useRef(onPageCountChange);
   const pdfMarkerDragRef = useRef<{ pointerId: number; controlPointId: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isDraggingMarker, setIsDraggingMarker] = useState(false);
@@ -1920,6 +2123,9 @@ function PdfPreviewPane({
   transformRef.current = transform;
   onTransformChangeRef.current = onTransformChange;
   onControlPointPdfMoveRef.current = onControlPointPdfMove;
+  onCanvasReadyRef.current = onCanvasReady;
+  onErrorRef.current = onError;
+  onPageCountChangeRef.current = onPageCountChange;
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -2058,6 +2264,7 @@ function PdfPreviewPane({
   useEffect(() => {
     const canvasElement = canvasRef.current;
     if (!canvasElement) {
+      onCanvasReadyRef.current(null);
       return;
     }
 
@@ -2066,8 +2273,9 @@ function PdfPreviewPane({
     if (!file) {
       const context = targetCanvas.getContext("2d");
       context?.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
-      onError(null);
-      onPageCountChange(null);
+      onCanvasReadyRef.current(null);
+      onErrorRef.current(null);
+      onPageCountChangeRef.current(null);
       return;
     }
 
@@ -2078,7 +2286,7 @@ function PdfPreviewPane({
 
     async function renderFirstPage() {
       setIsLoading(true);
-      onError(null);
+      onErrorRef.current(null);
 
       try {
         const { GlobalWorkerOptions, getDocument } = await import("pdfjs-dist");
@@ -2087,14 +2295,14 @@ function PdfPreviewPane({
         const source = new Uint8Array(await selectedFile.arrayBuffer());
         loadingTask = getDocument({ data: source });
         const pdf = await loadingTask.promise;
-        onPageCountChange(pdf.numPages);
+        onPageCountChangeRef.current(pdf.numPages);
 
         const page = await pdf.getPage(1);
         if (cancelled) {
           return;
         }
 
-        const viewport = page.getViewport({ scale: 1.5 });
+        const viewport = page.getViewport({ scale: PDF_RENDER_SCALE });
         targetCanvas.width = Math.floor(viewport.width);
         targetCanvas.height = Math.floor(viewport.height);
         targetCanvas.style.width = `${Math.floor(viewport.width)}px`;
@@ -2107,9 +2315,14 @@ function PdfPreviewPane({
 
         renderTask = page.render({ canvas: targetCanvas, canvasContext: context, viewport });
         await renderTask.promise;
+
+        if (!cancelled) {
+          onCanvasReadyRef.current(targetCanvas);
+        }
       } catch (err: unknown) {
         if (!cancelled) {
-          onError(unwrapUnknownError(err).message);
+          onErrorRef.current(unwrapUnknownError(err).message);
+          onCanvasReadyRef.current(null);
         }
       } finally {
         if (!cancelled) {
@@ -2125,7 +2338,7 @@ function PdfPreviewPane({
       renderTask?.cancel();
       void loadingTask?.destroy();
     };
-  }, [file, onError, onPageCountChange]);
+  }, [file]);
 
   return (
     <div

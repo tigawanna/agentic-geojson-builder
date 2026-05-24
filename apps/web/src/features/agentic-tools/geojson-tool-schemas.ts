@@ -357,6 +357,73 @@ export const exportedFeaturePropertiesSchema = z.object({
   sourceSegmentIds: z.array(z.number().int().positive()).optional(),
 });
 
+export const renderedMapViewPdfPaneSchema = z.object({
+  imageBase64: z.string(),
+  mimeType: z.literal("image/png"),
+  canvasWidth: z.number().int().positive(),
+  canvasHeight: z.number().int().positive(),
+  coordinateSpace: z.literal("pdf-pixels"),
+  origin: z.literal("top-left"),
+  pdfRenderScale: z.number().positive(),
+  viewTransform: z.object({
+    scale: z.number(),
+    rotation: z.number(),
+    panX: z.number(),
+    panY: z.number(),
+  }),
+  note: z.string(),
+});
+
+export const renderedMapViewMapPaneSchema = z.object({
+  imageBase64: z.string(),
+  mimeType: z.literal("image/png"),
+  viewport: z.object({
+    center: z.object({
+      latitude: z.number(),
+      longitude: z.number(),
+    }),
+    zoom: z.number(),
+    bounds: z.object({
+      north: z.number(),
+      south: z.number(),
+      east: z.number(),
+      west: z.number(),
+    }),
+  }),
+  coordinateSpace: z.literal("wgs84"),
+  baseMapStyle: mapBaseMapStyleSchema,
+  containerWidth: z.number().int().positive(),
+  containerHeight: z.number().int().positive(),
+  captureMode: z.enum(["dom-screenshot", "tile-composite", "schematic-overlays"]),
+});
+
+export const renderedMapViewSchema = z.object({
+  capturedAt: z.string(),
+  mapId: z.number().int().positive(),
+  source: z.enum(["client", "server"]),
+  pdfPane: renderedMapViewPdfPaneSchema.nullable(),
+  mapPane: renderedMapViewMapPaneSchema.nullable(),
+  controlPointsVisible: z.boolean(),
+  overlays: z.object({
+    pendingMapPin: z
+      .object({
+        latitude: z.number(),
+        longitude: z.number(),
+      })
+      .nullable(),
+    draftSegmentsDrawn: z.boolean(),
+  }),
+});
+
+export const getRenderedMapViewToolOutputSchema = z.object({
+  mapId: z.number().int().positive(),
+  ready: z.boolean(),
+  reason: z.enum(["no_client_snapshot", "client_snapshot"]),
+  message: z.string().optional(),
+  capturedAt: z.string().optional(),
+  snapshot: renderedMapViewSchema.nullable(),
+});
+
 export const exportedGeoJsonSchema = z.object({
   type: z.literal("FeatureCollection"),
   features: z.array(

@@ -12,6 +12,7 @@ import {
   georeferenceToolOutputSchema,
   getMapWorkspaceToolOutputSchema,
   getProjectContextToolOutputSchema,
+  getRenderedMapViewToolOutputSchema,
   applyFeaturePatchToolInputSchema,
   applyFeaturePatchToolOutputSchema,
   exportGeoJsonToolInputSchema,
@@ -56,6 +57,7 @@ import {
   getGeoreferenceTool,
   getMapWorkspaceTool,
   getProjectContextTool,
+  getRenderedMapViewTool,
   listFeatureSegmentsTool,
   listControlPointsTool,
   listMapsTool,
@@ -285,6 +287,22 @@ const getProjectContextProcedure = geojsonReadProcedure
     getProjectContextTool({ userId: context.userId }, input.mapId),
   );
 
+const getRenderedMapViewProcedure = geojsonReadProcedure
+  .route({
+    method: "POST",
+    path: "/project/rendered-map-view",
+    summary: "Get rendered map view",
+    description:
+      "Return the latest client-captured PDF and map pane snapshots with coordinate metadata.",
+    tags: ["Agentic GeoJSON"],
+    successStatus: 200,
+  })
+  .input(mapIdInputSchema)
+  .output(getRenderedMapViewToolOutputSchema)
+  .handler(async ({ context, input }) =>
+    getRenderedMapViewTool({ userId: context.userId }, input.mapId),
+  );
+
 const listFeatureSegmentsProcedure = geojsonReadProcedure
   .route({
     method: "POST",
@@ -393,6 +411,7 @@ export const geojsonAgenticRouter = {
   },
   project: {
     context: getProjectContextProcedure,
+    renderedMapView: getRenderedMapViewProcedure,
   },
   featureSegments: {
     list: listFeatureSegmentsProcedure,

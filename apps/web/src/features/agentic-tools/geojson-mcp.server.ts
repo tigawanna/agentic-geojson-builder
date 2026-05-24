@@ -156,6 +156,17 @@ export function createGeojsonMcpServer(userId: string): McpServer {
   );
 
   server.registerTool(
+    "get_rendered_map_view",
+    {
+      title: "Get Rendered Map View",
+      description:
+        "Return the latest client-captured PDF and map pane PNG snapshots with coordinate metadata. Capture from the map workspace first.",
+      inputSchema: mapIdInputSchema.shape,
+    },
+    async (input) => jsonToolResult(await client.project.renderedMapView(input)),
+  );
+
+  server.registerTool(
     "compute_georeference",
     {
       title: "Compute Georeference",

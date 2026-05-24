@@ -8,9 +8,10 @@ import { useState } from "react";
 type MapAiPanelProps = {
   mapId: number;
   mapName: string;
+  onBeforeSend?: () => Promise<unknown>;
 };
 
-export function MapAiPanel({ mapId, mapName }: MapAiPanelProps) {
+export function MapAiPanel({ mapId, mapName, onBeforeSend }: MapAiPanelProps) {
   const [input, setInput] = useState("");
   const { messages, sendMessage, clear, isLoading, error } = useChat({
     connection: fetchServerSentEvents("/api/ai/map-assistant"),
@@ -27,6 +28,10 @@ export function MapAiPanel({ mapId, mapName }: MapAiPanelProps) {
       return;
     }
 
+    if (onBeforeSend) {
+      await onBeforeSend();
+    }
+
     await sendMessage(trimmed);
     setInput("");
   }
@@ -34,6 +39,10 @@ export function MapAiPanel({ mapId, mapName }: MapAiPanelProps) {
   async function sendStarter(message: string) {
     if (isLoading) {
       return;
+    }
+
+    if (onBeforeSend) {
+      await onBeforeSend();
     }
 
     await sendMessage(message);
@@ -49,7 +58,8 @@ export function MapAiPanel({ mapId, mapName }: MapAiPanelProps) {
           </CardTitle>
           <CardDescription>
             Ask about georeference quality, trail segments, and export readiness for {mapName}. The
-            assistant can inspect this map with tools and propose draft trail patches when you ask.
+            assistant captures the current PDF and map view before each message so tools can inspect
+            what you see.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2 px-4 pb-4">
@@ -60,7 +70,7 @@ export function MapAiPanel({ mapId, mapName }: MapAiPanelProps) {
             disabled={isLoading}
             onClick={() =>
               sendStarter(
-                "Load project context and summarize georeference quality plus how many trail segments exist.",
+                "Load project context and the latest rendered map view, then summarize what you can see on the PDF and map panes.",
               )
             }
             data-test="map-ai-starter-context"
