@@ -5,6 +5,7 @@ All docs describe the **same current reality**: server Postgres, `/maps` routes,
 | File                                                           | Read when you need…                                                   |
 | -------------------------------------------------------------- | --------------------------------------------------------------------- |
 | [`map-workspace-features.md`](map-workspace-features.md)       | What the UI already does (reference points, PDF, Leaflet, etc.)       |
+| [`agent-tile-cache-handoff.md`](agent-tile-cache-handoff.md)   | Agent tile cache prototype: sectors, disk cache, MCP tools, georef    |
 | [`agent-digitization-design.md`](agent-digitization-design.md) | How agents should work: chunking, coordinates, verification tools     |
 | [`../TODOS.md`](../TODOS.md)                                   | What's done vs next phases; full tool inventory with UI/Agent columns |
 | [`../GAMEPLAN.md`](../GAMEPLAN.md)                             | Product workflow mapped to implementation status                      |
@@ -16,7 +17,7 @@ All docs describe the **same current reality**: server Postgres, `/maps` routes,
 - **Routes:** `/maps`, `/maps/new`, `/maps/$id` — not `/map-projects`
 - **Database:** PostgreSQL (`map`, `control_point`) — not browser PGLite
 - **UI server fns:** exist in `data-access-layer/maps/` and `control-points/`
-- **Agent/MCP tools:** planned in `features/agentic-tools/` — not registered yet
+- **Agent/MCP tools:** registered in `features/agentic-tools/` (maps, georef, segments, tile cache, rendered views)
 - **Tool names in design docs:** snake_case = agent/MCP contract; camelCase `*Fn` = UI server function today
 
 When updating code, update the relevant doc in the same PR/session so these stay aligned.
