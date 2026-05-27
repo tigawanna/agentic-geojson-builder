@@ -5,6 +5,7 @@ import log from "electron-log/main";
 import { registerIpcHandlers } from "./ipc/index.js";
 import { initPgliteDb } from "./lib/pglite/client.js";
 import { initMcpServer, shutdownMcpServer } from "./mcp/index.js";
+import { startTileServer, stopTileServer } from "./tile-server.js";
 import { initUpdater } from "./updater.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -58,6 +59,7 @@ function createWindow(): BrowserWindow {
 void app.whenReady().then(async () => {
   await initPgliteDb();
   registerIpcHandlers();
+  await startTileServer();
   await initMcpServer();
 
   mainWindow = createWindow();
@@ -79,6 +81,7 @@ app.on("window-all-closed", () => {
 
 app.on("before-quit", () => {
   void shutdownMcpServer();
+  void stopTileServer();
 });
 
 process.on("uncaughtException", (err) => {

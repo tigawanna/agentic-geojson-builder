@@ -69,11 +69,16 @@ export async function geocodePlace(query: string) {
   };
 }
 
-export function createBaseLayer(L: typeof import("leaflet"), style: MapBaseMapStyle) {
+export function createBaseLayer(
+  L: typeof import("leaflet"),
+  style: MapBaseMapStyle,
+  tileUrlOverride?: string | null,
+) {
   const config = BASE_MAP_CONFIG[style];
-  return L.tileLayer(config.url, {
+  return L.tileLayer(tileUrlOverride ?? config.url, {
     maxZoom: config.maxZoom,
     attribution: config.attribution,
+    crossOrigin: "anonymous",
   });
 }
 

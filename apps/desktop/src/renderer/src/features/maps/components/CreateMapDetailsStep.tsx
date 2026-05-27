@@ -1,10 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { useCreateMapProjectMutation } from "../hooks/useCreateMapProjectMutation";
 import { useCreateMapWizardStore } from "../store/create-map-wizard-store";
 
 export function CreateMapDetailsStep() {
   const { t } = useTranslation();
-  const createProject = useCreateMapProjectMutation();
   const file = useCreateMapWizardStore((state) => state.file);
   const name = useCreateMapWizardStore((state) => state.name);
   const description = useCreateMapWizardStore((state) => state.description);
@@ -17,24 +15,6 @@ export function CreateMapDetailsStep() {
   const setLocationQuery = useCreateMapWizardStore((state) => state.setLocationQuery);
   const setLatitude = useCreateMapWizardStore((state) => state.setLatitude);
   const setLongitude = useCreateMapWizardStore((state) => state.setLongitude);
-
-  function submit() {
-    if (!file || !name.trim()) {
-      return;
-    }
-
-    const parsedLat = latitude.trim() ? Number(latitude) : undefined;
-    const parsedLng = longitude.trim() ? Number(longitude) : undefined;
-
-    createProject.mutate({
-      name: name.trim(),
-      file,
-      ...(description.trim() ? { description: description.trim() } : {}),
-      ...(locationQuery.trim() ? { locationQuery: locationQuery.trim() } : {}),
-      ...(parsedLat !== undefined && Number.isFinite(parsedLat) ? { mapCenterLat: parsedLat } : {}),
-      ...(parsedLng !== undefined && Number.isFinite(parsedLng) ? { mapCenterLng: parsedLng } : {}),
-    });
-  }
 
   return (
     <div className="flex flex-col gap-8 pr-6">
@@ -111,14 +91,6 @@ export function CreateMapDetailsStep() {
         </div>
       </div>
 
-      {createProject.isError ? (
-        <p className="text-sm text-error">
-          {createProject.error instanceof Error
-            ? createProject.error.message
-            : t("maps.create.error")}
-        </p>
-      ) : null}
-
       <div className="flex gap-3 pt-2">
         <button type="button" className="btn flex-1 btn-outline" onClick={() => setStep("upload")}>
           {t("maps.create.back")}
@@ -126,10 +98,10 @@ export function CreateMapDetailsStep() {
         <button
           type="button"
           className="btn flex-1 btn-primary"
-          disabled={!file || !name.trim() || createProject.isPending}
-          onClick={submit}
+          disabled={!file || !name.trim()}
+          onClick={() => setStep("cacheBounds")}
         >
-          {createProject.isPending ? t("maps.create.processing") : t("maps.create.submit")}
+          {t("maps.create.continue")}
         </button>
       </div>
     </div>

@@ -3,6 +3,41 @@ import type { SquareBounds, TileCoordinate } from "./types.js";
 const TILE_SIZE = 256;
 const EARTH_RADIUS_METERS = 6378137;
 
+export type GeoPoint = {
+  latitude: number;
+  longitude: number;
+};
+
+export function boundsFromCorners(corners: GeoPoint[]): SquareBounds {
+  if (corners.length !== 4) {
+    throw new Error("Exactly four corner points are required.");
+  }
+
+  const north = Math.max(...corners.map((corner) => corner.latitude));
+  const south = Math.min(...corners.map((corner) => corner.latitude));
+  const east = Math.max(...corners.map((corner) => corner.longitude));
+  const west = Math.min(...corners.map((corner) => corner.longitude));
+  const centerLatitude = (north + south) / 2;
+  const centerLongitude = (east + west) / 2;
+  const latHalfMeters = ((north - south) / 2) * (Math.PI / 180) * EARTH_RADIUS_METERS;
+  const lngHalfMeters =
+    ((east - west) / 2) *
+    (Math.PI / 180) *
+    EARTH_RADIUS_METERS *
+    Math.cos((centerLatitude * Math.PI) / 180);
+  const halfSideMeters = Math.max(latHalfMeters, lngHalfMeters, 1);
+
+  return {
+    north,
+    south,
+    east,
+    west,
+    centerLatitude,
+    centerLongitude,
+    halfSideMeters,
+  };
+}
+
 export function squareBoundsFromCenter(
   centerLatitude: number,
   centerLongitude: number,

@@ -6,12 +6,15 @@ import tailwindcss from "@tailwindcss/vite";
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin()],
     build: {
+      externalizeDeps: {
+        exclude: ["@repo/tile-cache"],
+      },
       rollupOptions: {
         input: {
           index: resolve(__dirname, "src/main/index.ts"),
         },
+        external: ["sharp", /^@img\/sharp-/],
       },
     },
     resolve: {

@@ -1,6 +1,8 @@
 import { create } from "zustand";
+import type { MapBaseMapStyle } from "@shared/maps.types";
+import type { TileCacheCorner } from "@shared/tile-cache.types";
 
-export type CreateMapWizardStep = "upload" | "details" | "processing";
+export type CreateMapWizardStep = "upload" | "details" | "cacheBounds" | "cacheBuilding";
 
 type CreateMapWizardState = {
   isOpen: boolean;
@@ -11,6 +13,10 @@ type CreateMapWizardState = {
   locationQuery: string;
   latitude: string;
   longitude: string;
+  cacheCorners: TileCacheCorner[];
+  cacheStyle: MapBaseMapStyle;
+  buildProgress: { completed: number; total: number } | null;
+  buildMessage: string | null;
 };
 
 type CreateMapWizardActions = {
@@ -24,6 +30,11 @@ type CreateMapWizardActions = {
   setLocationQuery: (locationQuery: string) => void;
   setLatitude: (latitude: string) => void;
   setLongitude: (longitude: string) => void;
+  addCacheCorner: (corner: TileCacheCorner) => void;
+  resetCacheCorners: () => void;
+  setCacheStyle: (style: MapBaseMapStyle) => void;
+  setBuildProgress: (progress: { completed: number; total: number } | null) => void;
+  setBuildMessage: (message: string | null) => void;
 };
 
 const initialState: CreateMapWizardState = {
@@ -35,6 +46,10 @@ const initialState: CreateMapWizardState = {
   locationQuery: "",
   latitude: "",
   longitude: "",
+  cacheCorners: [],
+  cacheStyle: "satellite",
+  buildProgress: null,
+  buildMessage: null,
 };
 
 export const useCreateMapWizardStore = create<CreateMapWizardState & CreateMapWizardActions>(
@@ -58,5 +73,16 @@ export const useCreateMapWizardStore = create<CreateMapWizardState & CreateMapWi
     setLocationQuery: (locationQuery) => set({ locationQuery }),
     setLatitude: (latitude) => set({ latitude }),
     setLongitude: (longitude) => set({ longitude }),
+    addCacheCorner: (corner) =>
+      set((state) => ({
+        cacheCorners:
+          state.cacheCorners.length >= 4
+            ? [...state.cacheCorners.slice(1), corner]
+            : [...state.cacheCorners, corner],
+      })),
+    resetCacheCorners: () => set({ cacheCorners: [] }),
+    setCacheStyle: (cacheStyle) => set({ cacheStyle }),
+    setBuildProgress: (buildProgress) => set({ buildProgress }),
+    setBuildMessage: (buildMessage) => set({ buildMessage }),
   }),
 );

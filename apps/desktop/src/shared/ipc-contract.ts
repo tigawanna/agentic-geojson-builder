@@ -5,8 +5,18 @@ import type {
   MapSourceFilePayload,
   MapWorkspaceState,
   MapsChangedEvent,
+  ReplaceMapSourceInput,
+  UpdateMapWorkspaceInput,
 } from "./maps.types.js";
 import type { McpStatus } from "./mcp.types.js";
+import type {
+  BuildTileCacheResult,
+  GetMapSectorViewInput,
+  MapSectorViewResult,
+  MapTileCacheConfig,
+  SetTileCacheBoundsInput,
+  TileCacheBuildProgressEvent,
+} from "./tile-cache.types.js";
 
 /**
  * Single source of truth for every IPC channel in the app.
@@ -44,6 +54,14 @@ export interface IpcContract {
   "maps:createProject": { req: CreateMapProjectInput; res: MapWorkspaceState };
   "maps:getWorkspace": { req: { mapId: number }; res: MapWorkspaceState | null };
   "maps:readSource": { req: { mapId: number }; res: MapSourceFilePayload | null };
+  "maps:updateWorkspace": { req: UpdateMapWorkspaceInput; res: MapWorkspaceState };
+  "maps:replaceSource": { req: ReplaceMapSourceInput; res: MapSourceFilePayload };
+
+  // --- Tile cache (local map tiles) ------------------------------------------
+  "tileCache:getStatus": { req: { mapId: number }; res: MapTileCacheConfig | null };
+  "tileCache:setBoundsFromCorners": { req: SetTileCacheBoundsInput; res: MapTileCacheConfig };
+  "tileCache:build": { req: { mapId: number }; res: BuildTileCacheResult };
+  "tileCache:getSectorView": { req: GetMapSectorViewInput; res: MapSectorViewResult };
 
   // --- Local MCP server ------------------------------------------------------
   "mcp:getStatus": { req: void; res: McpStatus };
@@ -64,6 +82,7 @@ export type IpcResponse<K extends IpcChannel> = IpcContract[K]["res"];
  */
 export interface IpcEventMap {
   "maps:changed": MapsChangedEvent;
+  "tileCache:buildProgress": TileCacheBuildProgressEvent;
   "updater:status": {
     state: "checking" | "available" | "not-available" | "downloading" | "downloaded" | "error";
     version?: string;

@@ -3,6 +3,7 @@ import log from "electron-log/main";
 import type { IpcChannel, IpcRequest, IpcResponse } from "../../shared/ipc-contract.js";
 import { storageHandlers } from "./storage.js";
 import { mapsHandlers } from "./maps.js";
+import { tileCacheHandlers } from "./tile-cache.js";
 import { mcpSettingsHandlers } from "./mcp-settings.js";
 import { pgliteHandlers } from "./pglite.js";
 import { updaterHandlers } from "./updater.js";
@@ -42,6 +43,7 @@ export function registerIpcHandlers(): void {
     ...storageHandlers,
     ...pgliteHandlers,
     ...mapsHandlers,
+    ...tileCacheHandlers,
     ...mcpSettingsHandlers,
     ...updaterHandlers,
   };

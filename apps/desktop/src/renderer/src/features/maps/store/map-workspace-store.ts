@@ -24,6 +24,7 @@ type MapWorkspaceStoreActions = {
   setError: (message: string) => void;
   setWorkspace: (workspace: MapWorkspaceState) => void;
   setSourceFile: (sourceFile: MapSourceFilePayload | null) => void;
+  patchWorkspace: (patch: Partial<MapWorkspaceState>) => void;
 };
 
 export type MapWorkspaceStore = StoreApi<MapWorkspaceStoreState & MapWorkspaceStoreActions>;
@@ -47,6 +48,8 @@ export function createMapWorkspaceStore(): MapWorkspaceStore {
     setError: (message) => set({ phase: "error", errorMessage: message }),
     setWorkspace: (workspace) => set({ workspace }),
     setSourceFile: (sourceFile) => set({ sourceFile }),
+    patchWorkspace: (patch) =>
+      set((state) => (state.workspace ? { workspace: { ...state.workspace, ...patch } } : state)),
   }));
 }
 

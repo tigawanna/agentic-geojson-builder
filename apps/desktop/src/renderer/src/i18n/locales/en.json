@@ -48,8 +48,10 @@
     "create": {
       "heading": "New map project",
       "description": "Upload a PDF or image, add details, and we will prepare your split workspace.",
-      "stepUpload": "Step 1 of 2",
-      "stepDetails": "Step 2 of 2",
+      "stepUpload": "Step 1 of 4",
+      "stepDetails": "Step 2 of 4",
+      "stepCacheBounds": "Step 3 of 4",
+      "stepCacheBuilding": "Step 4 of 4",
       "uploadHeading": "Load your map sheet",
       "uploadDescription": "Choose a PDF or image of the trail map you want to georeference.",
       "detailsHeading": "Project details",
@@ -73,7 +75,50 @@
       "longitudeLabel": "Longitude (optional)",
       "submit": "Create workspace",
       "processing": "Creating workspace…",
-      "error": "Could not create the map project."
+      "error": "Could not create the map project.",
+      "cacheBoundsHeading": "Define offline map area",
+      "cacheBoundsDescription": "Click four corners on the map to outline the region whose tiles should be cached locally.",
+      "cachePoints": "{{count}} / 4 points placed",
+      "resetPoints": "Reset points",
+      "cacheAndCreate": "Download tiles & create",
+      "cacheBuildingHeading": "Caching map tiles locally…",
+      "cacheBuildingDescription": "This may take a minute. Tiles are saved on disk so the app and MCP can reuse them offline.",
+      "cacheProgress": "{{percent}}% · {{completed}} / {{total}} tiles",
+      "baseMap": {
+        "satellite": "Satellite",
+        "outline": "Outline",
+        "standard": "Standard"
+      }
+    },
+    "workspace": {
+      "back": "Back to maps",
+      "controls": "Controls",
+      "openControls": "Open project controls",
+      "controlsTitle": "Project controls",
+      "controlsDescription": "Update project details, map area, and PDF view settings.",
+      "projectSection": "Project",
+      "projectSectionHint": "Edit the name, description, or replace the source file.",
+      "mapSection": "Map area",
+      "mapSectionHint": "Search for a location, switch base map style, or set coordinates.",
+      "pdfSection": "PDF view",
+      "pdfSectionHint": "Drag the source to pan. Use the wheel to zoom. Adjust scale and rotation here.",
+      "replaceSource": "Replace source file",
+      "replaceError": "Could not replace the source file.",
+      "search": "Go",
+      "searching": "Searching…",
+      "applyCoordinates": "Apply coordinates",
+      "invalidCoordinates": "Enter valid latitude and longitude values.",
+      "pdfScale": "Scale",
+      "pdfRotation": "Rotation",
+      "resetPdfView": "Reset PDF view",
+      "cursorCoordinates": "Cursor: {{value}}",
+      "selectedCoordinates": "Selected: {{value}}",
+      "coordinatesCopied": "Coordinates copied: {{value}}",
+      "baseMap": {
+        "satellite": "Satellite",
+        "outline": "Outline",
+        "standard": "Standard"
+      }
     }
   },
   "posts": {

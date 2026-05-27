@@ -5,6 +5,8 @@ import {
   getMapWorkspace,
   listMaps,
   readMapSourcePayload,
+  replaceMapSource,
+  updateMapWorkspace,
 } from "../lib/pglite/maps.service.js";
 import { broadcastToRenderers } from "./broadcast.js";
 
@@ -26,4 +28,14 @@ export const mapsHandlers: { [K in IpcChannel]?: Handler<K> } = {
   },
   "maps:getWorkspace": async ({ mapId }) => getMapWorkspace(mapId),
   "maps:readSource": async ({ mapId }) => readMapSourcePayload(mapId),
+  "maps:updateWorkspace": async (input) => {
+    const workspace = await updateMapWorkspace(input);
+    broadcastToRenderers("maps:changed", { reason: "updated", mapId: workspace.id });
+    return workspace;
+  },
+  "maps:replaceSource": async (input) => {
+    const source = await replaceMapSource(input);
+    broadcastToRenderers("maps:changed", { reason: "updated", mapId: input.mapId });
+    return source;
+  },
 };

@@ -37,6 +37,7 @@ export type CreateMapProjectInput = {
   locationQuery?: string;
   mapCenterLat?: number;
   mapCenterLng?: number;
+  baseMapStyle?: MapBaseMapStyle;
   fileName: string;
   mimeType: string;
   fileBase64: string;
@@ -55,6 +56,8 @@ export type MapsChangedEvent = {
 
 export type UpdateMapWorkspaceInput = {
   mapId: number;
+  name?: string;
+  description?: string | null;
   locationQuery?: string;
   mapCenterLat?: number | null;
   mapCenterLng?: number | null;
@@ -64,4 +67,11 @@ export type UpdateMapWorkspaceInput = {
   pdfRotation?: number;
   pdfPanX?: number;
   pdfPanY?: number;
+};
+
+export type ReplaceMapSourceInput = {
+  mapId: number;
+  fileName: string;
+  mimeType: string;
+  fileBase64: string;
 };

@@ -5,6 +5,8 @@ import type {
   MapListItem,
   MapSourceFilePayload,
   MapWorkspaceState,
+  ReplaceMapSourceInput,
+  UpdateMapWorkspaceInput,
 } from "../../../shared/maps.types.js";
 import { readMapSourceFile, saveMapSourceFile } from "./map-files.service.js";
 import { getPgliteDb } from "./client.js";
@@ -108,6 +110,7 @@ export async function createMapProject(input: CreateMapProjectInput): Promise<Ma
       mapCenterLat: input.mapCenterLat ?? null,
       mapCenterLng: input.mapCenterLng ?? null,
       mapZoom: input.mapCenterLat != null && input.mapCenterLng != null ? 13 : null,
+      baseMapStyle: input.baseMapStyle ?? "satellite",
     })
     .returning();
 
@@ -153,5 +156,95 @@ export async function readMapSourcePayload(mapId: number): Promise<MapSourceFile
     fileName: workspace.pdfFileName,
     mimeType,
     fileBase64: buffer.toString("base64"),
+  };
+}
+
+export async function updateMapWorkspace(
+  input: UpdateMapWorkspaceInput,
+): Promise<MapWorkspaceState> {
+  const db = getPgliteDb();
+  const patch: Partial<MapRecord> = { updatedAt: new Date() };
+
+  if (input.name !== undefined) {
+    const name = input.name.trim();
+    if (!name) {
+      throw new Error("Map name is required");
+    }
+    patch.name = name;
+  }
+  if (input.description !== undefined) {
+    patch.description = input.description?.trim() || null;
+  }
+  if (input.locationQuery !== undefined) {
+    patch.locationQuery = input.locationQuery.trim() || null;
+  }
+  if (input.mapCenterLat !== undefined) {
+    patch.mapCenterLat = input.mapCenterLat;
+  }
+  if (input.mapCenterLng !== undefined) {
+    patch.mapCenterLng = input.mapCenterLng;
+  }
+  if (input.mapZoom !== undefined) {
+    patch.mapZoom = input.mapZoom;
+  }
+  if (input.baseMapStyle !== undefined) {
+    patch.baseMapStyle = input.baseMapStyle;
+  }
+  if (input.pdfScale !== undefined) {
+    patch.pdfScale = input.pdfScale;
+  }
+  if (input.pdfRotation !== undefined) {
+    patch.pdfRotation = input.pdfRotation;
+  }
+  if (input.pdfPanX !== undefined) {
+    patch.pdfPanX = input.pdfPanX;
+  }
+  if (input.pdfPanY !== undefined) {
+    patch.pdfPanY = input.pdfPanY;
+  }
+
+  const [updated] = await db
+    .update(mapTable)
+    .set(patch)
+    .where(eq(mapTable.id, input.mapId))
+    .returning();
+
+  if (!updated) {
+    throw new Error("Map not found");
+  }
+
+  return toMapWorkspaceState(updated);
+}
+
+export async function replaceMapSource(
+  input: ReplaceMapSourceInput,
+): Promise<MapSourceFilePayload> {
+  const workspace = await getMapWorkspace(input.mapId);
+  if (!workspace) {
+    throw new Error("Map not found");
+  }
+
+  const buffer = Buffer.from(input.fileBase64, "base64");
+  const folderPath = await saveMapSourceFile(input.mapId, input.fileName, buffer);
+
+  const db = getPgliteDb();
+  const [updated] = await db
+    .update(mapTable)
+    .set({
+      folderPath,
+      pdfFileName: input.fileName,
+      updatedAt: new Date(),
+    })
+    .where(eq(mapTable.id, input.mapId))
+    .returning({ pdfFileName: mapTable.pdfFileName, folderPath: mapTable.folderPath });
+
+  if (!updated?.pdfFileName || !updated.folderPath) {
+    throw new Error("Failed to replace map source");
+  }
+
+  return {
+    fileName: input.fileName,
+    mimeType: input.mimeType,
+    fileBase64: input.fileBase64,
   };
 }

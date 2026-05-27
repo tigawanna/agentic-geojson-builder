@@ -28,6 +28,7 @@
     "@electric-sql/pglite": "^0.4.5",
     "@electric-sql/pglite-postgis": "^0.0.7",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@repo/tile-cache": "workspace:*",
     "@tanstack/react-query": "^5.62.7",
     "@tanstack/react-query-devtools": "^5.62.7",
     "@tanstack/react-router": "^1.169.0",
@@ -45,6 +46,7 @@
     "react-dom": "^19.0.0",
     "react-i18next": "^15.2.0",
     "react-resizable-panels": "^3.0.6",
+    "sharp": "^0.34.5",
     "zod": "^4.3.6",
     "zustand": "^5.0.8"
   },
