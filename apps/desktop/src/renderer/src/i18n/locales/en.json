@@ -103,6 +103,8 @@
     "workspace": {
       "back": "Back to maps",
       "controls": "Controls",
+      "hardReload": "Hard reload",
+      "hardReloadHint": "Reload the entire view if the map or document fails to load",
       "openControls": "Open project controls",
       "controlsTitle": "Project controls",
       "controlsDescription": "Update project details, map area, and PDF view settings.",

@@ -1,6 +1,7 @@
-import { app, ipcMain } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import type { IpcChannel, IpcRequest, IpcResponse } from "../../shared/ipc-contract.js";
 import { log } from "../lib/logger.js";
+import { appMenuHandlers } from "./app-menu.js";
 import { storageHandlers } from "./storage.js";
 import { mapsHandlers } from "./maps.js";
 import { tileCacheHandlers } from "./tile-cache.js";
@@ -38,6 +39,30 @@ function register<K extends IpcChannel>(channel: K, handler: Handler<K>): void {
   });
 }
 
+function registerWithWindow<K extends IpcChannel>(
+  channel: K,
+  handler: (
+    req: IpcRequest<K>,
+    window: BrowserWindow | null,
+  ) => IpcResponse<K> | Promise<IpcResponse<K>>,
+): void {
+  ipcMain.handle(channel, async (event, req: IpcRequest<K>) => {
+    try {
+      const window = BrowserWindow.fromWebContents(event.sender);
+      const result = await handler(req, window);
+      return result;
+    } catch (err) {
+      log.error({
+        action: "ipc",
+        message: "handler failed",
+        channel,
+        error: err instanceof Error ? err.message : String(err),
+      });
+      throw err;
+    }
+  });
+}
+
 /**
  * Aggregate all handlers and register them. Called once at app-ready.
  */
@@ -60,9 +85,16 @@ export function registerIpcHandlers(): void {
     if (handler) register(channel, handler);
   }
 
+  for (const [channel, handler] of Object.entries(appMenuHandlers) as [
+    IpcChannel,
+    (req: IpcRequest<IpcChannel>, window: BrowserWindow | null) => IpcResponse<IpcChannel>,
+  ][]) {
+    if (handler) registerWithWindow(channel, handler);
+  }
+
   log.info({
     action: "ipc",
     message: "registered channels",
-    count: Object.keys(handlers).length,
+    count: Object.keys(handlers).length + Object.keys(appMenuHandlers).length,
   });
 }

@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { registerIpcHandlers } from "./ipc/index.js";
 import { initPgliteDb } from "./lib/pglite/client.js";
 import { initAppLogger, log } from "./lib/logger.js";
+import { createApplicationMenu } from "./menu/create-application-menu.js";
 import { initMcpServer, shutdownMcpServer } from "./mcp/index.js";
 import { startTileServer, stopTileServer } from "./tile-server.js";
 import { initUpdater } from "./updater.js";
@@ -20,7 +21,7 @@ function createWindow(): BrowserWindow {
     minWidth: 800,
     minHeight: 600,
     show: false,
-    autoHideMenuBar: true,
+    autoHideMenuBar: process.platform !== "darwin",
     backgroundColor: "#0a0a0a",
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     webPreferences: {
@@ -62,6 +63,7 @@ void app.whenReady().then(async () => {
 
   await initPgliteDb();
   registerIpcHandlers();
+  createApplicationMenu();
   await startTileServer();
   await initMcpServer();
 

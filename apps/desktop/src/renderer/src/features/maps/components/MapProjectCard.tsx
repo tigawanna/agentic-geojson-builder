@@ -6,10 +6,18 @@ import { useMapThumbnailQuery } from "../hooks/useMapThumbnailQuery";
 
 type MapProjectCardProps = {
   map: MapListItem;
-  onDelete: (map: MapListItem) => void;
 };
 
-export function MapProjectCard({ map, onDelete }: MapProjectCardProps) {
+async function openNativeContextMenu(map: MapListItem, event?: React.MouseEvent) {
+  event?.preventDefault();
+  event?.stopPropagation();
+  await window.api.invoke("app:showMapContextMenu", {
+    mapId: map.id,
+    mapName: map.name,
+  });
+}
+
+export function MapProjectCard({ map }: MapProjectCardProps) {
   const { t } = useTranslation();
   const thumbnail = useMapThumbnailQuery(map.id, map.hasThumbnail);
 
@@ -17,6 +25,7 @@ export function MapProjectCard({ map, onDelete }: MapProjectCardProps) {
     <article
       className="glass-card group flex aspect-[3/4] flex-col overflow-hidden transition-shadow hover:shadow-lg"
       data-test={`map-card-${map.id}`}
+      onContextMenu={(event) => void openNativeContextMenu(map, event)}
     >
       <Link
         to="/maps/$mapId"
@@ -48,37 +57,15 @@ export function MapProjectCard({ map, onDelete }: MapProjectCardProps) {
           ) : null}
         </Link>
 
-        <div className="dropdown dropdown-end shrink-0">
-          <button
-            type="button"
-            tabIndex={0}
-            className="btn btn-square btn-ghost btn-xs"
-            aria-label={t("maps.list.actions")}
-            data-test={`map-actions-${map.id}`}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <MoreVertical className="size-4" />
-          </button>
-          <ul
-            tabIndex={0}
-            className="dropdown-content menu z-20 mt-1 w-40 rounded-box border border-base-content/10 bg-base-100 p-1 shadow-lg"
-          >
-            <li>
-              <button
-                type="button"
-                className="text-error"
-                data-test={`map-delete-${map.id}`}
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  onDelete(map);
-                }}
-              >
-                {t("maps.list.delete")}
-              </button>
-            </li>
-          </ul>
-        </div>
+        <button
+          type="button"
+          className="btn btn-square shrink-0 btn-ghost btn-xs"
+          aria-label={t("maps.list.actions")}
+          data-test={`map-actions-${map.id}`}
+          onClick={(event) => void openNativeContextMenu(map, event)}
+        >
+          <MoreVertical className="size-4" />
+        </button>
       </div>
     </article>
   );

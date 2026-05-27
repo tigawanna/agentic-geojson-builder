@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Settings2 } from "lucide-react";
+import { ArrowLeft, RotateCw, Settings2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatMapCoordinates } from "../lib/copy-map-coordinates";
 import { useMapWorkspaceUiState, useMapWorkspaceState } from "../store/MapWorkspaceProvider";
@@ -7,6 +7,10 @@ import { useMapWorkspaceUiState, useMapWorkspaceState } from "../store/MapWorksp
 type MapWorkspaceHeaderProps = {
   onOpenControls: () => void;
 };
+
+async function hardReloadView() {
+  await window.api.invoke("app:hardReload", undefined);
+}
 
 export function MapWorkspaceHeader({ onOpenControls }: MapWorkspaceHeaderProps) {
   const { t } = useTranslation();
@@ -63,15 +67,27 @@ export function MapWorkspaceHeader({ onOpenControls }: MapWorkspaceHeaderProps) 
         </div>
       </div>
 
-      <button
-        type="button"
-        className="btn shrink-0 btn-outline btn-sm"
-        onClick={onOpenControls}
-        aria-label={t("maps.workspace.openControls")}
-      >
-        <Settings2 className="size-4" />
-        {t("maps.workspace.controls")}
-      </button>
+      <div className="flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          className="btn btn-square btn-outline btn-sm"
+          onClick={() => void hardReloadView()}
+          aria-label={t("maps.workspace.hardReload")}
+          title={t("maps.workspace.hardReloadHint")}
+          data-test="map-hard-reload"
+        >
+          <RotateCw className="size-4" />
+        </button>
+        <button
+          type="button"
+          className="btn btn-outline btn-sm"
+          onClick={onOpenControls}
+          aria-label={t("maps.workspace.openControls")}
+        >
+          <Settings2 className="size-4" />
+          {t("maps.workspace.controls")}
+        </button>
+      </div>
     </header>
   );
 }

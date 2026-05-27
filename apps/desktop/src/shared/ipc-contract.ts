@@ -11,6 +11,7 @@ import type {
   UpdateMapWorkspaceInput,
 } from "./maps.types.js";
 import type { McpStatus } from "./mcp.types.js";
+import type { AppMenuAction, ShowMapContextMenuInput } from "./menu.types.js";
 import type {
   BuildTileCacheResult,
   GetMapSectorViewInput,
@@ -32,6 +33,8 @@ export interface IpcContract {
   // --- App meta --------------------------------------------------------------
   "app:getVersion": { req: void; res: string };
   "app:getPlatform": { req: void; res: NodeJS.Platform };
+  "app:showMapContextMenu": { req: ShowMapContextMenuInput; res: { ok: true } | { ok: false } };
+  "app:hardReload": { req: void; res: { ok: true } | { ok: false } };
 
   // --- Generic key/value storage (electron-store backend) --------------------
   // Also fulfilled by the sqlite backend via a `kv` table.
@@ -85,6 +88,7 @@ export type IpcResponse<K extends IpcChannel> = IpcContract[K]["res"];
  * Events pushed from main -> renderer (fire-and-forget, no response).
  */
 export interface IpcEventMap {
+  "app:menuAction": AppMenuAction;
   "maps:changed": MapsChangedEvent;
   "tileCache:buildProgress": TileCacheBuildProgressEvent;
   "updater:status": {
