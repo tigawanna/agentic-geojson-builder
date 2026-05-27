@@ -1,0 +1,77 @@
+appId: com.tigawanna.desktop
+productName: "desktop"
+copyright: Copyright © 2026 ${author}
+
+directories:
+  output: release/${version}
+  buildResources: build
+
+files:
+  - out/**/*
+  - package.json
+  - "!node_modules/**/*"
+
+asar: true
+asarUnpack:
+  # better-sqlite3 native .node files can't live inside asar
+  - node_modules/better-sqlite3/**/*
+
+extraResources: []
+
+# --- Publish -----------------------------------------------------------------
+publish:
+  provider: github
+  owner: "tigawanna"
+  repo: "desktop"
+  releaseType: release
+
+# --- macOS -------------------------------------------------------------------
+mac:
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+    - target: zip
+      arch: [arm64, x64]
+  category: public.app-category.developer-tools
+  icon: build/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  # To enable code signing + notarization, set these env vars before `npm run release`:
+  #   APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID, CSC_LINK, CSC_KEY_PASSWORD
+  # See docs/07-build-and-package.md for the full guide.
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+
+dmg:
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+
+# --- Windows -----------------------------------------------------------------
+win:
+  target:
+    - target: nsis
+      arch: [x64, arm64]
+    - target: portable
+      arch: [x64]
+  icon: build/icon.ico
+  # Code signing: set WIN_CSC_LINK + WIN_CSC_KEY_PASSWORD before `npm run release`.
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  allowElevation: true
+  artifactName: "${productName}-Setup-${version}.${ext}"
+
+# --- Linux -------------------------------------------------------------------
+linux:
+  target:
+    - target: AppImage
+      arch: [x64, arm64]
+    - target: deb
+      arch: [x64]
+  category: Development
+  icon: build/icon.png
+  maintainer: "tigawanna"
+
+appImage:
+  artifactName: "${productName}-${version}-${arch}.${ext}"

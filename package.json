@@ -42,6 +42,8 @@
     "onlyBuiltDependencies": [
       "@openrouter/sdk",
       "core-js",
+      "electron",
+      "electron-winstaller",
       "es5-ext",
       "esbuild",
       "futurescript",

@@ -1,0 +1,58 @@
+{
+  "app": {
+    "title": "desktop",
+    "tagline": "Electron + React + Vite + TypeScript"
+  },
+  "nav": {
+    "home": "Home",
+    "posts": "Posts",
+    "settings": "Settings",
+    "about": "About"
+  },
+  "home": {
+    "heading": "Welcome",
+    "description": "This boilerplate gives you a production-ready Electron app with a strongly-typed IPC bridge, TanStack Query, Tailwind, i18n, and auto-updates.",
+    "version": "App version",
+    "platform": "Platform"
+  },
+  "posts": {
+    "heading": "Posts",
+    "description": "An example feature fetching data with Axios + TanStack Query.",
+    "loading": "Loading...",
+    "error": "Failed to load posts.",
+    "retry": "Retry"
+  },
+  "settings": {
+    "heading": "Settings",
+    "theme": "Theme",
+    "language": "Language",
+    "storageHeading": "Local storage",
+    "storageHint": "This demo persists a value in the main-process storage backend via typed IPC.",
+    "keyLabel": "Key",
+    "valueLabel": "Value",
+    "save": "Save",
+    "load": "Load",
+    "clear": "Clear",
+    "saved": "Saved."
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "about": {
+    "heading": "About",
+    "body": "Built with create-era-next — the modern successor to electron-react-boilerplate."
+  },
+  "updater": {
+    "checking": "Checking for updates...",
+    "available": "Update {{version}} is available.",
+    "notAvailable": "You're on the latest version.",
+    "downloading": "Downloading update... {{percent}}%",
+    "downloaded": "Update {{version}} downloaded. Restart to apply.",
+    "error": "Update failed: {{error}}",
+    "check": "Check for updates",
+    "download": "Download",
+    "install": "Restart & install"
+  }
+}
