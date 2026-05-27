@@ -4,6 +4,7 @@ import type {
   MapCaptureOverlayInput,
   RenderedMapViewMapPane,
 } from "@shared/rendered-map-view.types";
+import { annotateMapCaptureImage } from "./capture-agent-guides";
 
 function readMapBounds(map: Leaflet.Map) {
   const bounds = map.getBounds();
@@ -43,6 +44,20 @@ function buildMapPaneCapture(
     containerHeight: height,
     captureMode,
   };
+}
+
+async function finalizeMapCapture(
+  map: Leaflet.Map,
+  overlays: MapCaptureOverlayInput,
+  imageBase64: string,
+  captureMode: RenderedMapViewMapPane["captureMode"],
+) {
+  const container = map.getContainer();
+  const width = Math.max(container.clientWidth, 1);
+  const height = Math.max(container.clientHeight, 1);
+  const bounds = readMapBounds(map);
+  const annotated = await annotateMapCaptureImage(imageBase64, width, height, bounds);
+  return buildMapPaneCapture(map, overlays, annotated, captureMode);
 }
 
 function waitForMapPaint() {
@@ -118,13 +133,10 @@ async function captureDomScreenshot(map: Leaflet.Map, overlays: MapCaptureOverla
     throw new Error("Could not capture map image.");
   }
 
-  return buildMapPaneCapture(map, overlays, imageBase64, "dom-screenshot");
+  return finalizeMapCapture(map, overlays, imageBase64, "dom-screenshot");
 }
 
-export function captureMapPaneSchematic(
-  map: Leaflet.Map,
-  overlays: MapCaptureOverlayInput,
-): RenderedMapViewMapPane {
+export async function captureMapPaneSchematic(map: Leaflet.Map, overlays: MapCaptureOverlayInput) {
   const container = map.getContainer();
   const width = Math.max(container.clientWidth, 1);
   const height = Math.max(container.clientHeight, 1);
@@ -225,7 +237,7 @@ export function captureMapPaneSchematic(
     throw new Error("Could not capture the map pane.");
   }
 
-  return buildMapPaneCapture(map, overlays, imageBase64, "schematic-overlays");
+  return finalizeMapCapture(map, overlays, imageBase64, "schematic-overlays");
 }
 
 async function captureMapPaneTiles(map: Leaflet.Map, overlays: MapCaptureOverlayInput) {
@@ -341,7 +353,7 @@ async function captureMapPaneTiles(map: Leaflet.Map, overlays: MapCaptureOverlay
     throw new Error("Could not export map tile capture.");
   }
 
-  return buildMapPaneCapture(map, overlays, imageBase64, "tile-composite");
+  return finalizeMapCapture(map, overlays, imageBase64, "tile-composite");
 }
 
 export async function captureMapPaneFromDom(

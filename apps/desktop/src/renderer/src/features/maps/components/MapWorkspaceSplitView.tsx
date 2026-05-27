@@ -145,22 +145,28 @@ export function MapWorkspaceSplitView() {
         throw new Error("Map pane is not ready yet.");
       }
 
-      const mapPane = await handle.captureView({
-        ...captureOverlays,
-        pendingMapPoint: pendingMapPoint,
-      });
+      const mapPane = await handle.captureView(
+        {
+          ...captureOverlays,
+          pendingMapPoint: pendingMapPoint,
+        },
+        { fitControlPoints: controlPointsRef.current.length > 0 },
+      );
 
       return captureWorkspaceView({
         mapId: workspace.id,
         pdfCanvas: sourceCaptureRef.current?.getPdfCanvas() ?? null,
-        sourceViewport: sourceCaptureRef.current?.getSourceViewport() ?? null,
-        pdfTransform: workspaceToPdfTransform(workspace),
+        pdfControlPoints: controlPoints.map((point) => ({
+          id: point.id,
+          imageX: point.imageX,
+          imageY: point.imageY,
+        })),
+        selectedControlPointId,
         mapPane,
-        controlPoints: captureOverlays.controlPoints,
         controlPointsVisible: controlPointsRef.current.length > 0,
       });
     });
-  }, [captureOverlays, pendingMapPoint, workspace]);
+  }, [captureOverlays, controlPoints, pendingMapPoint, selectedControlPointId, workspace]);
 
   useEffect(() => {
     if (!workspace) {

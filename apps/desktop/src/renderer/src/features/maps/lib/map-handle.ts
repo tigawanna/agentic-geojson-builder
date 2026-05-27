@@ -14,7 +14,10 @@ export type MapViewport = {
 export type MapHandle = {
   panToQuery: (query: string) => Promise<{ error?: string }>;
   setViewport: (viewport: MapViewport) => void;
-  captureView: (overlays: MapCaptureOverlayInput) => Promise<RenderedMapViewMapPane>;
+  captureView: (
+    overlays: MapCaptureOverlayInput,
+    options?: { fitControlPoints?: boolean },
+  ) => Promise<RenderedMapViewMapPane>;
 };
 
 export const DEFAULT_MAP_VIEWPORT: MapViewport = {
@@ -114,6 +117,42 @@ export function createMapHandle(
       options.emitViewportChange();
       options.setSuppressViewportSync(false);
     },
-    captureView: (overlays) => captureMapPaneFromDom(map, overlays),
+    captureView: async (overlays, captureOptions) => {
+      const previous = {
+        latitude: map.getCenter().lat,
+        longitude: map.getCenter().lng,
+        zoom: map.getZoom(),
+      };
+
+      if (captureOptions?.fitControlPoints && overlays.controlPoints.length > 0) {
+        const latitudes = overlays.controlPoints.map((point) => point.latitude);
+        const longitudes = overlays.controlPoints.map((point) => point.longitude);
+        const south = Math.min(...latitudes);
+        const north = Math.max(...latitudes);
+        const west = Math.min(...longitudes);
+        const east = Math.max(...longitudes);
+        options.setSuppressViewportSync(true);
+        map.fitBounds(
+          [
+            [south, west],
+            [north, east],
+          ],
+          { padding: [48, 48], maxZoom: 17, animate: false },
+        );
+        options.emitViewportChange();
+        options.setSuppressViewportSync(false);
+      }
+
+      const capture = await captureMapPaneFromDom(map, overlays);
+
+      if (captureOptions?.fitControlPoints) {
+        options.setSuppressViewportSync(true);
+        map.setView([previous.latitude, previous.longitude], previous.zoom, { animate: false });
+        options.emitViewportChange();
+        options.setSuppressViewportSync(false);
+      }
+
+      return capture;
+    },
   };
 }

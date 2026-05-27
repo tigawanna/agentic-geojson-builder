@@ -1,49 +1,35 @@
 import type {
-  MapCaptureOverlayInput,
   PdfViewTransform,
   RenderedMapView,
   RenderedMapViewMapPane,
 } from "@shared/rendered-map-view.types";
-import { capturePdfPaneCanvas, captureSourceViewport } from "./capture-pdf-pane";
+import { capturePdfPaneCanvas, type PdfCaptureControlPoint } from "./capture-pdf-pane";
 
 type CaptureWorkspaceViewInput = {
   mapId: number;
   pdfCanvas: HTMLCanvasElement | null;
-  sourceViewport: HTMLElement | null;
-  pdfTransform: PdfViewTransform;
+  pdfControlPoints: PdfCaptureControlPoint[];
+  selectedControlPointId: number | null;
   mapPane: RenderedMapViewMapPane | null;
-  controlPoints: MapCaptureOverlayInput["controlPoints"];
   controlPointsVisible: boolean;
 };
-
-function attachSourceDocumentDimensions(
-  pdfPane: NonNullable<RenderedMapView["pdfPane"]>,
-  pdfCanvas: HTMLCanvasElement | null,
-) {
-  if (!pdfCanvas) {
-    return pdfPane;
-  }
-
-  return {
-    ...pdfPane,
-    sourceDocumentWidth: pdfCanvas.width,
-    sourceDocumentHeight: pdfCanvas.height,
-  };
-}
 
 export async function captureWorkspaceView(
   input: CaptureWorkspaceViewInput,
 ): Promise<RenderedMapView> {
-  let pdfPane: RenderedMapView["pdfPane"] = null;
+  const identityTransform: PdfViewTransform = {
+    scale: 1,
+    rotation: 0,
+    panX: 0,
+    panY: 0,
+  };
 
-  if (input.sourceViewport) {
-    pdfPane = attachSourceDocumentDimensions(
-      await captureSourceViewport(input.sourceViewport, input.pdfTransform),
-      input.pdfCanvas,
-    );
-  } else if (input.pdfCanvas) {
-    pdfPane = capturePdfPaneCanvas(input.pdfCanvas, input.pdfTransform);
-  }
+  const pdfPane = input.pdfCanvas
+    ? capturePdfPaneCanvas(input.pdfCanvas, identityTransform, {
+        controlPoints: input.pdfControlPoints,
+        selectedControlPointId: input.selectedControlPointId,
+      })
+    : null;
 
   return {
     capturedAt: new Date().toISOString(),
