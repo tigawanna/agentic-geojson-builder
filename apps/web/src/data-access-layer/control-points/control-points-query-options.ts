@@ -8,11 +8,7 @@ import {
   listControlPointsFn,
   updateControlPointFn,
 } from "./control-points.functions";
-import type {
-  CreateControlPointInput,
-  ControlPointViewModel,
-  UpdateControlPointInput,
-} from "./control-points.types";
+import type { CreateControlPointInput, UpdateControlPointInput } from "./control-points.types";
 
 export type {
   ControlPointViewModel,

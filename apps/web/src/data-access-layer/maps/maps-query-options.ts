@@ -11,7 +11,7 @@ import {
   saveMapPdfFn,
   updateMapWorkspaceFn,
 } from "./maps.functions";
-import type { ListMapsInput, MapViewport, UpdateMapWorkspaceInput } from "./maps.types";
+import type { ListMapsInput, UpdateMapWorkspaceInput } from "./maps.types";
 
 export type {
   ListMapsInput,

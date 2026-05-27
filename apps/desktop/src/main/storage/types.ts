@@ -8,7 +8,7 @@
  */
 export interface StorageBackend {
   // Key/value surface — required on every backend.
-  get(key: string): unknown | Promise<unknown>;
+  get(key: string): unknown;
   set(key: string, value: unknown): void | Promise<void>;
   delete(key: string): void | Promise<void>;
   clear(): void | Promise<void>;

@@ -12,7 +12,6 @@ import {
 import type {
   CreateGeoSegmentInput,
   ExportGeoJsonInput,
-  ExportGeoJsonResult,
   UpdateGeoSegmentInput,
 } from "./geo-segments.types";
 

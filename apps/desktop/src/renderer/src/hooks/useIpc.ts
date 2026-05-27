@@ -39,7 +39,7 @@ export function useIpcMutation<K extends IpcChannel>(
     mutationFn: (req) => window.api.invoke(channel, req),
     onSuccess: (...args) => {
       // Invalidate any query scoped to the same channel by default.
-      qc.invalidateQueries({ queryKey: [channel] });
+      void qc.invalidateQueries({ queryKey: [channel] });
       options?.onSuccess?.(...args);
     },
     ...options,
