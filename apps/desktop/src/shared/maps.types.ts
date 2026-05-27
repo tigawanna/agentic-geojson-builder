@@ -6,6 +6,12 @@ export type MapListItem = {
   description: string | null;
   locationQuery: string | null;
   updatedAt: string;
+  hasThumbnail: boolean;
+};
+
+export type MapThumbnailPayload = {
+  mimeType: string;
+  fileBase64: string;
 };
 
 export type MapWorkspaceState = {
@@ -41,6 +47,8 @@ export type CreateMapProjectInput = {
   fileName: string;
   mimeType: string;
   fileBase64: string;
+  thumbnailBase64?: string;
+  thumbnailMimeType?: string;
 };
 
 export type MapSourceFilePayload = {
@@ -74,4 +82,10 @@ export type ReplaceMapSourceInput = {
   fileName: string;
   mimeType: string;
   fileBase64: string;
+  thumbnailBase64?: string;
+  thumbnailMimeType?: string;
+};
+
+export type DeleteMapInput = {
+  mapId: number;
 };

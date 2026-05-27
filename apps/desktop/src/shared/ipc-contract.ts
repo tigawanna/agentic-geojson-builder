@@ -1,8 +1,10 @@
 import type {
   CreateMapInput,
   CreateMapProjectInput,
+  DeleteMapInput,
   MapListItem,
   MapSourceFilePayload,
+  MapThumbnailPayload,
   MapWorkspaceState,
   MapsChangedEvent,
   ReplaceMapSourceInput,
@@ -56,6 +58,8 @@ export interface IpcContract {
   "maps:readSource": { req: { mapId: number }; res: MapSourceFilePayload | null };
   "maps:updateWorkspace": { req: UpdateMapWorkspaceInput; res: MapWorkspaceState };
   "maps:replaceSource": { req: ReplaceMapSourceInput; res: MapSourceFilePayload };
+  "maps:readThumbnail": { req: { mapId: number }; res: MapThumbnailPayload | null };
+  "maps:delete": { req: DeleteMapInput; res: { ok: true } };
 
   // --- Tile cache (local map tiles) ------------------------------------------
   "tileCache:getStatus": { req: { mapId: number }; res: MapTileCacheConfig | null };

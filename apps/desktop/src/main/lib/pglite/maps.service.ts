@@ -4,13 +4,22 @@ import type {
   CreateMapProjectInput,
   MapListItem,
   MapSourceFilePayload,
+  MapThumbnailPayload,
   MapWorkspaceState,
   ReplaceMapSourceInput,
   UpdateMapWorkspaceInput,
 } from "../../../shared/maps.types.js";
-import { readMapSourceFile, saveMapSourceFile } from "./map-files.service.js";
+import { deleteMapAssets, readMapSourceFile, saveMapSourceFile } from "./map-files.service.js";
+import {
+  generateMapThumbnailFromSource,
+  readMapThumbnailPayload,
+  saveMapThumbnailFromBase64,
+} from "./map-thumbnail.service.js";
 import { getPgliteDb } from "./client.js";
 import { mapTable, type MapRecord } from "./schema/map.schema.js";
+import { getTileCacheBaseDir } from "../tile-cache/paths.js";
+import { rm } from "node:fs/promises";
+import { getMapCacheRoot } from "@repo/tile-cache/paths";
 
 function toBaseMapStyle(value: string | null): MapWorkspaceState["baseMapStyle"] {
   if (value === "outline" || value === "standard" || value === "satellite") {
@@ -41,7 +50,10 @@ export function toMapWorkspaceState(row: MapRecord): MapWorkspaceState {
 }
 
 function toMapListItem(
-  row: Pick<MapRecord, "id" | "name" | "description" | "locationQuery" | "updatedAt">,
+  row: Pick<
+    MapRecord,
+    "id" | "name" | "description" | "locationQuery" | "updatedAt" | "thumbnailFileName"
+  >,
 ): MapListItem {
   return {
     id: row.id,
@@ -49,7 +61,23 @@ function toMapListItem(
     description: row.description,
     locationQuery: row.locationQuery,
     updatedAt: row.updatedAt.toISOString(),
+    hasThumbnail: Boolean(row.thumbnailFileName),
   };
+}
+
+async function persistMapThumbnail(
+  mapId: number,
+  sourceBuffer: Buffer,
+  mimeType: string,
+  fileName: string,
+  thumbnailBase64?: string,
+  thumbnailMimeType?: string,
+): Promise<string | null> {
+  if (thumbnailBase64) {
+    return saveMapThumbnailFromBase64(mapId, thumbnailBase64, thumbnailMimeType ?? "image/webp");
+  }
+
+  return generateMapThumbnailFromSource(mapId, sourceBuffer, mimeType, fileName);
 }
 
 export async function listMaps(): Promise<MapListItem[]> {
@@ -61,6 +89,7 @@ export async function listMaps(): Promise<MapListItem[]> {
       description: mapTable.description,
       locationQuery: mapTable.locationQuery,
       updatedAt: mapTable.updatedAt,
+      thumbnailFileName: mapTable.thumbnailFileName,
     })
     .from(mapTable)
     .orderBy(desc(mapTable.id));
@@ -79,6 +108,7 @@ export async function createMap(input: CreateMapInput = {}): Promise<MapListItem
       description: mapTable.description,
       locationQuery: mapTable.locationQuery,
       updatedAt: mapTable.updatedAt,
+      thumbnailFileName: mapTable.thumbnailFileName,
     });
 
   if (!row) {
@@ -120,10 +150,22 @@ export async function createMapProject(input: CreateMapProjectInput): Promise<Ma
 
   const buffer = Buffer.from(input.fileBase64, "base64");
   const folderPath = await saveMapSourceFile(created.id, input.fileName, buffer);
+  const thumbnailFileName = await persistMapThumbnail(
+    created.id,
+    buffer,
+    input.mimeType,
+    input.fileName,
+    input.thumbnailBase64,
+    input.thumbnailMimeType,
+  );
 
   const [updated] = await db
     .update(mapTable)
-    .set({ folderPath, pdfFileName: input.fileName })
+    .set({
+      folderPath,
+      pdfFileName: input.fileName,
+      thumbnailFileName,
+    })
     .where(eq(mapTable.id, created.id))
     .returning();
 
@@ -157,6 +199,24 @@ export async function readMapSourcePayload(mapId: number): Promise<MapSourceFile
     mimeType,
     fileBase64: buffer.toString("base64"),
   };
+}
+
+export async function readMapThumbnail(mapId: number): Promise<MapThumbnailPayload | null> {
+  const db = getPgliteDb();
+  const [row] = await db
+    .select({
+      folderPath: mapTable.folderPath,
+      thumbnailFileName: mapTable.thumbnailFileName,
+    })
+    .from(mapTable)
+    .where(eq(mapTable.id, mapId))
+    .limit(1);
+
+  if (!row?.folderPath || !row.thumbnailFileName) {
+    return null;
+  }
+
+  return readMapThumbnailPayload(row.folderPath, row.thumbnailFileName);
 }
 
 export async function updateMapWorkspace(
@@ -226,6 +286,14 @@ export async function replaceMapSource(
 
   const buffer = Buffer.from(input.fileBase64, "base64");
   const folderPath = await saveMapSourceFile(input.mapId, input.fileName, buffer);
+  const thumbnailFileName = await persistMapThumbnail(
+    input.mapId,
+    buffer,
+    input.mimeType,
+    input.fileName,
+    input.thumbnailBase64,
+    input.thumbnailMimeType,
+  );
 
   const db = getPgliteDb();
   const [updated] = await db
@@ -233,6 +301,7 @@ export async function replaceMapSource(
     .set({
       folderPath,
       pdfFileName: input.fileName,
+      thumbnailFileName,
       updatedAt: new Date(),
     })
     .where(eq(mapTable.id, input.mapId))
@@ -247,4 +316,22 @@ export async function replaceMapSource(
     mimeType: input.mimeType,
     fileBase64: input.fileBase64,
   };
+}
+
+export async function deleteMap(mapId: number): Promise<void> {
+  const db = getPgliteDb();
+  const [row] = await db
+    .select({ id: mapTable.id })
+    .from(mapTable)
+    .where(eq(mapTable.id, mapId))
+    .limit(1);
+
+  if (!row) {
+    throw new Error("Map not found");
+  }
+
+  await db.delete(mapTable).where(eq(mapTable.id, mapId));
+
+  await deleteMapAssets(mapId);
+  await rm(getMapCacheRoot(getTileCacheBaseDir(), mapId), { recursive: true, force: true });
 }

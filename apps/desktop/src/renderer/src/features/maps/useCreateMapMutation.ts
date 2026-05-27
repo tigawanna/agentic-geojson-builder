@@ -23,6 +23,7 @@ export function useCreateMapMutation() {
         description: null,
         locationQuery: null,
         updatedAt: new Date().toISOString(),
+        hasThumbnail: false,
       };
 
       queryClient.setQueryData<MapListItem[]>(mapsQueryKeys.list(), (current = []) => [

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MapBaseMapStyle } from "@shared/maps.types";
 import { useReplaceMapSourceMutation } from "../hooks/useReplaceMapSourceMutation";
+import { generateSourceThumbnail } from "../lib/generate-source-thumbnail";
 import { useTileCacheStatusQuery } from "../hooks/useTileCacheStatusQuery";
 import { useWorkspacePersistence } from "../hooks/useWorkspacePersistence";
 import { defaultPdfTransform } from "../lib/pdf-view-transform";
@@ -163,11 +164,15 @@ export function MapWorkspaceControlsModal({ mapHandle }: MapWorkspaceControlsMod
     setReplaceError(null);
     try {
       const fileBase64 = await fileToBase64(file);
+      const thumbnail = await generateSourceThumbnail(file);
       await replaceSource.mutateAsync({
         mapId: currentMapId,
         fileName: file.name,
         mimeType: file.type || "application/octet-stream",
         fileBase64,
+        ...(thumbnail
+          ? { thumbnailBase64: thumbnail.base64, thumbnailMimeType: thumbnail.mimeType }
+          : {}),
       });
       resetPdfView();
     } catch (error) {

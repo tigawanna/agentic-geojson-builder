@@ -43,7 +43,16 @@
       "create": "New map project",
       "loading": "Loading maps…",
       "error": "Could not load maps.",
-      "empty": "No maps yet."
+      "empty": "No maps yet.",
+      "actions": "Map actions",
+      "delete": "Delete"
+    },
+    "delete": {
+      "title": "Delete map project?",
+      "description": "\"{{name}}\" and all of its files will be permanently removed.",
+      "confirm": "Delete",
+      "cancel": "Cancel",
+      "deleting": "Deleting…"
     },
     "create": {
       "heading": "New map project",

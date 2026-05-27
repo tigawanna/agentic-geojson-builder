@@ -2,9 +2,11 @@ import type { IpcChannel, IpcRequest, IpcResponse } from "../../shared/ipc-contr
 import {
   createMap,
   createMapProject,
+  deleteMap,
   getMapWorkspace,
   listMaps,
   readMapSourcePayload,
+  readMapThumbnail,
   replaceMapSource,
   updateMapWorkspace,
 } from "../lib/pglite/maps.service.js";
@@ -37,5 +39,11 @@ export const mapsHandlers: { [K in IpcChannel]?: Handler<K> } = {
     const source = await replaceMapSource(input);
     broadcastToRenderers("maps:changed", { reason: "updated", mapId: input.mapId });
     return source;
+  },
+  "maps:readThumbnail": async ({ mapId }) => readMapThumbnail(mapId),
+  "maps:delete": async ({ mapId }) => {
+    await deleteMap(mapId);
+    broadcastToRenderers("maps:changed", { reason: "deleted", mapId });
+    return { ok: true as const };
   },
 };

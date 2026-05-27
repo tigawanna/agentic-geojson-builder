@@ -250,3 +250,5 @@ DON'T
 DO NOT manually bypass drizzle and edit the sql migratins files unless when explicitly allowed to do it go through the drizzle schema and commnads everytime
 
 DO NOT manually edit the auth.schema it should be auto genrated by the auth:migrate command
+
+Run `vp check --fix` after every run to ensure you are staying as compliant as possible

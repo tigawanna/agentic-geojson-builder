@@ -5,50 +5,15 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1779296407114,
+      "when": 1779901875482,
       "tag": "0000_extensions",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1779296565787,
-      "tag": "0001_busy_lester",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1779543644176,
-      "tag": "0002_striped_scorpion",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1779544403554,
-      "tag": "0003_cultured_big_bertha",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1779547374469,
-      "tag": "0004_empty_wendell_rand",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1779550000000,
-      "tag": "0005_map_project_fields",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1779551000000,
-      "tag": "0006_map_tile_cache",
+      "when": 1779901905456,
+      "tag": "0001_init",
       "breakpoints": true
     }
   ]

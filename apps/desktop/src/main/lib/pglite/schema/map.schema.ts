@@ -18,6 +18,7 @@ export const mapTable = pgTable("map", {
   pdfFileName: varchar("pdf_file_name", { length: 512 }),
   pdfData: bytea("pdf_data"),
   pdfPageCount: integer("pdf_page_count"),
+  thumbnailFileName: varchar("thumbnail_file_name", { length: 512 }),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 

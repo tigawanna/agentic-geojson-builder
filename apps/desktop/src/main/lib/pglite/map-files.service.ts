@@ -1,6 +1,8 @@
 import { app } from "electron";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+
+export const MAP_THUMBNAIL_FILE_NAME = "thumbnail.webp";
 
 export function getMapsRootDir(): string {
   return join(app.getPath("userData"), "maps");
@@ -37,4 +39,20 @@ export async function saveMapSourceFile(
 
 export async function readMapSourceFile(mapDir: string, fileName: string): Promise<Buffer> {
   return readFile(join(mapDir, sanitizeFileName(fileName)));
+}
+
+export async function saveMapThumbnailFile(mapId: number, buffer: Buffer): Promise<string> {
+  const screenshotsDir = getMapScreenshotsDir(mapId);
+  await mkdir(screenshotsDir, { recursive: true });
+  const filePath = join(screenshotsDir, MAP_THUMBNAIL_FILE_NAME);
+  await writeFile(filePath, buffer);
+  return MAP_THUMBNAIL_FILE_NAME;
+}
+
+export async function readMapThumbnailFile(mapDir: string, fileName: string): Promise<Buffer> {
+  return readFile(join(mapDir, "screenshots", sanitizeFileName(fileName)));
+}
+
+export async function deleteMapAssets(mapId: number): Promise<void> {
+  await rm(getMapDir(mapId), { recursive: true, force: true });
 }

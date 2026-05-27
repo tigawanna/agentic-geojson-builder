@@ -5,6 +5,7 @@ import { useCreateMapWizardStore } from "../store/create-map-wizard-store";
 import { mapWorkspaceQueryKeys } from "./map-workspace-api";
 import { mapsQueryKeys } from "../maps-query-keys";
 import { tileCacheQueryKeys } from "./tile-cache-api";
+import { generateSourceThumbnail } from "../lib/generate-source-thumbnail";
 
 async function fileToBase64(file: File): Promise<string> {
   const buffer = await file.arrayBuffer();
@@ -41,6 +42,7 @@ export function useCreateMapProjectMutation() {
       const parsedLat = latitude.trim() ? Number(latitude) : undefined;
       const parsedLng = longitude.trim() ? Number(longitude) : undefined;
       const fileBase64 = await fileToBase64(file);
+      const thumbnail = await generateSourceThumbnail(file);
 
       useCreateMapWizardStore.getState().setBuildMessage("Creating project…");
 
@@ -49,6 +51,9 @@ export function useCreateMapProjectMutation() {
         fileName: file.name,
         mimeType: file.type || "application/octet-stream",
         fileBase64,
+        ...(thumbnail
+          ? { thumbnailBase64: thumbnail.base64, thumbnailMimeType: thumbnail.mimeType }
+          : {}),
         ...(description.trim() ? { description: description.trim() } : {}),
         ...(locationQuery.trim() ? { locationQuery: locationQuery.trim() } : {}),
         ...(parsedLat !== undefined && Number.isFinite(parsedLat)
