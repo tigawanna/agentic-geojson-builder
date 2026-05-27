@@ -30,7 +30,7 @@ function toTileStyle(value: string): TileStyle {
   if (value === "outline" || value === "standard" || value === "satellite") {
     return value;
   }
-  return "satellite";
+  return "standard";
 }
 
 function rowToBounds(row: MapTileCacheRecord): SquareBounds {
@@ -75,7 +75,7 @@ export async function setMapTileCacheBoundsFromCorners(
   input: SetTileCacheBoundsInput,
 ): Promise<MapTileCacheConfig> {
   const bounds = boundsFromCorners(input.corners);
-  const style = input.style ?? "satellite";
+  const style = input.style ?? "standard";
   const db = getPgliteDb();
 
   const [row] = await db

@@ -25,7 +25,7 @@ function toBaseMapStyle(value: string | null): MapWorkspaceState["baseMapStyle"]
   if (value === "outline" || value === "standard" || value === "satellite") {
     return value;
   }
-  return "satellite";
+  return "standard";
 }
 
 export function toMapWorkspaceState(row: MapRecord): MapWorkspaceState {
@@ -140,7 +140,7 @@ export async function createMapProject(input: CreateMapProjectInput): Promise<Ma
       mapCenterLat: input.mapCenterLat ?? null,
       mapCenterLng: input.mapCenterLng ?? null,
       mapZoom: input.mapCenterLat != null && input.mapCenterLng != null ? 13 : null,
-      baseMapStyle: input.baseMapStyle ?? "satellite",
+      baseMapStyle: input.baseMapStyle ?? "standard",
     })
     .returning();
 

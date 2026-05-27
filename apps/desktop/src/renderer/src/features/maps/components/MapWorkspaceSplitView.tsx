@@ -68,7 +68,7 @@ export function MapWorkspaceSplitView() {
       geoSegments: [],
       pendingMapPoint: pendingMapPoint,
       pendingTracePoints: [],
-      baseMapStyle: workspace?.baseMapStyle ?? ("satellite" as const),
+      baseMapStyle: workspace?.baseMapStyle ?? ("standard" as const),
     }),
     [controlPoints, pendingMapPoint, workspace?.baseMapStyle],
   );

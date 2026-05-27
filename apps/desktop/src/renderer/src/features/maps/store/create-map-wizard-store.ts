@@ -48,7 +48,7 @@ const initialState: CreateMapWizardState = {
   latitude: "",
   longitude: "",
   cacheCorners: [],
-  cacheStyle: "satellite",
+  cacheStyle: "standard",
   buildProgress: null,
   buildMessage: null,
 };

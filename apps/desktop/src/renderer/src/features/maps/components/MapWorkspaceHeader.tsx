@@ -43,11 +43,11 @@ export function MapWorkspaceHeader({ onOpenControls, hasSourceFile }: MapWorkspa
       : t("maps.workspace.coordinatesIdle");
 
   return (
-    <header className="flex items-start justify-between gap-4 border-b border-base-content/10 px-4 py-3">
+    <header className="relative z-20 flex items-start justify-between gap-4 border-b border-base-content/10 px-4 py-3">
       <div className="flex min-w-0 flex-1 items-start gap-3">
         <Link
           to="/maps"
-          className="btn mt-0.5 btn-square shrink-0 btn-ghost btn-sm"
+          className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-base-content/70 transition-colors hover:bg-base-content/10 hover:text-base-content"
           aria-label={t("maps.workspace.back")}
         >
           <ArrowLeft className="size-4" />
@@ -79,10 +79,14 @@ export function MapWorkspaceHeader({ onOpenControls, hasSourceFile }: MapWorkspa
         </div>
       </div>
 
-      <div className="flex shrink-0 items-center gap-2">
+      <div className="flex shrink-0 items-center gap-1">
         <button
           type="button"
-          className={`btn btn-sm ${referenceMode ? "btn-primary" : "btn-outline"}`}
+          className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40 ${
+            referenceMode
+              ? "bg-primary text-primary-content"
+              : "text-base-content/75 hover:bg-base-content/10 hover:text-base-content"
+          }`}
           disabled={!hasSourceFile}
           onClick={() => {
             if (referenceMode) {
@@ -99,7 +103,7 @@ export function MapWorkspaceHeader({ onOpenControls, hasSourceFile }: MapWorkspa
         </button>
         <button
           type="button"
-          className="btn btn-square btn-outline btn-sm"
+          className="inline-flex size-8 items-center justify-center rounded-lg text-base-content/55 transition-colors hover:bg-base-content/10 hover:text-base-content"
           onClick={() => void hardReloadView()}
           aria-label={t("maps.workspace.hardReload")}
           title={t("maps.workspace.hardReloadHint")}
@@ -109,7 +113,7 @@ export function MapWorkspaceHeader({ onOpenControls, hasSourceFile }: MapWorkspa
         </button>
         <button
           type="button"
-          className="btn btn-outline btn-sm"
+          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-base-content/75 transition-colors hover:bg-base-content/10 hover:text-base-content"
           onClick={onOpenControls}
           aria-label={t("maps.workspace.openControls")}
         >

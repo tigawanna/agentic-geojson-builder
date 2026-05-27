@@ -25,7 +25,7 @@ export function MapTileCacheBoundsModal() {
   const buildCache = useBuildTileCacheMutation();
 
   const [corners, setCorners] = useState<TileCacheCorner[]>([]);
-  const [cacheStyle, setCacheStyle] = useState<MapBaseMapStyle>("satellite");
+  const [cacheStyle, setCacheStyle] = useState<MapBaseMapStyle>("standard");
   const [buildProgress, setBuildProgress] = useState<{ completed: number; total: number } | null>(
     null,
   );
@@ -97,7 +97,7 @@ export function MapTileCacheBoundsModal() {
   }
 
   return (
-    <div className="modal-open modal z-[60]">
+    <div className="modal-open modal z-[1200]">
       <div className="modal-box max-w-3xl px-8 py-8">
         <button
           type="button"
@@ -159,14 +159,14 @@ export function MapTileCacheBoundsModal() {
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
-                className="btn flex-1 btn-outline"
+                className="flex-1 rounded-lg px-4 py-2 text-sm font-medium text-base-content/75 transition-colors hover:bg-base-content/10 hover:text-base-content"
                 onClick={closeTileCacheBounds}
               >
                 {t("maps.create.close")}
               </button>
               <button
                 type="button"
-                className="btn flex-1 btn-primary"
+                className="flex-1 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-content transition-opacity hover:opacity-90 disabled:opacity-40"
                 disabled={corners.length !== 4}
                 onClick={() => void handleBuild()}
               >

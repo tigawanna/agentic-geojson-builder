@@ -14,6 +14,7 @@ import {
   useMapWorkspaceUiState,
 } from "../store/MapWorkspaceProvider";
 import type { MapHandle } from "../lib/map-handle";
+import { BaseMapStylePicker } from "./BaseMapStylePicker";
 
 const acceptedTypes = "application/pdf,image/png,image/jpeg,image/webp";
 
@@ -28,9 +29,12 @@ type ControlsSectionProps = {
   children: ReactNode;
 };
 
+const softActionClass =
+  "rounded-lg px-4 py-2 text-sm font-medium text-base-content/75 transition-colors hover:bg-base-content/10 hover:text-base-content";
+
 function ControlsSection({ title, hint, children }: ControlsSectionProps) {
   return (
-    <section className="flex flex-col gap-5 rounded-box border border-base-content/10 bg-base-200/35 p-6">
+    <section className="flex flex-col gap-5 rounded-box bg-base-200/40 p-6">
       <div className="space-y-1.5">
         <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
         <p className="text-sm leading-relaxed text-base-content/60">{hint}</p>
@@ -70,7 +74,7 @@ export function MapWorkspaceControlsModal({
   const [locationQuery, setLocationQuery] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
-  const [baseMapStyle, setBaseMapStyle] = useState<MapBaseMapStyle>("satellite");
+  const [baseMapStyle, setBaseMapStyle] = useState<MapBaseMapStyle>("standard");
   const [pdfScale, setPdfScale] = useState(1);
   const [pdfRotation, setPdfRotation] = useState(0);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -206,11 +210,11 @@ export function MapWorkspaceControlsModal({
   }
 
   return (
-    <div className="modal-open modal">
-      <div className="modal-box max-h-[88vh] max-w-xl overflow-y-auto px-8 py-8">
+    <div className="modal-open modal z-[1100]">
+      <div className="modal-box max-h-[88vh] max-w-xl overflow-y-auto px-8 py-8 shadow-2xl">
         <button
           type="button"
-          className="btn absolute top-3 right-3 btn-circle btn-ghost btn-sm"
+          className="absolute top-3 right-3 inline-flex size-8 items-center justify-center rounded-lg text-base-content/55 transition-colors hover:bg-base-content/10 hover:text-base-content"
           onClick={closeControls}
           aria-label={t("maps.create.close")}
         >
@@ -243,7 +247,7 @@ export function MapWorkspaceControlsModal({
               />
               <button
                 type="submit"
-                className="btn btn-primary sm:min-w-24"
+                className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-content transition-opacity hover:opacity-90 disabled:opacity-40 sm:min-w-24"
                 disabled={isSearchingLocation || locationQuery.trim().length === 0}
               >
                 {isSearchingLocation ? t("maps.workspace.searching") : t("maps.workspace.search")}
@@ -251,22 +255,11 @@ export function MapWorkspaceControlsModal({
             </form>
             {locationError ? <p className="text-sm text-error">{locationError}</p> : null}
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2.5">
               <span className="text-xs font-medium tracking-wide text-base-content/50 uppercase">
                 Base map
               </span>
-              <div className="flex flex-wrap gap-2">
-                {(["satellite", "outline", "standard"] as const).map((style) => (
-                  <button
-                    key={style}
-                    type="button"
-                    className={`btn flex-1 sm:flex-none ${baseMapStyle === style ? "btn-primary" : "btn-outline"}`}
-                    onClick={() => applyBaseMapStyle(style)}
-                  >
-                    {t(`maps.workspace.baseMap.${style}`)}
-                  </button>
-                ))}
-              </div>
+              <BaseMapStylePicker value={baseMapStyle} onChange={applyBaseMapStyle} />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -292,7 +285,7 @@ export function MapWorkspaceControlsModal({
 
             <button
               type="button"
-              className="btn w-full btn-outline sm:w-auto"
+              className={`${softActionClass} w-full sm:w-auto`}
               onClick={applyPinCoordinates}
             >
               {t("maps.workspace.applyCoordinates")}
@@ -339,7 +332,7 @@ export function MapWorkspaceControlsModal({
 
             <button
               type="button"
-              className="btn w-full btn-outline sm:w-auto"
+              className={`${softActionClass} w-full sm:w-auto`}
               onClick={resetPdfView}
             >
               {t("maps.workspace.resetPdfView")}
@@ -359,7 +352,7 @@ export function MapWorkspaceControlsModal({
                 {controlPoints.map((point, index) => (
                   <li
                     key={point.id}
-                    className="flex items-start justify-between gap-4 rounded-box border border-base-content/10 bg-base-100/40 px-4 py-3"
+                    className="flex items-start justify-between gap-4 rounded-box bg-base-100/40 px-4 py-3"
                   >
                     <div className="min-w-0 space-y-1 text-sm">
                       <p className="font-medium">
@@ -374,7 +367,7 @@ export function MapWorkspaceControlsModal({
                     </div>
                     <button
                       type="button"
-                      className="btn shrink-0 btn-ghost btn-sm"
+                      className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-error"
                       onClick={() =>
                         void deleteControlPoint.mutateAsync({
                           mapId: currentMapId,
@@ -402,7 +395,7 @@ export function MapWorkspaceControlsModal({
 
             <button
               type="button"
-              className="btn w-full btn-outline sm:w-auto"
+              className={`${softActionClass} w-full sm:w-auto`}
               onClick={openTileCacheBounds}
             >
               {t("maps.workspace.configureTileCache")}

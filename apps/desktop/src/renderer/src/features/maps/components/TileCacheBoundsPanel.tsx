@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import type { MapBaseMapStyle } from "@shared/maps.types";
 import type { TileCacheCorner } from "@shared/tile-cache.types";
 import { BoundsPickerMap } from "./BoundsPickerMap";
+import { BaseMapStylePicker } from "./BaseMapStylePicker";
 
 type TileCacheBoundsPanelProps = {
   corners: TileCacheCorner[];
@@ -36,18 +37,7 @@ export function TileCacheBoundsPanel({
         {t("maps.create.cacheBoundsDescription")} {t("maps.create.cacheBoundsDragHint")}
       </p>
 
-      <div className="flex flex-wrap gap-2">
-        {(["satellite", "outline", "standard"] as const).map((style) => (
-          <button
-            key={style}
-            type="button"
-            className={`btn btn-sm ${cacheStyle === style ? "btn-primary" : "btn-outline"}`}
-            onClick={() => onStyleChange(style)}
-          >
-            {t(`maps.create.baseMap.${style}`)}
-          </button>
-        ))}
-      </div>
+      <BaseMapStylePicker value={cacheStyle} onChange={onStyleChange} />
 
       <BoundsPickerMap
         corners={corners}
@@ -62,7 +52,11 @@ export function TileCacheBoundsPanel({
 
       <div className="flex items-center justify-between text-sm text-base-content/70">
         <span>{t("maps.create.cachePoints", { count: corners.length })}</span>
-        <button type="button" className="btn btn-ghost btn-xs" onClick={onResetCorners}>
+        <button
+          type="button"
+          className="rounded-lg px-2 py-1 text-xs font-medium text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content"
+          onClick={onResetCorners}
+        >
           {t("maps.create.resetPoints")}
         </button>
       </div>
