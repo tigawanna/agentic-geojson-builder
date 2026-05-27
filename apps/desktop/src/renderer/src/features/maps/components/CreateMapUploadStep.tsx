@@ -10,16 +10,18 @@ export function CreateMapUploadStep() {
   const setStep = useCreateMapWizardStore((state) => state.setStep);
 
   return (
-    <div className="space-y-5">
-      <div>
+    <div className="flex flex-col gap-8 pr-6">
+      <div className="space-y-2">
         <p className="text-xs font-medium tracking-wide text-base-content/50 uppercase">
           {t("maps.create.stepUpload")}
         </p>
-        <h2 className="mt-1 text-xl font-semibold">{t("maps.create.uploadHeading")}</h2>
-        <p className="mt-1 text-sm text-base-content/60">{t("maps.create.uploadDescription")}</p>
+        <h2 className="text-xl font-semibold">{t("maps.create.uploadHeading")}</h2>
+        <p className="text-sm leading-relaxed text-base-content/60">
+          {t("maps.create.uploadDescription")}
+        </p>
       </div>
 
-      <label className="flex cursor-pointer flex-col items-center justify-center gap-3 rounded-box border border-dashed border-base-content/20 bg-base-200/40 px-6 py-10 hover:border-primary/40">
+      <label className="flex cursor-pointer flex-col items-center justify-center gap-4 rounded-box border border-dashed border-base-content/20 bg-base-200/40 px-8 py-14 hover:border-primary/40">
         <span className="text-sm font-medium">
           {file ? file.name : t("maps.create.fileDropLabel")}
         </span>

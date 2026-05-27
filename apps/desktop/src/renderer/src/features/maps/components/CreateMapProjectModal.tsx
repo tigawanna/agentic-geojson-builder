@@ -24,7 +24,7 @@ export function CreateMapProjectModal() {
 
   return (
     <div className="modal-open modal">
-      <div className="modal-box max-w-2xl">
+      <div className="modal-box max-w-2xl px-8 py-8">
         <button
           type="button"
           className="btn absolute top-2 right-2 btn-circle btn-ghost btn-sm"
