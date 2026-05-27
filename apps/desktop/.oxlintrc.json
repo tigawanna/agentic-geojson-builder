@@ -10,7 +10,8 @@
     "release/**",
     "node_modules/**",
     "playwright-report/**",
-    "coverage/**"
+    "coverage/**",
+    "**/routeTree.gen.ts"
   ],
   "env": {
     "builtin": true

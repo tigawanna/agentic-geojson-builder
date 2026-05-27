@@ -10,9 +10,9 @@ pre-configured `api` instance:
 - Add auth tokens / trace ids in the request interceptor.
 
 ```typescript
-import { api } from '@renderer/lib/axios'
+import { api } from "@renderer/lib/axios";
 
-const res = await api.get<User>('/me')
+const res = await api.get<User>("/me");
 ```
 
 ## TanStack Query
@@ -27,35 +27,35 @@ Co-locate query hooks inside the feature folder:
 
 ```typescript
 // src/renderer/src/features/users/useUserQuery.ts
-import { useQuery } from '@tanstack/react-query'
-import { api } from '@renderer/lib/axios'
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@renderer/lib/axios";
 
 export interface User {
-  id: string
-  name: string
+  id: string;
+  name: string;
 }
 
 export function useUserQuery(id: string) {
   return useQuery<User>({
-    queryKey: ['users', id],
+    queryKey: ["users", id],
     queryFn: async () => (await api.get<User>(`/users/${id}`)).data,
     enabled: Boolean(id),
-  })
+  });
 }
 ```
 
 ### Writing data
 
 ```typescript
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@renderer/lib/axios'
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@renderer/lib/axios";
 
 export function useCreateUser() {
-  const qc = useQueryClient()
+  const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { name: string }) => (await api.post<User>('/users', input)).data,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
-  })
+    mutationFn: async (input: { name: string }) => (await api.post<User>("/users", input)).data,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+  });
 }
 ```
 

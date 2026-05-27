@@ -25,7 +25,7 @@ describe("HomePage", () => {
 
   it("renders the heading and shows version/platform from IPC", async () => {
     renderWithProviders(<HomePage />);
-    expect(screen.getByRole("heading", { level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByText("1.2.3")).toBeInTheDocument());
     expect(screen.getByText("darwin")).toBeInTheDocument();
   });

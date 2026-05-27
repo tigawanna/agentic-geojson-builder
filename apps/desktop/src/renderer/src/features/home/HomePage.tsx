@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { PageShell } from "../../components/common/PageShell";
 import { useIpcQuery } from "../../hooks/useIpc";
 
 export function HomePage() {
@@ -7,18 +8,23 @@ export function HomePage() {
   const platform = useIpcQuery("app:getPlatform", undefined);
 
   return (
-    <section className="py-8">
-      <h2 className="text-3xl font-semibold tracking-tight">{t("home.heading")}</h2>
-      <p className="mt-3 max-w-prose text-neutral-600 dark:text-neutral-400">
-        {t("home.description")}
-      </p>
-
-      <dl className="mt-8 grid max-w-md grid-cols-2 gap-4 rounded-lg border border-neutral-200 bg-white p-4 text-sm dark:border-neutral-800 dark:bg-neutral-900">
-        <dt className="text-neutral-500">{t("home.version")}</dt>
-        <dd className="font-mono">{version.data ?? "—"}</dd>
-        <dt className="text-neutral-500">{t("home.platform")}</dt>
-        <dd className="font-mono">{platform.data ?? "—"}</dd>
-      </dl>
-    </section>
+    <PageShell title={t("home.heading")} description={t("home.description")}>
+      <div className="grid gap-4 md:grid-cols-2">
+        <article className="glass-card p-5">
+          <p className="text-xs font-medium tracking-wide text-base-content/50 uppercase">
+            {t("home.version")}
+          </p>
+          <p className="mt-2 font-mono text-2xl font-semibold text-primary">
+            {version.data ?? "—"}
+          </p>
+        </article>
+        <article className="glass-card p-5">
+          <p className="text-xs font-medium tracking-wide text-base-content/50 uppercase">
+            {t("home.platform")}
+          </p>
+          <p className="mt-2 font-mono text-2xl font-semibold capitalize">{platform.data ?? "—"}</p>
+        </article>
+      </div>
+    </PageShell>
   );
 }

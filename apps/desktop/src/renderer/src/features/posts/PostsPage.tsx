@@ -1,44 +1,49 @@
+import { RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { PageShell } from "../../components/common/PageShell";
+import { RouterErrorComponent } from "../../lib/tanstack/router/RouterErrorComponent";
+import { RouterPendingComponent } from "../../lib/tanstack/router/RouterPendingComponent";
 import { usePostsQuery } from "./usePostsQuery";
 
 export function PostsPage() {
   const { t } = useTranslation();
-  const { data, isLoading, isError, refetch } = usePostsQuery();
+  const { data, isPending, isError, error, refetch, isFetching } = usePostsQuery();
 
-  return (
-    <section className="py-8">
-      <h2 className="text-3xl font-semibold tracking-tight">{t("posts.heading")}</h2>
-      <p className="mt-2 max-w-prose text-neutral-600 dark:text-neutral-400">
-        {t("posts.description")}
-      </p>
+  if (isPending) {
+    return <RouterPendingComponent />;
+  }
 
-      <div className="mt-6">
-        {isLoading && <p className="text-sm text-neutral-500">{t("posts.loading")}</p>}
-
-        {isError && (
-          <div className="flex items-center gap-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-200">
-            <span>{t("posts.error")}</span>
+  if (isError) {
+    return (
+      <PageShell title={t("posts.heading")} description={t("posts.description")}>
+        <RouterErrorComponent
+          error={error instanceof Error ? error : new Error(t("posts.error"))}
+          actions={
             <button
               type="button"
-              className="rounded bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700"
+              className="btn gap-2 btn-outline border-primary/40 text-primary hover:border-primary hover:bg-primary hover:text-primary-content"
+              disabled={isFetching}
               onClick={() => void refetch()}
             >
-              {t("posts.retry")}
+              <RefreshCw className={`size-4 ${isFetching ? "animate-spin" : ""}`} />
+              {isFetching ? t("posts.loading") : t("posts.retry")}
             </button>
-          </div>
-        )}
+          }
+        />
+      </PageShell>
+    );
+  }
 
-        {data && (
-          <ul className="divide-y divide-neutral-200 rounded-lg border border-neutral-200 bg-white dark:divide-neutral-800 dark:border-neutral-800 dark:bg-neutral-900">
-            {data.map((p) => (
-              <li key={p.id} className="px-4 py-3">
-                <h3 className="font-medium capitalize">{p.title}</h3>
-                <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{p.body}</p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </section>
+  return (
+    <PageShell title={t("posts.heading")} description={t("posts.description")}>
+      <ul className="glass-card divide-y divide-base-content/8 overflow-hidden">
+        {data.map((post) => (
+          <li key={post.id} className="px-5 py-4 transition-colors hover:bg-base-200/40">
+            <h3 className="font-medium capitalize">{post.title}</h3>
+            <p className="mt-1.5 text-sm leading-relaxed text-base-content/70">{post.body}</p>
+          </li>
+        ))}
+      </ul>
+    </PageShell>
   );
 }

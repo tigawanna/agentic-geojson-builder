@@ -1,17 +1,17 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import { QueryClientProvider } from '@tanstack/react-query'
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
-import { RouterProvider } from '@tanstack/react-router'
-import { I18nextProvider } from 'react-i18next'
-import { queryClient } from './lib/query-client'
-import { router } from './router'
-import { i18n } from './i18n'
-import { ThemeProvider } from './features/theme/ThemeProvider'
-import './styles/globals.css'
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { RouterProvider } from "@tanstack/react-router";
+import { I18nextProvider } from "react-i18next";
+import { queryClient } from "./lib/query-client";
+import { router } from "./router";
+import { i18n } from "./i18n";
+import { ThemeProvider } from "./features/theme/ThemeProvider";
+import "./styles/globals.css";
 
-const root = document.getElementById('root')
-if (!root) throw new Error('#root element not found in index.html')
+const root = document.getElementById("root");
+if (!root) throw new Error("#root element not found in index.html");
 
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
@@ -24,4 +24,4 @@ ReactDOM.createRoot(root).render(
       </QueryClientProvider>
     </I18nextProvider>
   </React.StrictMode>,
-)
+);

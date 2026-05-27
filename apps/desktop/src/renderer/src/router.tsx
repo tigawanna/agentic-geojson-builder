@@ -1,60 +1,23 @@
-import {
-  createHashHistory,
-  createRootRoute,
-  createRoute,
-  createRouter,
-} from '@tanstack/react-router'
-import { AppLayout } from './components/AppLayout'
-import { HomePage } from './features/home/HomePage'
-import { PostsPage } from './features/posts/PostsPage'
-import { SettingsPage } from './features/settings/SettingsPage'
-import { AboutPage } from './features/about/AboutPage'
-import { ErrorPage } from './components/ErrorPage'
+import { createHashHistory, createRouter } from "@tanstack/react-router";
+import { RouterErrorComponent } from "./lib/tanstack/router/RouterErrorComponent";
+import { RouterNotFoundComponent } from "./lib/tanstack/router/RouterNotFoundComponent";
+import { RouterPendingComponent } from "./lib/tanstack/router/RouterPendingComponent";
+import { routeTree } from "./routeTree.gen";
 
-/**
- * Hash history keeps routing working under Electron `file://` in production
- * (same reason we avoided browser history + BrowserRouter in SPA-on-disk).
- */
-const rootRoute = createRootRoute({
-  component: AppLayout,
-  errorComponent: ErrorPage,
-})
-
-const indexRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: '/',
-  component: HomePage,
-})
-
-const postsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: 'posts',
-  component: PostsPage,
-})
-
-const settingsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: 'settings',
-  component: SettingsPage,
-})
-
-const aboutRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: 'about',
-  component: AboutPage,
-})
-
-const routeTree = rootRoute.addChildren([indexRoute, postsRoute, settingsRoute, aboutRoute])
-
-const hashHistory = createHashHistory()
+const hashHistory = createHashHistory();
 
 export const router = createRouter({
   routeTree,
   history: hashHistory,
-})
+  defaultPreload: "intent",
+  defaultViewTransition: true,
+  defaultPendingComponent: () => <RouterPendingComponent />,
+  defaultNotFoundComponent: () => <RouterNotFoundComponent />,
+  defaultErrorComponent: ({ error }) => <RouterErrorComponent error={error} />,
+});
 
-declare module '@tanstack/react-router' {
+declare module "@tanstack/react-router" {
   interface Register {
-    router: typeof router
+    router: typeof router;
   }
 }

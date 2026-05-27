@@ -7,7 +7,7 @@ export function UpdateToast() {
 
   if (!status || status.state === "not-available") return null;
 
-  let body: string = "";
+  let body = "";
   let action: { label: string; onClick: () => void } | null = null;
 
   switch (status.state) {
@@ -35,17 +35,13 @@ export function UpdateToast() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex max-w-sm items-center gap-3 rounded-lg border border-neutral-200 bg-white/90 px-4 py-3 text-sm shadow-lg backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/90">
+    <div className="glass-card fixed right-4 bottom-4 z-50 flex max-w-sm items-center gap-3 px-4 py-3 text-sm shadow-lg">
       <span className="flex-1">{body}</span>
-      {action && (
-        <button
-          type="button"
-          onClick={action.onClick}
-          className="rounded-md bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700"
-        >
+      {action ? (
+        <button type="button" onClick={action.onClick} className="btn btn-xs btn-primary">
           {action.label}
         </button>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -17,11 +17,11 @@ Extend the `AppSettings` interface to add top-level keys:
 
 ```typescript
 export interface AppSettings {
-  theme: 'light' | 'dark' | 'system'
-  language: string
-  kv: Record<string, unknown>
+  theme: "light" | "dark" | "system";
+  language: string;
+  kv: Record<string, unknown>;
   // add your new keys here
-  recentFiles: string[]
+  recentFiles: string[];
 }
 ```
 
@@ -62,10 +62,10 @@ The `db:all` / `db:get` / `db:run` channels expose a generic, **zod-validated**
 surface:
 
 ```typescript
-const { data } = useIpcQuery('db:all', {
-  sql: 'SELECT id, title FROM notes ORDER BY created_at DESC LIMIT ?',
+const { data } = useIpcQuery("db:all", {
+  sql: "SELECT id, title FROM notes ORDER BY created_at DESC LIMIT ?",
   params: [25],
-})
+});
 ```
 
 The main side (see

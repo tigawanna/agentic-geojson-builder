@@ -25,7 +25,6 @@
   "settings": {
     "heading": "Settings",
     "theme": "Theme",
-    "language": "Language",
     "storageHeading": "Local storage",
     "storageHint": "This demo persists a value in the main-process storage backend via typed IPC.",
     "keyLabel": "Key",

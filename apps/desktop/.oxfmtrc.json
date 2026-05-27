@@ -5,6 +5,7 @@
     "dist/**",
     "release/**",
     "coverage/**",
-    "playwright-report/**"
+    "playwright-report/**",
+    "**/routeTree.gen.ts"
   ]
 }

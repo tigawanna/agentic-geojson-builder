@@ -12,10 +12,10 @@ through it by failing the build at every missing piece.
 // src/shared/ipc-contract.ts
 export interface IpcContract {
   // ...existing entries
-  'notes:create': {
-    req: { title: string; body: string }
-    res: { id: number }
-  }
+  "notes:create": {
+    req: { title: string; body: string };
+    res: { id: number };
+  };
 }
 ```
 
@@ -25,19 +25,19 @@ Either extend an existing file in `src/main/ipc/` or create a new one:
 
 ```typescript
 // src/main/ipc/notes.ts
-import type { IpcChannel, IpcRequest, IpcResponse } from '../../shared/ipc-contract.js'
-import { storage } from '../storage/index.js'
+import type { IpcChannel, IpcRequest, IpcResponse } from "../../shared/ipc-contract.js";
+import { storage } from "../storage/index.js";
 
 type Handler<K extends IpcChannel> = (
   req: IpcRequest<K>,
-) => IpcResponse<K> | Promise<IpcResponse<K>>
+) => IpcResponse<K> | Promise<IpcResponse<K>>;
 
 export const noteHandlers: { [K in IpcChannel]?: Handler<K> } = {
-  'notes:create': ({ title, body }) => {
-    const result = storage.run?.('INSERT INTO notes (title, body) VALUES (?, ?)', [title, body])
-    return { id: Number(result?.lastInsertRowid ?? 0) }
+  "notes:create": ({ title, body }) => {
+    const result = storage.run?.("INSERT INTO notes (title, body) VALUES (?, ?)", [title, body]);
+    return { id: Number(result?.lastInsertRowid ?? 0) };
   },
-}
+};
 ```
 
 Then add `...noteHandlers` to the aggregated `handlers` object in
@@ -46,15 +46,15 @@ Then add `...noteHandlers` to the aggregated `handlers` object in
 ### 3. Use it in the renderer
 
 ```tsx
-import { useIpcMutation } from '../../hooks/useIpc'
+import { useIpcMutation } from "../../hooks/useIpc";
 
 function NewNoteForm() {
-  const createNote = useIpcMutation('notes:create')
+  const createNote = useIpcMutation("notes:create");
   return (
-    <button onClick={() => createNote.mutate({ title: 'Hello', body: 'World' })}>
-      {createNote.isPending ? 'Saving…' : 'Save'}
+    <button onClick={() => createNote.mutate({ title: "Hello", body: "World" })}>
+      {createNote.isPending ? "Saving…" : "Save"}
     </button>
-  )
+  );
 }
 ```
 
@@ -67,14 +67,14 @@ For fire-and-forget pushes (like `updater:status`):
 ```typescript
 // src/shared/ipc-contract.ts
 export interface IpcEventMap {
-  'sync:progress': { done: number; total: number }
+  "sync:progress": { done: number; total: number };
 }
 
 // src/main/somewhere.ts
-mainWindow.webContents.send('sync:progress', { done: 12, total: 50 })
+mainWindow.webContents.send("sync:progress", { done: 12, total: 50 });
 
 // renderer
-useEffect(() => window.api.on('sync:progress', (p) => console.log(p)), [])
+useEffect(() => window.api.on("sync:progress", (p) => console.log(p)), []);
 ```
 
 ## Why this beats `ipcRenderer.invoke` strings

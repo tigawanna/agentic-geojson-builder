@@ -16,8 +16,15 @@ function resolveSystem(): "light" | "dark" {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-function applyClass(resolved: "light" | "dark"): void {
-  document.documentElement.classList.toggle("dark", resolved === "dark");
+function applyTheme(theme: Theme): "light" | "dark" {
+  const root = document.documentElement;
+  const resolved = theme === "system" ? resolveSystem() : theme;
+
+  root.classList.remove("light", "dark");
+  root.classList.add(resolved);
+  root.setAttribute("data-theme", theme === "system" ? resolved : theme);
+
+  return resolved;
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -31,30 +38,36 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
           setThemeState(value);
         }
       })
-      .catch(() => {
-        /* fall back to default */
-      });
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
-    const r = theme === "system" ? resolveSystem() : theme;
-    setResolved(r);
-    applyClass(r);
+    const nextResolved = applyTheme(theme);
+    setResolved(nextResolved);
 
     if (theme !== "system") return;
+
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = () => {
-      const r2 = resolveSystem();
-      setResolved(r2);
-      applyClass(r2);
+      const next = applyTheme("system");
+      setResolved(next);
     };
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
   }, [theme]);
 
   const setTheme = useCallback((next: Theme) => {
-    setThemeState(next);
-    void ipcInvoke("store:set", { key: STORAGE_KEY, value: next });
+    const apply = () => {
+      setThemeState(next);
+      void ipcInvoke("store:set", { key: STORAGE_KEY, value: next });
+    };
+
+    if (document.startViewTransition) {
+      document.startViewTransition(apply);
+      return;
+    }
+
+    apply();
   }, []);
 
   return (
