@@ -1,7 +1,7 @@
 import { createServer, type Server } from "node:http";
-import log from "electron-log/main";
 import type { MapBaseMapStyle } from "../shared/maps.types.js";
 import { TILE_SERVER_PORT } from "../shared/tile-cache.types.js";
+import { log } from "./lib/logger.js";
 import { readCachedTileForMap } from "./lib/tile-cache/tile-cache.service.js";
 
 let tileServer: Server | null = null;
@@ -67,7 +67,11 @@ export async function startTileServer(): Promise<void> {
         res.end(buffer);
       })
       .catch((error) => {
-        log.error("[tile-server] failed to read tile", error);
+        log.error({
+          action: "tile-server",
+          message: "failed to read tile",
+          error: error instanceof Error ? error.message : String(error),
+        });
         res.statusCode = 500;
         res.end();
       });
@@ -83,7 +87,11 @@ export async function startTileServer(): Promise<void> {
     });
   });
 
-  log.info(`[tile-server] listening on http://127.0.0.1:${TILE_SERVER_PORT}`);
+  log.info({
+    action: "tile-server",
+    message: "listening",
+    url: `http://127.0.0.1:${TILE_SERVER_PORT}`,
+  });
 }
 
 export async function stopTileServer(): Promise<void> {
@@ -102,5 +110,5 @@ export async function stopTileServer(): Promise<void> {
   });
 
   tileServer = null;
-  log.info("[tile-server] stopped");
+  log.info({ action: "tile-server", message: "stopped" });
 }

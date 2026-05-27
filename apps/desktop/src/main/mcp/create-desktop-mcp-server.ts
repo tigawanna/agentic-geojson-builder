@@ -11,11 +11,26 @@ import {
   setMapTileCacheBoundsFromCorners,
 } from "../lib/tile-cache/tile-cache.service.js";
 import { broadcastToRenderers } from "../ipc/broadcast.js";
+import type { MapSectorViewResult } from "../../shared/tile-cache.types.js";
 
-function jsonToolResult<T extends Record<string, unknown>>(data: T): CallToolResult {
+function jsonToolResult(data: Record<string, unknown>): CallToolResult {
   return {
     content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
     structuredContent: data,
+  };
+}
+
+function mapSectorToolResult(data: MapSectorViewResult): CallToolResult {
+  const { imageBase64, ...summary } = data;
+  const structuredContent = {
+    ...summary,
+    hasImage: true,
+    imageBase64Length: imageBase64.length,
+  };
+
+  return {
+    content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
+    structuredContent,
   };
 }
 
@@ -52,7 +67,7 @@ export function createDesktopMcpServer(): McpServer {
     async (input) => {
       const map = await createMap(input);
       broadcastToRenderers("maps:changed", { reason: "created", mapId: map.id });
-      return jsonToolResult(map);
+      return jsonToolResult({ map });
     },
   );
 
@@ -96,7 +111,7 @@ export function createDesktopMcpServer(): McpServer {
         maxZoom: z.number().int().min(0).max(22).optional(),
       },
     },
-    async (input) => jsonToolResult(await setMapTileCacheBoundsFromCorners(input)),
+    async (input) => jsonToolResult({ cache: await setMapTileCacheBoundsFromCorners(input) }),
   );
 
   server.registerTool(
@@ -131,7 +146,7 @@ export function createDesktopMcpServer(): McpServer {
         style: z.enum(["outline", "standard", "satellite"]).optional(),
       },
     },
-    async (input) => jsonToolResult(await getMapSectorView(input)),
+    async (input) => mapSectorToolResult(await getMapSectorView(input)),
   );
 
   return server;

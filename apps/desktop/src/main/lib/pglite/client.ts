@@ -3,7 +3,7 @@ import { postgis } from "@electric-sql/pglite-postgis";
 import { sql } from "drizzle-orm";
 import { drizzle, type PgliteDatabase } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
-import log from "electron-log/main";
+import { log } from "../logger.js";
 import * as schema from "./schema/index.js";
 import { getMigrationsFolder, getPgliteDataDir } from "./paths.js";
 
@@ -20,7 +20,11 @@ export function initPgliteDb(): Promise<void> {
       const dataDir = getPgliteDataDir();
       const migrationsFolder = getMigrationsFolder();
 
-      log.info(`[pglite] opening database at ${dataDir}`);
+      log.info({
+        action: "pglite",
+        message: "opening database",
+        dataDir,
+      });
 
       pgliteClient = new PGlite({
         dataDir,
@@ -34,8 +38,14 @@ export function initPgliteDb(): Promise<void> {
       const health = await db.execute(sql`select 1 as ok`);
       const mapCount = await db.execute(sql`select count(*)::int as count from map`);
 
-      log.info("[pglite] migrations applied", { migrationsFolder });
-      log.info("[pglite] health check passed", {
+      log.info({
+        action: "pglite",
+        message: "migrations applied",
+        migrationsFolder,
+      });
+      log.info({
+        action: "pglite",
+        message: "health check passed",
         ok: health.rows[0],
         mapCount: mapCount.rows[0],
       });
@@ -43,7 +53,11 @@ export function initPgliteDb(): Promise<void> {
       initPromise = null;
       pgliteClient = null;
       db = null;
-      log.error("[pglite] initialization failed", error);
+      log.error({
+        action: "pglite",
+        message: "initialization failed",
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw error;
     });
   }

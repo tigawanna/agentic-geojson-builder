@@ -1,19 +1,15 @@
 import { app, BrowserWindow, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import log from "electron-log/main";
 import { registerIpcHandlers } from "./ipc/index.js";
 import { initPgliteDb } from "./lib/pglite/client.js";
+import { initAppLogger, log } from "./lib/logger.js";
 import { initMcpServer, shutdownMcpServer } from "./mcp/index.js";
 import { startTileServer, stopTileServer } from "./tile-server.js";
 import { initUpdater } from "./updater.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-log.initialize();
-log.transports.file.level = "info";
-log.info(`Starting desktop v${app.getVersion()}`);
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -57,6 +53,13 @@ function createWindow(): BrowserWindow {
 }
 
 void app.whenReady().then(async () => {
+  initAppLogger();
+  log.info({
+    action: "app",
+    message: "starting desktop",
+    version: app.getVersion(),
+  });
+
   await initPgliteDb();
   registerIpcHandlers();
   await startTileServer();
@@ -85,5 +88,10 @@ app.on("before-quit", () => {
 });
 
 process.on("uncaughtException", (err) => {
-  log.error("Uncaught exception:", err);
+  log.error({
+    action: "app",
+    message: "uncaught exception",
+    error: err instanceof Error ? err.message : String(err),
+    stack: err instanceof Error ? err.stack : undefined,
+  });
 });

@@ -1,13 +1,26 @@
 import { BrowserWindow, app } from "electron";
-import log from "electron-log/main";
 import electronUpdater from "electron-updater";
 import type { IpcEventPayload } from "../shared/ipc-contract.js";
+import { log } from "./lib/logger.js";
 
 // `electron-updater` is published as CJS. `esModuleInterop` gives us the full
 // namespace under `default`, so we destructure `autoUpdater` here.
 const { autoUpdater } = electronUpdater;
 
-autoUpdater.logger = log;
+autoUpdater.logger = {
+  info: (message) => {
+    log.info({ action: "updater", message: String(message) });
+  },
+  warn: (message) => {
+    log.warn({ action: "updater", message: String(message) });
+  },
+  error: (message) => {
+    log.error({ action: "updater", message: String(message) });
+  },
+  debug: (message) => {
+    log.debug({ action: "updater", message: String(message) });
+  },
+};
 autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = true;
 
@@ -44,16 +57,20 @@ export function initUpdater(window: BrowserWindow): void {
   // Automatically check for updates 5s after boot in production builds.
   if (app.isPackaged) {
     setTimeout(() => {
-      void autoUpdater
-        .checkForUpdates()
-        .catch((err) => log.error("[updater] initial check failed", err));
+      void autoUpdater.checkForUpdates().catch((err) =>
+        log.error({
+          action: "updater",
+          message: "initial check failed",
+          error: err instanceof Error ? err.message : String(err),
+        }),
+      );
     }, 5_000);
   }
 }
 
 export async function checkForUpdates(): Promise<{ updateAvailable: boolean; version?: string }> {
   if (!app.isPackaged) {
-    log.info("[updater] skipping check in dev mode");
+    log.info({ action: "updater", message: "skipping check in dev mode" });
     return { updateAvailable: false };
   }
   const result = await autoUpdater.checkForUpdates();

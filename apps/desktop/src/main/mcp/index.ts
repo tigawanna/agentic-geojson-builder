@@ -1,5 +1,5 @@
-import log from "electron-log/main";
 import type { McpStatus } from "../../shared/mcp.types.js";
+import { log } from "../lib/logger.js";
 import { getMcpEnabled, getMcpPort } from "../storage/app-settings.js";
 import {
   getMcpListenPort,
@@ -39,7 +39,11 @@ export async function syncMcpServer(): Promise<McpStatus> {
 
   const started = await startMcpHttpServerSafe(port);
   if (!started) {
-    log.warn(`[mcp] could not bind to port ${port}`);
+    log.warn({
+      action: "mcp",
+      message: "could not bind to port",
+      port,
+    });
   }
 
   return getMcpStatus();

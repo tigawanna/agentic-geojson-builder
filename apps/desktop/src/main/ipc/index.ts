@@ -1,6 +1,6 @@
 import { app, ipcMain } from "electron";
-import log from "electron-log/main";
 import type { IpcChannel, IpcRequest, IpcResponse } from "../../shared/ipc-contract.js";
+import { log } from "../lib/logger.js";
 import { storageHandlers } from "./storage.js";
 import { mapsHandlers } from "./maps.js";
 import { tileCacheHandlers } from "./tile-cache.js";
@@ -27,7 +27,12 @@ function register<K extends IpcChannel>(channel: K, handler: Handler<K>): void {
       const result = await handler(req);
       return result;
     } catch (err) {
-      log.error(`[ipc] ${channel} failed:`, err);
+      log.error({
+        action: "ipc",
+        message: "handler failed",
+        channel,
+        error: err instanceof Error ? err.message : String(err),
+      });
       throw err;
     }
   });
@@ -55,5 +60,9 @@ export function registerIpcHandlers(): void {
     if (handler) register(channel, handler);
   }
 
-  log.info(`[ipc] registered ${Object.keys(handlers).length} channels`);
+  log.info({
+    action: "ipc",
+    message: "registered channels",
+    count: Object.keys(handlers).length,
+  });
 }
