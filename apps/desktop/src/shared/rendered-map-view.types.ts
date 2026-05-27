@@ -20,6 +20,8 @@ export type RenderedMapViewPdfPane = {
   mimeType: "image/png";
   canvasWidth: number;
   canvasHeight: number;
+  sourceDocumentWidth?: number;
+  sourceDocumentHeight?: number;
   coordinateSpace: "pdf-pixels";
   origin: "top-left";
   pdfRenderScale: number;

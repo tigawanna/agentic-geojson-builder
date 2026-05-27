@@ -11,6 +11,7 @@
     "check-types": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
     "db:pglite:generate": "drizzle-kit generate --config drizzle.pglite.config.ts",
     "db:pglite:studio": "drizzle-kit studio --config drizzle.pglite.config.ts",
+    "db:import-stash": "node scripts/import-data-stash.mjs",
     "lint": "oxlint --react-plugin --vitest-plugin -c .oxlintrc.json src tests",
     "lint:fix": "oxlint --react-plugin --vitest-plugin --fix -c .oxlintrc.json src tests",
     "format": "oxfmt .",

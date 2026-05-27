@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LocateFixed } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
@@ -6,6 +6,8 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "../../../components/common/Resizable";
+import { useIpcMutation } from "../../../hooks/useIpc";
+import { useControlPointsQuery } from "../hooks/useControlPointsQuery";
 import { useTileCacheStatusQuery } from "../hooks/useTileCacheStatusQuery";
 import { resolveLocalTileUrl } from "../hooks/tile-cache-api";
 import { copyMapCoordinates } from "../lib/copy-map-coordinates";
@@ -31,12 +33,19 @@ export function MapWorkspaceSplitView() {
   const sourceFile = useMapWorkspaceState((state) => state.sourceFile);
   const { openControls } = useMapWorkspaceUiActions();
   const { setHomeViewport } = useMapWorkspaceUiActions();
-  const homeViewport = useMapWorkspaceUiState((state) => state.homeViewport);
-  const { setCursorCoordinates, setSelectedCoordinates, setStatusMessage } =
+  const { setCursorCoordinates, setSelectedCoordinates, setStatusMessage, setPendingMapPoint } =
     useMapWorkspaceUiActions();
+  const homeViewport = useMapWorkspaceUiState((state) => state.homeViewport);
+  const referenceMode = useMapWorkspaceUiState((state) => state.referenceMode);
+  const pendingMapPoint = useMapWorkspaceUiState((state) => state.pendingMapPoint);
+  const selectedControlPointId = useMapWorkspaceUiState((state) => state.selectedControlPointId);
   const { queueSave } = useWorkspacePersistence();
+  const controlPointsQuery = useControlPointsQuery(workspace?.id ?? null);
+  const createControlPoint = useIpcMutation("controlPoints:create");
+  const updateControlPoint = useIpcMutation("controlPoints:update");
   const [mapHandle, setMapHandle] = useState<MapHandle | null>(null);
   const mapHandleRef = useRef<MapHandle | null>(null);
+  const controlPointsRef = useRef(controlPointsQuery.data?.controlPoints ?? []);
   const sourceCaptureRef = useRef<{
     getPdfCanvas: () => HTMLCanvasElement | null;
     getSourceViewport: () => HTMLDivElement | null;
@@ -46,6 +55,23 @@ export function MapWorkspaceSplitView() {
   const localTileUrl = workspace
     ? resolveLocalTileUrl(workspace.id, workspace.baseMapStyle, tileCache.data)
     : null;
+
+  const controlPoints = controlPointsQuery.data?.controlPoints ?? [];
+  controlPointsRef.current = controlPoints;
+
+  const captureOverlays = useMemo(
+    () => ({
+      controlPoints: controlPoints.map((point) => ({
+        latitude: point.latitude,
+        longitude: point.longitude,
+      })),
+      geoSegments: [],
+      pendingMapPoint: pendingMapPoint,
+      pendingTracePoints: [],
+      baseMapStyle: workspace?.baseMapStyle ?? ("satellite" as const),
+    }),
+    [controlPoints, pendingMapPoint, workspace?.baseMapStyle],
+  );
 
   useEffect(() => {
     mapHandleRef.current = mapHandle;
@@ -73,11 +99,8 @@ export function MapWorkspaceSplitView() {
       }
 
       const mapPane = await handle.captureView({
-        controlPoints: [],
-        geoSegments: [],
-        pendingMapPoint: null,
-        pendingTracePoints: [],
-        baseMapStyle: workspace.baseMapStyle,
+        ...captureOverlays,
+        pendingMapPoint: pendingMapPoint,
       });
 
       return captureWorkspaceView({
@@ -86,9 +109,11 @@ export function MapWorkspaceSplitView() {
         sourceViewport: sourceCaptureRef.current?.getSourceViewport() ?? null,
         pdfTransform: workspaceToPdfTransform(workspace),
         mapPane,
+        controlPoints: captureOverlays.controlPoints,
+        controlPointsVisible: controlPointsRef.current.length > 0,
       });
     });
-  }, [workspace]);
+  }, [captureOverlays, pendingMapPoint, workspace]);
 
   useEffect(() => {
     if (!workspace) {
@@ -142,13 +167,112 @@ export function MapWorkspaceSplitView() {
     [queueSave],
   );
 
+  const handleMapLocationPick = useCallback(
+    (latitude: number, longitude: number) => {
+      if (!referenceMode) {
+        return;
+      }
+
+      setPendingMapPoint({ latitude, longitude });
+      setStatusMessage(
+        t("maps.workspace.referencePendingPdf", {
+          value: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
+        }),
+      );
+    },
+    [referenceMode, setPendingMapPoint, setStatusMessage, t],
+  );
+
+  const handlePdfLocationPick = useCallback(
+    (imageX: number, imageY: number) => {
+      if (!referenceMode || !pendingMapPoint || !workspace) {
+        return;
+      }
+
+      void createControlPoint
+        .mutateAsync({
+          mapId: workspace.id,
+          imageX,
+          imageY,
+          longitude: pendingMapPoint.longitude,
+          latitude: pendingMapPoint.latitude,
+        })
+        .then(() => {
+          setPendingMapPoint(null);
+          setStatusMessage(t("maps.workspace.referenceCreated"));
+          window.clearTimeout(statusTimerRef.current);
+          statusTimerRef.current = window.setTimeout(() => setStatusMessage(null), 2500);
+        })
+        .catch((error) => {
+          setStatusMessage(
+            error instanceof Error ? error.message : t("maps.workspace.referenceError"),
+          );
+        });
+    },
+    [
+      createControlPoint,
+      pendingMapPoint,
+      referenceMode,
+      setPendingMapPoint,
+      setStatusMessage,
+      t,
+      workspace,
+    ],
+  );
+
+  const handleControlPointMapMove = useCallback(
+    (controlPointId: number, latitude: number, longitude: number) => {
+      if (!workspace) {
+        return;
+      }
+
+      const point = controlPoints.find((entry) => entry.id === controlPointId);
+      if (!point) {
+        return;
+      }
+
+      void updateControlPoint.mutateAsync({
+        mapId: workspace.id,
+        controlPointId,
+        imageX: point.imageX,
+        imageY: point.imageY,
+        latitude,
+        longitude,
+      });
+    },
+    [controlPoints, updateControlPoint, workspace],
+  );
+
+  const handleControlPointPdfMove = useCallback(
+    (controlPointId: number, imageX: number, imageY: number) => {
+      if (!workspace) {
+        return;
+      }
+
+      const point = controlPoints.find((entry) => entry.id === controlPointId);
+      if (!point) {
+        return;
+      }
+
+      void updateControlPoint.mutateAsync({
+        mapId: workspace.id,
+        controlPointId,
+        imageX,
+        imageY,
+        latitude: point.latitude,
+        longitude: point.longitude,
+      });
+    },
+    [controlPoints, updateControlPoint, workspace],
+  );
+
   if (!workspace) {
     return null;
   }
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <MapWorkspaceHeader onOpenControls={openControls} />
+      <MapWorkspaceHeader onOpenControls={openControls} hasSourceFile={Boolean(sourceFile)} />
 
       <div className="min-h-0 flex-1">
         <ResizablePanelGroup direction="horizontal">
@@ -161,7 +285,13 @@ export function MapWorkspaceSplitView() {
                 <SourceDocumentPane
                   sourceFile={sourceFile}
                   transform={workspaceToPdfTransform(workspace)}
+                  controlPoints={controlPoints}
+                  selectedControlPointId={selectedControlPointId}
+                  referenceMode={referenceMode}
+                  canPickPdfPoint={referenceMode && pendingMapPoint !== null}
                   onTransformChange={handlePdfTransformChange}
+                  onPdfLocationPick={handlePdfLocationPick}
+                  onControlPointPdfMove={handleControlPointPdfMove}
                   onCaptureReady={handleCaptureReady}
                 />
               ) : (
@@ -193,6 +323,10 @@ export function MapWorkspaceSplitView() {
                 workspace={workspace}
                 localTileUrl={localTileUrl}
                 tileCacheOverlay={tileCache.data?.bounds ?? null}
+                controlPoints={controlPoints}
+                pendingMapPoint={pendingMapPoint}
+                canPickMapPoint={referenceMode && pendingMapPoint === null}
+                selectedControlPointId={selectedControlPointId}
                 onReady={setMapHandle}
                 onInitialViewportReady={setHomeViewport}
                 onViewportChange={handleViewportChange}
@@ -200,13 +334,15 @@ export function MapWorkspaceSplitView() {
                 onCoordinateSelect={(coordinates) => {
                   void handleCoordinateSelect(coordinates);
                 }}
+                onMapLocationPick={handleMapLocationPick}
+                onControlPointMapMove={handleControlPointMapMove}
               />
             </section>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
 
-      <MapWorkspaceControlsModal mapHandle={mapHandle} />
+      <MapWorkspaceControlsModal mapHandle={mapHandle} controlPoints={controlPoints} />
       <MapTileCacheBoundsModal />
     </div>
   );

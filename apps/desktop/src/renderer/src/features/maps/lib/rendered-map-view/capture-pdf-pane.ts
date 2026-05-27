@@ -18,6 +18,8 @@ export function capturePdfPaneCanvas(
     mimeType: "image/png",
     canvasWidth: canvas.width,
     canvasHeight: canvas.height,
+    sourceDocumentWidth: canvas.width,
+    sourceDocumentHeight: canvas.height,
     coordinateSpace: "pdf-pixels",
     origin: "top-left",
     pdfRenderScale: PDF_RENDER_SCALE,

@@ -1,4 +1,5 @@
 import type {
+  MapCaptureOverlayInput,
   PdfViewTransform,
   RenderedMapView,
   RenderedMapViewMapPane,
@@ -11,7 +12,24 @@ type CaptureWorkspaceViewInput = {
   sourceViewport: HTMLElement | null;
   pdfTransform: PdfViewTransform;
   mapPane: RenderedMapViewMapPane | null;
+  controlPoints: MapCaptureOverlayInput["controlPoints"];
+  controlPointsVisible: boolean;
 };
+
+function attachSourceDocumentDimensions(
+  pdfPane: NonNullable<RenderedMapView["pdfPane"]>,
+  pdfCanvas: HTMLCanvasElement | null,
+) {
+  if (!pdfCanvas) {
+    return pdfPane;
+  }
+
+  return {
+    ...pdfPane,
+    sourceDocumentWidth: pdfCanvas.width,
+    sourceDocumentHeight: pdfCanvas.height,
+  };
+}
 
 export async function captureWorkspaceView(
   input: CaptureWorkspaceViewInput,
@@ -19,7 +37,10 @@ export async function captureWorkspaceView(
   let pdfPane: RenderedMapView["pdfPane"] = null;
 
   if (input.sourceViewport) {
-    pdfPane = await captureSourceViewport(input.sourceViewport, input.pdfTransform);
+    pdfPane = attachSourceDocumentDimensions(
+      await captureSourceViewport(input.sourceViewport, input.pdfTransform),
+      input.pdfCanvas,
+    );
   } else if (input.pdfCanvas) {
     pdfPane = capturePdfPaneCanvas(input.pdfCanvas, input.pdfTransform);
   }
@@ -30,7 +51,7 @@ export async function captureWorkspaceView(
     source: "client",
     pdfPane,
     mapPane: input.mapPane,
-    controlPointsVisible: false,
+    controlPointsVisible: input.controlPointsVisible,
     overlays: {
       pendingMapPin: null,
       draftSegmentsDrawn: false,

@@ -1,16 +1,25 @@
 import { useEffect, useRef, useState } from "react";
 import * as pdfjs from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
+import type { ControlPointRecord } from "@shared/control-points.types";
 import type { MapSourceFilePayload } from "@shared/maps.types";
 import { fileBase64ToDataUrl } from "../hooks/map-workspace-api";
 import { clampPdfScale, PDF_RENDER_SCALE, type PdfViewTransform } from "../lib/pdf-view-transform";
+import { getImageCoordinatesFromClick } from "../lib/pdf-image-coordinates";
+import { isPickModifierEvent, usePickModifierHeld } from "../lib/pick-modifier";
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 type SourceDocumentPaneProps = {
   sourceFile: MapSourceFilePayload;
   transform: PdfViewTransform;
+  controlPoints?: ControlPointRecord[];
+  selectedControlPointId?: number | null;
+  referenceMode?: boolean;
+  canPickPdfPoint?: boolean;
   onTransformChange: (patch: Partial<PdfViewTransform>) => void;
+  onPdfLocationPick?: (imageX: number, imageY: number) => void;
+  onControlPointPdfMove?: (controlPointId: number, imageX: number, imageY: number) => void;
   onCaptureReady?: (elements: {
     getPdfCanvas: () => HTMLCanvasElement | null;
     getSourceViewport: () => HTMLDivElement | null;
@@ -20,7 +29,13 @@ type SourceDocumentPaneProps = {
 export function SourceDocumentPane({
   sourceFile,
   transform,
+  controlPoints = [],
+  selectedControlPointId = null,
+  referenceMode = false,
+  canPickPdfPoint = false,
   onTransformChange,
+  onPdfLocationPick,
+  onControlPointPdfMove,
   onCaptureReady,
 }: SourceDocumentPaneProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -32,14 +47,24 @@ export function SourceDocumentPane({
     panX: number;
     panY: number;
   } | null>(null);
+  const markerDragRef = useRef<{ pointerId: number; controlPointId: number } | null>(null);
   const transformRef = useRef(transform);
   const onTransformChangeRef = useRef(onTransformChange);
+  const onControlPointPdfMoveRef = useRef(onControlPointPdfMove);
   const [localTransform, setLocalTransform] = useState(transform);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isDraggingMarker, setIsDraggingMarker] = useState(false);
+  const [pdfDragPreview, setPdfDragPreview] = useState<{
+    id: number;
+    imageX: number;
+    imageY: number;
+  } | null>(null);
+  const pickModifierHeld = usePickModifierHeld();
 
   transformRef.current = localTransform;
   onTransformChangeRef.current = onTransformChange;
+  onControlPointPdfMoveRef.current = onControlPointPdfMove;
 
   useEffect(() => {
     onCaptureReady?.({
@@ -135,7 +160,11 @@ export function SourceDocumentPane({
   }, [sourceFile.fileName]);
 
   function handlePointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    if (event.button !== 0) {
+    if (event.button !== 0 || isDraggingMarker) {
+      return;
+    }
+
+    if (canPickPdfPoint && isPickModifierEvent(event)) {
       return;
     }
 
@@ -188,10 +217,68 @@ export function SourceDocumentPane({
     }
   }
 
+  function handleCanvasClick(event: React.MouseEvent<HTMLCanvasElement>) {
+    if (!canPickPdfPoint || !canvasRef.current || !isPickModifierEvent(event)) {
+      return;
+    }
+
+    event.stopPropagation();
+    const coords = getImageCoordinatesFromClick(canvasRef.current, event);
+    onPdfLocationPick?.(coords.imageX, coords.imageY);
+  }
+
+  function handleMarkerPointerDown(
+    event: React.PointerEvent<HTMLDivElement>,
+    controlPointId: number,
+  ) {
+    event.stopPropagation();
+    markerDragRef.current = { pointerId: event.pointerId, controlPointId };
+    setIsDraggingMarker(true);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handleMarkerPointerMove(event: React.PointerEvent<HTMLDivElement>) {
+    const drag = markerDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId || !canvasRef.current) {
+      return;
+    }
+
+    event.stopPropagation();
+    const coords = getImageCoordinatesFromClick(canvasRef.current, event);
+    setPdfDragPreview({ id: drag.controlPointId, imageX: coords.imageX, imageY: coords.imageY });
+  }
+
+  function handleMarkerPointerUp(event: React.PointerEvent<HTMLDivElement>) {
+    const drag = markerDragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) {
+      return;
+    }
+
+    event.stopPropagation();
+    if (pdfDragPreview && pdfDragPreview.id === drag.controlPointId) {
+      onControlPointPdfMoveRef.current?.(
+        drag.controlPointId,
+        pdfDragPreview.imageX,
+        pdfDragPreview.imageY,
+      );
+    }
+
+    markerDragRef.current = null;
+    setIsDraggingMarker(false);
+    setPdfDragPreview(null);
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  }
+
   const content = isPdf ? (
     <canvas
       ref={canvasRef}
-      className="pointer-events-none max-w-none shadow-[0_0_0_1px_rgba(0,0,0,0.12),0_12px_40px_rgba(0,0,0,0.18)]"
+      className={`max-w-none shadow-[0_0_0_1px_rgba(0,0,0,0.12),0_12px_40px_rgba(0,0,0,0.18)] ${
+        canPickPdfPoint ? "pointer-events-auto cursor-crosshair" : "pointer-events-none"
+      }`}
+      onClick={handleCanvasClick}
     />
   ) : (
     imageUrl && (
@@ -199,7 +286,15 @@ export function SourceDocumentPane({
         src={imageUrl}
         alt={sourceFile.fileName}
         draggable={false}
-        className="pointer-events-none max-w-none object-contain shadow-[0_0_0_1px_rgba(0,0,0,0.12),0_12px_40px_rgba(0,0,0,0.18)]"
+        className={`max-w-none object-contain shadow-[0_0_0_1px_rgba(0,0,0,0.12),0_12px_40px_rgba(0,0,0,0.18)] ${
+          canPickPdfPoint ? "pointer-events-auto cursor-crosshair" : "pointer-events-none"
+        }`}
+        onClick={(event) => {
+          if (!canPickPdfPoint || !isPickModifierEvent(event)) {
+            return;
+          }
+          onPdfLocationPick?.(event.nativeEvent.offsetX, event.nativeEvent.offsetY);
+        }}
       />
     )
   );
@@ -208,7 +303,11 @@ export function SourceDocumentPane({
     <div
       ref={viewportRef}
       className={`absolute inset-0 touch-none overflow-hidden bg-base-300/40 select-none ${
-        isDragging ? "cursor-grabbing" : "cursor-grab"
+        canPickPdfPoint && pickModifierHeld
+          ? "cursor-crosshair"
+          : isDragging
+            ? "cursor-grabbing"
+            : "cursor-grab"
       }`}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -224,8 +323,41 @@ export function SourceDocumentPane({
           }}
         >
           {content}
+          {isPdf
+            ? controlPoints.map((point, index) => {
+                const displayX =
+                  pdfDragPreview?.id === point.id ? pdfDragPreview.imageX : point.imageX;
+                const displayY =
+                  pdfDragPreview?.id === point.id ? pdfDragPreview.imageY : point.imageY;
+
+                return (
+                  <div
+                    key={point.id}
+                    className={`absolute flex -translate-x-1/2 -translate-y-1/2 touch-none items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white select-none ${
+                      selectedControlPointId === point.id
+                        ? "size-5 cursor-grab bg-blue-600 active:cursor-grabbing"
+                        : "size-4 cursor-grab bg-primary active:cursor-grabbing"
+                    }`}
+                    style={{ left: displayX, top: displayY }}
+                    onPointerDown={(event) => handleMarkerPointerDown(event, point.id)}
+                    onPointerMove={handleMarkerPointerMove}
+                    onPointerUp={handleMarkerPointerUp}
+                    onPointerCancel={handleMarkerPointerUp}
+                  >
+                    {index + 1}
+                  </div>
+                );
+              })
+            : null}
         </div>
       </div>
+      {referenceMode ? (
+        <div className="pointer-events-none absolute bottom-3 left-3 z-10 rounded-box bg-base-100/90 px-2 py-1 text-xs text-base-content/70">
+          {canPickPdfPoint
+            ? "Ctrl+click the same spot on the PDF"
+            : "Ctrl+click the base map to set a pin"}
+        </div>
+      ) : null}
     </div>
   );
 }

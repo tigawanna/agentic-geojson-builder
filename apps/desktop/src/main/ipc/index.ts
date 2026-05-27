@@ -5,6 +5,7 @@ import { appMenuHandlers } from "./app-menu.js";
 import { storageHandlers } from "./storage.js";
 import { mapsHandlers } from "./maps.js";
 import { tileCacheHandlers } from "./tile-cache.js";
+import { controlPointsHandlers } from "./control-points.js";
 import { mcpSettingsHandlers } from "./mcp-settings.js";
 import { workspaceSnapshotHandlers } from "./workspace-snapshot.js";
 import { pgliteHandlers } from "./pglite.js";
@@ -76,6 +77,7 @@ export function registerIpcHandlers(): void {
     ...mapsHandlers,
     ...tileCacheHandlers,
     ...workspaceSnapshotHandlers,
+    ...controlPointsHandlers,
     ...mcpSettingsHandlers,
     ...updaterHandlers,
   };

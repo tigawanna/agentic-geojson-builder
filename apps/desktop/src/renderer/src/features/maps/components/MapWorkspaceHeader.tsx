@@ -2,22 +2,31 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft, RotateCw, Settings2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatMapCoordinates } from "../lib/copy-map-coordinates";
-import { useMapWorkspaceUiState, useMapWorkspaceState } from "../store/MapWorkspaceProvider";
+import {
+  useMapWorkspaceUiActions,
+  useMapWorkspaceUiState,
+  useMapWorkspaceState,
+} from "../store/MapWorkspaceProvider";
 
 type MapWorkspaceHeaderProps = {
   onOpenControls: () => void;
+  hasSourceFile: boolean;
 };
 
 async function hardReloadView() {
   await window.api.invoke("app:hardReload", undefined);
 }
 
-export function MapWorkspaceHeader({ onOpenControls }: MapWorkspaceHeaderProps) {
+export function MapWorkspaceHeader({ onOpenControls, hasSourceFile }: MapWorkspaceHeaderProps) {
   const { t } = useTranslation();
   const workspace = useMapWorkspaceState((state) => state.workspace);
   const cursorCoordinates = useMapWorkspaceUiState((state) => state.cursorCoordinates);
   const selectedCoordinates = useMapWorkspaceUiState((state) => state.selectedCoordinates);
   const statusMessage = useMapWorkspaceUiState((state) => state.statusMessage);
+  const referenceMode = useMapWorkspaceUiState((state) => state.referenceMode);
+  const pendingMapPoint = useMapWorkspaceUiState((state) => state.pendingMapPoint);
+  const { setReferenceMode, stopReferenceMode, setPendingMapPoint, setStatusMessage } =
+    useMapWorkspaceUiActions();
 
   if (!workspace) {
     return null;
@@ -58,16 +67,36 @@ export function MapWorkspaceHeader({ onOpenControls }: MapWorkspaceHeaderProps) 
           <div className="mt-2 min-h-10 space-y-1">
             <p className="truncate font-mono text-xs text-base-content/50">{coordinateLine}</p>
             <p
-              className={`truncate text-xs ${statusMessage ? "text-success" : "text-transparent"}`}
+              className={`truncate text-xs ${statusMessage || (referenceMode && !pendingMapPoint) ? "text-success" : "text-transparent"}`}
               aria-live="polite"
             >
-              {statusMessage ?? t("maps.workspace.statusIdle")}
+              {statusMessage ??
+                (referenceMode && !pendingMapPoint
+                  ? t("maps.workspace.referenceHint")
+                  : t("maps.workspace.statusIdle"))}
             </p>
           </div>
         </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
+        <button
+          type="button"
+          className={`btn btn-sm ${referenceMode ? "btn-primary" : "btn-outline"}`}
+          disabled={!hasSourceFile}
+          onClick={() => {
+            if (referenceMode) {
+              stopReferenceMode();
+              setStatusMessage(null);
+              return;
+            }
+
+            setReferenceMode(true);
+            setPendingMapPoint(null);
+          }}
+        >
+          {t("maps.workspace.addReference")}
+        </button>
         <button
           type="button"
           className="btn btn-square btn-outline btn-sm"

@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import type { ControlPointRecord } from "@shared/control-points.types";
 import type { MapBaseMapStyle } from "@shared/maps.types";
+import { useIpcMutation } from "../../../hooks/useIpc";
 import { useReplaceMapSourceMutation } from "../hooks/useReplaceMapSourceMutation";
 import { generateSourceThumbnail } from "../lib/generate-source-thumbnail";
 import { useTileCacheStatusQuery } from "../hooks/useTileCacheStatusQuery";
@@ -17,7 +19,26 @@ const acceptedTypes = "application/pdf,image/png,image/jpeg,image/webp";
 
 type MapWorkspaceControlsModalProps = {
   mapHandle: MapHandle | null;
+  controlPoints: ControlPointRecord[];
 };
+
+type ControlsSectionProps = {
+  title: string;
+  hint: string;
+  children: ReactNode;
+};
+
+function ControlsSection({ title, hint, children }: ControlsSectionProps) {
+  return (
+    <section className="flex flex-col gap-5 rounded-box border border-base-content/10 bg-base-200/35 p-6">
+      <div className="space-y-1.5">
+        <h3 className="text-sm font-semibold tracking-tight">{title}</h3>
+        <p className="text-sm leading-relaxed text-base-content/60">{hint}</p>
+      </div>
+      <div className="flex flex-col gap-5">{children}</div>
+    </section>
+  );
+}
 
 async function fileToBase64(file: File): Promise<string> {
   const buffer = await file.arrayBuffer();
@@ -29,7 +50,10 @@ async function fileToBase64(file: File): Promise<string> {
   return btoa(binary);
 }
 
-export function MapWorkspaceControlsModal({ mapHandle }: MapWorkspaceControlsModalProps) {
+export function MapWorkspaceControlsModal({
+  mapHandle,
+  controlPoints,
+}: MapWorkspaceControlsModalProps) {
   const { t } = useTranslation();
   const workspace = useMapWorkspaceState((state) => state.workspace);
   const mapId = useMapWorkspaceState((state) => state.mapId);
@@ -38,6 +62,7 @@ export function MapWorkspaceControlsModal({ mapHandle }: MapWorkspaceControlsMod
   const openTileCacheBounds = useMapWorkspaceUiActions().openTileCacheBounds;
   const { queueSave } = useWorkspacePersistence();
   const replaceSource = useReplaceMapSourceMutation();
+  const deleteControlPoint = useIpcMutation("controlPoints:delete");
   const tileCache = useTileCacheStatusQuery(mapId);
 
   const [name, setName] = useState("");
@@ -182,93 +207,34 @@ export function MapWorkspaceControlsModal({ mapHandle }: MapWorkspaceControlsMod
 
   return (
     <div className="modal-open modal">
-      <div className="modal-box max-h-[85vh] max-w-lg overflow-y-auto px-8 py-8">
+      <div className="modal-box max-h-[88vh] max-w-xl overflow-y-auto px-8 py-8">
         <button
           type="button"
-          className="btn absolute top-2 right-2 btn-circle btn-ghost btn-sm"
+          className="btn absolute top-3 right-3 btn-circle btn-ghost btn-sm"
           onClick={closeControls}
           aria-label={t("maps.create.close")}
         >
           ✕
         </button>
 
-        <div className="flex flex-col gap-8 pr-4">
-          <div className="space-y-2">
-            <h2 className="text-xl font-semibold">{t("maps.workspace.controlsTitle")}</h2>
+        <div className="flex flex-col gap-8 pr-2">
+          <div className="space-y-2 pr-8">
+            <h2 className="text-xl font-semibold tracking-tight">
+              {t("maps.workspace.controlsTitle")}
+            </h2>
             <p className="text-sm leading-relaxed text-base-content/60">
               {t("maps.workspace.controlsDescription")}
             </p>
           </div>
 
-          <section className="flex flex-col gap-4 border-t border-base-content/10 pt-6">
-            <div>
-              <h3 className="text-sm font-semibold">{t("maps.workspace.projectSection")}</h3>
-              <p className="mt-1 text-sm text-base-content/60">
-                {t("maps.workspace.projectSectionHint")}
-              </p>
-            </div>
-
-            <label className="form-control gap-2">
-              <span className="label-text">{t("maps.create.nameLabel")}</span>
-              <input
-                className="input-bordered input w-full"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-                onBlur={saveProjectDetails}
-              />
-            </label>
-
-            <label className="form-control gap-2">
-              <span className="label-text">{t("maps.create.descriptionLabel")}</span>
-              <textarea
-                className="textarea-bordered textarea min-h-20 w-full"
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-                onBlur={saveProjectDetails}
-                rows={2}
-              />
-            </label>
-
-            <label className="flex cursor-pointer flex-col gap-2">
-              <span className="label-text">{t("maps.workspace.replaceSource")}</span>
-              <input
-                type="file"
-                accept={acceptedTypes}
-                className="file-input-bordered file-input w-full"
-                onChange={(event) => void handleReplaceSource(event)}
-              />
-            </label>
-            {replaceError ? <p className="text-sm text-error">{replaceError}</p> : null}
-          </section>
-
-          <section className="flex flex-col gap-4 border-t border-base-content/10 pt-6">
-            <div>
-              <h3 className="text-sm font-semibold">{t("maps.workspace.tileCacheSection")}</h3>
-              <p className="mt-1 text-sm text-base-content/60">
-                {t("maps.workspace.tileCacheSectionHint")}
-              </p>
-            </div>
-
-            <p className="text-sm text-base-content/70">
-              {tileCache.data?.builtAt
-                ? `${tileCache.data.tileCount.toLocaleString()} tiles cached · ${tileCache.data.style}`
-                : t("maps.workspace.tileCacheMissing")}
-            </p>
-
-            <button type="button" className="btn btn-outline btn-sm" onClick={openTileCacheBounds}>
-              {t("maps.workspace.configureTileCache")}
-            </button>
-          </section>
-
-          <section className="flex flex-col gap-4 border-t border-base-content/10 pt-6">
-            <div>
-              <h3 className="text-sm font-semibold">{t("maps.workspace.mapSection")}</h3>
-              <p className="mt-1 text-sm text-base-content/60">
-                {t("maps.workspace.mapSectionHint")}
-              </p>
-            </div>
-
-            <form className="flex gap-2" onSubmit={(event) => void handleLocationSearch(event)}>
+          <ControlsSection
+            title={t("maps.workspace.mapSection")}
+            hint={t("maps.workspace.mapSectionHint")}
+          >
+            <form
+              className="flex flex-col gap-3 sm:flex-row"
+              onSubmit={(event) => void handleLocationSearch(event)}
+            >
               <input
                 className="input-bordered input min-w-0 flex-1"
                 value={locationQuery}
@@ -277,7 +243,7 @@ export function MapWorkspaceControlsModal({ mapHandle }: MapWorkspaceControlsMod
               />
               <button
                 type="submit"
-                className="btn btn-sm btn-primary"
+                className="btn btn-primary sm:min-w-24"
                 disabled={isSearchingLocation || locationQuery.trim().length === 0}
               >
                 {isSearchingLocation ? t("maps.workspace.searching") : t("maps.workspace.search")}
@@ -285,22 +251,27 @@ export function MapWorkspaceControlsModal({ mapHandle }: MapWorkspaceControlsMod
             </form>
             {locationError ? <p className="text-sm text-error">{locationError}</p> : null}
 
-            <div className="flex flex-wrap gap-2">
-              {(["satellite", "outline", "standard"] as const).map((style) => (
-                <button
-                  key={style}
-                  type="button"
-                  className={`btn btn-sm ${baseMapStyle === style ? "btn-primary" : "btn-outline"}`}
-                  onClick={() => applyBaseMapStyle(style)}
-                >
-                  {t(`maps.workspace.baseMap.${style}`)}
-                </button>
-              ))}
+            <div className="flex flex-col gap-2">
+              <span className="text-xs font-medium tracking-wide text-base-content/50 uppercase">
+                Base map
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {(["satellite", "outline", "standard"] as const).map((style) => (
+                  <button
+                    key={style}
+                    type="button"
+                    className={`btn flex-1 sm:flex-none ${baseMapStyle === style ? "btn-primary" : "btn-outline"}`}
+                    onClick={() => applyBaseMapStyle(style)}
+                  >
+                    {t(`maps.workspace.baseMap.${style}`)}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <label className="form-control gap-2">
-                <span className="label-text">{t("maps.create.latitudeLabel")}</span>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="form-control gap-2.5">
+                <span className="label-text font-medium">{t("maps.create.latitudeLabel")}</span>
                 <input
                   className="input-bordered input w-full"
                   value={latitude}
@@ -308,8 +279,8 @@ export function MapWorkspaceControlsModal({ mapHandle }: MapWorkspaceControlsMod
                   inputMode="decimal"
                 />
               </label>
-              <label className="form-control gap-2">
-                <span className="label-text">{t("maps.create.longitudeLabel")}</span>
+              <label className="form-control gap-2.5">
+                <span className="label-text font-medium">{t("maps.create.longitudeLabel")}</span>
                 <input
                   className="input-bordered input w-full"
                   value={longitude}
@@ -319,21 +290,26 @@ export function MapWorkspaceControlsModal({ mapHandle }: MapWorkspaceControlsMod
               </label>
             </div>
 
-            <button type="button" className="btn btn-outline btn-sm" onClick={applyPinCoordinates}>
+            <button
+              type="button"
+              className="btn w-full btn-outline sm:w-auto"
+              onClick={applyPinCoordinates}
+            >
               {t("maps.workspace.applyCoordinates")}
             </button>
-          </section>
+          </ControlsSection>
 
-          <section className="flex flex-col gap-4 border-t border-base-content/10 pt-6">
-            <div>
-              <h3 className="text-sm font-semibold">{t("maps.workspace.pdfSection")}</h3>
-              <p className="mt-1 text-sm text-base-content/60">
-                {t("maps.workspace.pdfSectionHint")}
-              </p>
-            </div>
-
-            <label className="form-control gap-2">
-              <span className="label-text">{t("maps.workspace.pdfScale")}</span>
+          <ControlsSection
+            title={t("maps.workspace.pdfSection")}
+            hint={t("maps.workspace.pdfSectionHint")}
+          >
+            <label className="form-control gap-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="label-text font-medium">{t("maps.workspace.pdfScale")}</span>
+                <span className="font-mono text-xs text-base-content/60">
+                  {pdfScale.toFixed(2)}×
+                </span>
+              </div>
               <input
                 type="range"
                 min={0.25}
@@ -341,13 +317,15 @@ export function MapWorkspaceControlsModal({ mapHandle }: MapWorkspaceControlsMod
                 step={0.05}
                 value={pdfScale}
                 onChange={(event) => applyPdfTransform(Number(event.target.value), pdfRotation)}
-                className="range range-primary range-sm"
+                className="range range-primary"
               />
-              <span className="text-xs text-base-content/50">{pdfScale.toFixed(2)}×</span>
             </label>
 
-            <label className="form-control gap-2">
-              <span className="label-text">{t("maps.workspace.pdfRotation")}</span>
+            <label className="form-control gap-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="label-text font-medium">{t("maps.workspace.pdfRotation")}</span>
+                <span className="font-mono text-xs text-base-content/60">{pdfRotation}°</span>
+              </div>
               <input
                 type="range"
                 min={-180}
@@ -355,15 +333,118 @@ export function MapWorkspaceControlsModal({ mapHandle }: MapWorkspaceControlsMod
                 step={1}
                 value={pdfRotation}
                 onChange={(event) => applyPdfTransform(pdfScale, Number(event.target.value))}
-                className="range range-primary range-sm"
+                className="range range-primary"
               />
-              <span className="text-xs text-base-content/50">{pdfRotation}°</span>
             </label>
 
-            <button type="button" className="btn btn-outline btn-sm" onClick={resetPdfView}>
+            <button
+              type="button"
+              className="btn w-full btn-outline sm:w-auto"
+              onClick={resetPdfView}
+            >
               {t("maps.workspace.resetPdfView")}
             </button>
-          </section>
+          </ControlsSection>
+
+          <ControlsSection
+            title={t("maps.workspace.referencesSection")}
+            hint={t("maps.workspace.referencesSectionHint")}
+          >
+            {controlPoints.length === 0 ? (
+              <p className="rounded-box border border-dashed border-base-content/15 px-4 py-6 text-center text-sm text-base-content/60">
+                {t("maps.workspace.referencesEmpty")}
+              </p>
+            ) : (
+              <ul className="flex max-h-56 flex-col gap-3 overflow-y-auto pr-1">
+                {controlPoints.map((point, index) => (
+                  <li
+                    key={point.id}
+                    className="flex items-start justify-between gap-4 rounded-box border border-base-content/10 bg-base-100/40 px-4 py-3"
+                  >
+                    <div className="min-w-0 space-y-1 text-sm">
+                      <p className="font-medium">
+                        {t("maps.workspace.referenceItem", { index: index + 1 })}
+                      </p>
+                      <p className="font-mono text-xs text-base-content/60">
+                        PDF ({point.imageX.toFixed(1)}, {point.imageY.toFixed(1)})
+                      </p>
+                      <p className="font-mono text-xs text-base-content/60">
+                        Map ({point.latitude.toFixed(5)}, {point.longitude.toFixed(5)})
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn shrink-0 btn-ghost btn-sm"
+                      onClick={() =>
+                        void deleteControlPoint.mutateAsync({
+                          mapId: currentMapId,
+                          controlPointId: point.id,
+                        })
+                      }
+                    >
+                      {t("maps.workspace.deleteReference")}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </ControlsSection>
+
+          <ControlsSection
+            title={t("maps.workspace.tileCacheSection")}
+            hint={t("maps.workspace.tileCacheSectionHint")}
+          >
+            <p className="rounded-box bg-base-100/40 px-4 py-3 text-sm text-base-content/70">
+              {tileCache.data?.builtAt
+                ? `${tileCache.data.tileCount.toLocaleString()} tiles cached · ${tileCache.data.style}`
+                : t("maps.workspace.tileCacheMissing")}
+            </p>
+
+            <button
+              type="button"
+              className="btn w-full btn-outline sm:w-auto"
+              onClick={openTileCacheBounds}
+            >
+              {t("maps.workspace.configureTileCache")}
+            </button>
+          </ControlsSection>
+
+          <ControlsSection
+            title={t("maps.workspace.projectSection")}
+            hint={t("maps.workspace.projectSectionHint")}
+          >
+            <label className="form-control gap-2.5">
+              <span className="label-text font-medium">{t("maps.create.nameLabel")}</span>
+              <input
+                className="input-bordered input w-full"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                onBlur={saveProjectDetails}
+              />
+            </label>
+
+            <label className="form-control gap-2.5">
+              <span className="label-text font-medium">{t("maps.create.descriptionLabel")}</span>
+              <textarea
+                className="textarea-bordered textarea min-h-24 w-full"
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                onBlur={saveProjectDetails}
+                rows={3}
+              />
+            </label>
+
+            <label className="flex cursor-pointer flex-col gap-2.5">
+              <span className="label-text font-medium">{t("maps.workspace.replaceSource")}</span>
+              <input
+                type="file"
+                accept={acceptedTypes}
+                className="file-input-bordered file-input w-full"
+                onChange={(event) => void handleReplaceSource(event)}
+              />
+            </label>
+            {replaceError ? <p className="text-sm text-error">{replaceError}</p> : null}
+          </ControlsSection>
         </div>
       </div>
       <button type="button" className="modal-backdrop" onClick={closeControls} aria-hidden />

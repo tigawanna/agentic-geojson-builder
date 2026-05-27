@@ -10,6 +10,18 @@ import type {
   ReplaceMapSourceInput,
   UpdateMapWorkspaceInput,
 } from "./maps.types.js";
+import type {
+  ControlPointRecord,
+  ControlPointsChangedEvent,
+  CreateControlPointFromViewportPixelsInput,
+  CreateControlPointInput,
+  DeleteControlPointInput,
+  ImagePixelResult,
+  LonLatResult,
+  MapPanePixelInput,
+  PdfPanePixelInput,
+  UpdateControlPointInput,
+} from "./control-points.types.js";
 import type { McpStatus } from "./mcp.types.js";
 import type { AppMenuAction, ShowMapContextMenuInput } from "./menu.types.js";
 import type {
@@ -85,6 +97,27 @@ export interface IpcContract {
     res: GetRenderedMapViewResult;
   };
 
+  // --- Control points (PDF ↔ map references) -------------------------------
+  "controlPoints:list": { req: { mapId: number }; res: { controlPoints: ControlPointRecord[] } };
+  "controlPoints:create": {
+    req: CreateControlPointInput;
+    res: { controlPoint: ControlPointRecord };
+  };
+  "controlPoints:update": {
+    req: UpdateControlPointInput;
+    res: { controlPoint: ControlPointRecord };
+  };
+  "controlPoints:delete": { req: DeleteControlPointInput; res: { ok: true } };
+  "controlPoints:mapPanePixelToLonLat": { req: MapPanePixelInput; res: LonLatResult };
+  "controlPoints:pdfPanePixelToImageXY": { req: PdfPanePixelInput; res: ImagePixelResult };
+  "controlPoints:createFromViewportPixels": {
+    req: CreateControlPointFromViewportPixelsInput;
+    res: {
+      controlPoint: ControlPointRecord;
+      converted: ImagePixelResult & LonLatResult;
+    };
+  };
+
   // --- Local MCP server ------------------------------------------------------
   "mcp:getStatus": { req: void; res: McpStatus };
   "mcp:setEnabled": { req: { enabled: boolean }; res: McpStatus };
@@ -107,6 +140,7 @@ export interface IpcEventMap {
   "maps:changed": MapsChangedEvent;
   "tileCache:buildProgress": TileCacheBuildProgressEvent;
   "workspace:captureRequest": WorkspaceCaptureRequestEvent;
+  "controlPoints:changed": ControlPointsChangedEvent;
   "updater:status": {
     state: "checking" | "available" | "not-available" | "downloading" | "downloaded" | "error";
     version?: string;
