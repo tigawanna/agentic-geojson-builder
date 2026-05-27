@@ -1,21 +1,16 @@
-import { randomUUID } from "node:crypto";
 import type { Server } from "node:http";
 import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import type { Express } from "express";
 import log from "electron-log/main";
 import { createDesktopMcpServer } from "./create-desktop-mcp-server.js";
 
 const MCP_PATH = "/mcp";
 
-type ActiveTransport = StreamableHTTPServerTransport;
-
 let httpServer: Server | null = null;
 let expressApp: Express | null = null;
 let listeningPort: number | null = null;
 let startError: string | undefined;
-const transports = new Map<string, ActiveTransport>();
 
 function attachRoutes(app: Express): void {
   app.options(MCP_PATH, (_req, res) => {
@@ -23,59 +18,21 @@ function attachRoutes(app: Express): void {
   });
 
   app.post(MCP_PATH, async (req, res) => {
-    const sessionId = req.headers["mcp-session-id"];
-    let transport: ActiveTransport | undefined;
+    const server = createDesktopMcpServer();
 
     try {
-      if (typeof sessionId === "string" && transports.has(sessionId)) {
-        transport = transports.get(sessionId);
-      } else if (!sessionId && isInitializeRequest(req.body)) {
-        transport = new StreamableHTTPServerTransport({
-          sessionIdGenerator: () => randomUUID(),
-          enableJsonResponse: true,
-          onsessioninitialized: (nextSessionId) => {
-            if (transport) {
-              transports.set(nextSessionId, transport);
-            }
-          },
-        });
+      const transport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined,
+        enableJsonResponse: true,
+      });
 
-        transport.onclose = () => {
-          const closedSessionId = transport?.sessionId;
-          if (closedSessionId) {
-            transports.delete(closedSessionId);
-          }
-        };
-
-        const server = createDesktopMcpServer();
-        await server.connect(transport);
-        await transport.handleRequest(req, res, req.body);
-        return;
-      } else {
-        res.status(400).json({
-          jsonrpc: "2.0",
-          error: {
-            code: -32000,
-            message: "Bad Request: No valid session ID provided",
-          },
-          id: null,
-        });
-        return;
-      }
-
-      if (!transport) {
-        res.status(400).json({
-          jsonrpc: "2.0",
-          error: {
-            code: -32000,
-            message: "Bad Request: Unknown MCP session",
-          },
-          id: null,
-        });
-        return;
-      }
-
+      await server.connect(transport);
       await transport.handleRequest(req, res, req.body);
+
+      res.on("close", () => {
+        void transport.close();
+        void server.close();
+      });
     } catch (error) {
       log.error("[mcp] request failed", error);
       if (!res.headersSent) {
@@ -91,46 +48,33 @@ function attachRoutes(app: Express): void {
     }
   });
 
-  app.get(MCP_PATH, async (req, res) => {
-    const sessionId = req.headers["mcp-session-id"];
-    if (typeof sessionId !== "string" || !transports.has(sessionId)) {
-      res.status(400).send("Invalid or missing session ID");
-      return;
-    }
-
-    const transport = transports.get(sessionId);
-    if (!transport) {
-      res.status(400).send("Invalid or missing session ID");
-      return;
-    }
-
-    await transport.handleRequest(req, res);
+  app.get(MCP_PATH, (_req, res) => {
+    res
+      .status(405)
+      .set("Allow", "POST")
+      .json({
+        jsonrpc: "2.0",
+        error: {
+          code: -32000,
+          message: "Method not allowed.",
+        },
+        id: null,
+      });
   });
 
-  app.delete(MCP_PATH, async (req, res) => {
-    const sessionId = req.headers["mcp-session-id"];
-    if (typeof sessionId !== "string" || !transports.has(sessionId)) {
-      res.status(400).send("Invalid or missing session ID");
-      return;
-    }
-
-    const transport = transports.get(sessionId);
-    if (!transport) {
-      res.status(400).send("Invalid or missing session ID");
-      return;
-    }
-
-    await transport.handleRequest(req, res);
+  app.delete(MCP_PATH, (_req, res) => {
+    res
+      .status(405)
+      .set("Allow", "POST")
+      .json({
+        jsonrpc: "2.0",
+        error: {
+          code: -32000,
+          message: "Method not allowed.",
+        },
+        id: null,
+      });
   });
-}
-
-async function closeTransports(): Promise<void> {
-  await Promise.all(
-    [...transports.values()].map(async (transport) => {
-      await transport.close();
-    }),
-  );
-  transports.clear();
 }
 
 export function getMcpListenPort(): number | null {
@@ -172,8 +116,6 @@ export async function startMcpHttpServer(port: number): Promise<void> {
 }
 
 export async function stopMcpHttpServer(): Promise<void> {
-  await closeTransports();
-
   if (!httpServer) {
     listeningPort = null;
     startError = undefined;
