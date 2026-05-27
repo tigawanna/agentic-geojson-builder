@@ -31,6 +31,7 @@ type CreateMapWizardActions = {
   setLatitude: (latitude: string) => void;
   setLongitude: (longitude: string) => void;
   addCacheCorner: (corner: TileCacheCorner) => void;
+  updateCacheCorner: (index: number, corner: TileCacheCorner) => void;
   resetCacheCorners: () => void;
   setCacheStyle: (style: MapBaseMapStyle) => void;
   setBuildProgress: (progress: { completed: number; total: number } | null) => void;
@@ -76,9 +77,13 @@ export const useCreateMapWizardStore = create<CreateMapWizardState & CreateMapWi
     addCacheCorner: (corner) =>
       set((state) => ({
         cacheCorners:
-          state.cacheCorners.length >= 4
-            ? [...state.cacheCorners.slice(1), corner]
-            : [...state.cacheCorners, corner],
+          state.cacheCorners.length >= 4 ? state.cacheCorners : [...state.cacheCorners, corner],
+      })),
+    updateCacheCorner: (index, corner) =>
+      set((state) => ({
+        cacheCorners: state.cacheCorners.map((item, itemIndex) =>
+          itemIndex === index ? corner : item,
+        ),
       })),
     resetCacheCorners: () => set({ cacheCorners: [] }),
     setCacheStyle: (cacheStyle) => set({ cacheStyle }),

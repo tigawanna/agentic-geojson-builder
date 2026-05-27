@@ -1,4 +1,6 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { LocateFixed } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -10,16 +12,24 @@ import { copyMapCoordinates } from "../lib/copy-map-coordinates";
 import { workspaceToPdfTransform, pdfTransformToWorkspacePatch } from "../lib/pdf-view-transform";
 import type { MapHandle } from "../lib/map-handle";
 import { useWorkspacePersistence } from "../hooks/useWorkspacePersistence";
-import { useMapWorkspaceState, useMapWorkspaceUiActions } from "../store/MapWorkspaceProvider";
+import {
+  useMapWorkspaceState,
+  useMapWorkspaceUiActions,
+  useMapWorkspaceUiState,
+} from "../store/MapWorkspaceProvider";
 import { LeafletMapPane } from "./LeafletMapPane";
+import { MapTileCacheBoundsModal } from "./MapTileCacheBoundsModal";
 import { MapWorkspaceControlsModal } from "./MapWorkspaceControlsModal";
 import { MapWorkspaceHeader } from "./MapWorkspaceHeader";
 import { SourceDocumentPane } from "./SourceDocumentPane";
 
 export function MapWorkspaceSplitView() {
+  const { t } = useTranslation();
   const workspace = useMapWorkspaceState((state) => state.workspace);
   const sourceFile = useMapWorkspaceState((state) => state.sourceFile);
   const { openControls } = useMapWorkspaceUiActions();
+  const { setHomeViewport } = useMapWorkspaceUiActions();
+  const homeViewport = useMapWorkspaceUiState((state) => state.homeViewport);
   const { setCursorCoordinates, setSelectedCoordinates, setStatusMessage } =
     useMapWorkspaceUiActions();
   const { queueSave } = useWorkspacePersistence();
@@ -29,6 +39,20 @@ export function MapWorkspaceSplitView() {
   const localTileUrl = workspace
     ? resolveLocalTileUrl(workspace.id, workspace.baseMapStyle, tileCache.data)
     : null;
+
+  useEffect(() => {
+    if (!workspace) {
+      setHomeViewport(null);
+    }
+  }, [setHomeViewport, workspace?.id]);
+
+  const handleCenterMap = useCallback(() => {
+    if (!mapHandle || !homeViewport) {
+      return;
+    }
+
+    mapHandle.setViewport(homeViewport);
+  }, [homeViewport, mapHandle]);
 
   const handleViewportChange = useCallback(
     (viewport: { latitude: number; longitude: number; zoom: number }) => {
@@ -104,11 +128,22 @@ export function MapWorkspaceSplitView() {
               <span className="pointer-events-none absolute top-3 left-3 z-10 rounded-box bg-base-100/90 px-2 py-1 text-xs font-medium">
                 Base map
               </span>
+              <button
+                type="button"
+                className="btn absolute top-16 left-3 z-[1000] btn-square bg-base-100/90 shadow-sm btn-ghost btn-sm"
+                onClick={handleCenterMap}
+                disabled={!mapHandle || !homeViewport}
+                aria-label={t("maps.workspace.centerMap")}
+                title={t("maps.workspace.centerMap")}
+              >
+                <LocateFixed className="size-4" />
+              </button>
               <LeafletMapPane
                 workspace={workspace}
                 localTileUrl={localTileUrl}
                 tileCacheOverlay={tileCache.data?.bounds ?? null}
                 onReady={setMapHandle}
+                onInitialViewportReady={setHomeViewport}
                 onViewportChange={handleViewportChange}
                 onCursorMove={(coordinates) => setCursorCoordinates(coordinates)}
                 onCoordinateSelect={(coordinates) => {
@@ -121,6 +156,7 @@ export function MapWorkspaceSplitView() {
       </div>
 
       <MapWorkspaceControlsModal mapHandle={mapHandle} />
+      <MapTileCacheBoundsModal />
     </div>
   );
 }

@@ -19,7 +19,15 @@ export function MapWorkspaceHeader({ onOpenControls }: MapWorkspaceHeaderProps) 
     return null;
   }
 
-  const activeCoordinates = selectedCoordinates ?? cursorCoordinates;
+  const coordinateLine = selectedCoordinates
+    ? t("maps.workspace.selectedCoordinates", {
+        value: formatMapCoordinates(selectedCoordinates.latitude, selectedCoordinates.longitude),
+      })
+    : cursorCoordinates
+      ? t("maps.workspace.cursorCoordinates", {
+          value: formatMapCoordinates(cursorCoordinates.latitude, cursorCoordinates.longitude),
+        })
+      : t("maps.workspace.coordinatesIdle");
 
   return (
     <header className="flex items-start justify-between gap-4 border-b border-base-content/10 px-4 py-3">
@@ -34,27 +42,24 @@ export function MapWorkspaceHeader({ onOpenControls }: MapWorkspaceHeaderProps) 
 
         <div className="min-w-0 flex-1">
           <h1 className="truncate text-lg font-semibold">{workspace.name}</h1>
-          {workspace.description ? (
-            <p className="mt-1 text-sm text-base-content/60">{workspace.description}</p>
-          ) : null}
-          {activeCoordinates ? (
-            <p className="mt-2 font-mono text-xs text-base-content/50">
-              {selectedCoordinates
-                ? t("maps.workspace.selectedCoordinates", {
-                    value: formatMapCoordinates(
-                      selectedCoordinates.latitude,
-                      selectedCoordinates.longitude,
-                    ),
-                  })
-                : t("maps.workspace.cursorCoordinates", {
-                    value: formatMapCoordinates(
-                      cursorCoordinates!.latitude,
-                      cursorCoordinates!.longitude,
-                    ),
-                  })}
+          <div className="mt-1 min-h-5">
+            {workspace.description ? (
+              <p className="truncate text-sm text-base-content/60">{workspace.description}</p>
+            ) : (
+              <p className="text-sm opacity-0" aria-hidden>
+                —
+              </p>
+            )}
+          </div>
+          <div className="mt-2 min-h-10 space-y-1">
+            <p className="truncate font-mono text-xs text-base-content/50">{coordinateLine}</p>
+            <p
+              className={`truncate text-xs ${statusMessage ? "text-success" : "text-transparent"}`}
+              aria-live="polite"
+            >
+              {statusMessage ?? t("maps.workspace.statusIdle")}
             </p>
-          ) : null}
-          {statusMessage ? <p className="mt-1 text-xs text-success">{statusMessage}</p> : null}
+          </div>
         </div>
       </div>
 

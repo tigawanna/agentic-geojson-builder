@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useCreateMapProjectMutation } from "../hooks/useCreateMapProjectMutation";
 import { useCreateMapWizardStore } from "../store/create-map-wizard-store";
-import { WizardBoundsMap } from "./WizardBoundsMap";
+import { TileCacheBoundsPanel } from "./TileCacheBoundsPanel";
 
 export function CreateMapCacheBoundsStep() {
   const { t } = useTranslation();
@@ -15,6 +15,7 @@ export function CreateMapCacheBoundsStep() {
   const cacheStyle = useCreateMapWizardStore((state) => state.cacheStyle);
   const setStep = useCreateMapWizardStore((state) => state.setStep);
   const addCacheCorner = useCreateMapWizardStore((state) => state.addCacheCorner);
+  const updateCacheCorner = useCreateMapWizardStore((state) => state.updateCacheCorner);
   const resetCacheCorners = useCreateMapWizardStore((state) => state.resetCacheCorners);
   const setCacheStyle = useCreateMapWizardStore((state) => state.setCacheStyle);
 
@@ -25,39 +26,19 @@ export function CreateMapCacheBoundsStep() {
           {t("maps.create.stepCacheBounds")}
         </p>
         <h2 className="text-xl font-semibold">{t("maps.create.cacheBoundsHeading")}</h2>
-        <p className="text-sm leading-relaxed text-base-content/60">
-          {t("maps.create.cacheBoundsDescription")}
-        </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {(["satellite", "outline", "standard"] as const).map((style) => (
-          <button
-            key={style}
-            type="button"
-            className={`btn btn-sm ${cacheStyle === style ? "btn-primary" : "btn-outline"}`}
-            onClick={() => setCacheStyle(style)}
-          >
-            {t(`maps.create.baseMap.${style}`)}
-          </button>
-        ))}
-      </div>
-
-      <WizardBoundsMap
+      <TileCacheBoundsPanel
         corners={cacheCorners}
+        cacheStyle={cacheStyle}
         locationQuery={locationQuery}
         latitude={latitude}
         longitude={longitude}
-        style={cacheStyle}
+        onStyleChange={setCacheStyle}
         onCornerAdd={addCacheCorner}
+        onCornerMove={updateCacheCorner}
+        onResetCorners={resetCacheCorners}
       />
-
-      <div className="flex items-center justify-between text-sm text-base-content/70">
-        <span>{t("maps.create.cachePoints", { count: cacheCorners.length })}</span>
-        <button type="button" className="btn btn-ghost btn-xs" onClick={resetCacheCorners}>
-          {t("maps.create.resetPoints")}
-        </button>
-      </div>
 
       <div className="flex gap-3 pt-2">
         <button type="button" className="btn flex-1 btn-outline" onClick={() => setStep("details")}>

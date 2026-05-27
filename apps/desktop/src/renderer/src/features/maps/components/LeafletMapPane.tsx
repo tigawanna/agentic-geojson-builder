@@ -15,6 +15,7 @@ type LeafletMapPaneProps = {
   localTileUrl?: string | null;
   tileCacheOverlay?: TileCacheBounds | null;
   onReady: (handle: MapHandle) => void;
+  onInitialViewportReady?: (viewport: MapViewport) => void;
   onViewportChange: (viewport: MapViewport) => void;
   onCursorMove: (coordinates: { latitude: number; longitude: number } | null) => void;
   onCoordinateSelect: (viewport: MapViewport) => void;
@@ -25,6 +26,7 @@ export function LeafletMapPane({
   localTileUrl,
   tileCacheOverlay,
   onReady,
+  onInitialViewportReady,
   onViewportChange,
   onCursorMove,
   onCoordinateSelect,
@@ -35,12 +37,15 @@ export function LeafletMapPane({
   const overlayRef = useRef<import("leaflet").Rectangle | null>(null);
   const suppressViewportSyncRef = useRef(false);
   const onReadyRef = useRef(onReady);
+  const onInitialViewportReadyRef = useRef(onInitialViewportReady);
   const onViewportChangeRef = useRef(onViewportChange);
   const onCursorMoveRef = useRef(onCursorMove);
   const onCoordinateSelectRef = useRef(onCoordinateSelect);
   const geocodedRef = useRef(false);
+  const initialViewportCapturedRef = useRef(false);
 
   onReadyRef.current = onReady;
+  onInitialViewportReadyRef.current = onInitialViewportReady;
   onViewportChangeRef.current = onViewportChange;
   onCursorMoveRef.current = onCursorMove;
   onCoordinateSelectRef.current = onCoordinateSelect;
@@ -93,6 +98,20 @@ export function LeafletMapPane({
       });
       onReadyRef.current(handle);
 
+      function captureInitialViewport() {
+        if (initialViewportCapturedRef.current) {
+          return;
+        }
+
+        initialViewportCapturedRef.current = true;
+        const center = map.getCenter();
+        onInitialViewportReadyRef.current?.({
+          latitude: center.lat,
+          longitude: center.lng,
+          zoom: map.getZoom(),
+        });
+      }
+
       map.on("moveend", emitViewportChange);
       map.on("zoomend", emitViewportChange);
       map.on("mousemove", (event) => {
@@ -114,7 +133,11 @@ export function LeafletMapPane({
 
       if (workspace.locationQuery.trim() && !geocodedRef.current) {
         geocodedRef.current = true;
-        void handle.panToQuery(workspace.locationQuery.trim());
+        void handle.panToQuery(workspace.locationQuery.trim()).finally(() => {
+          captureInitialViewport();
+        });
+      } else {
+        captureInitialViewport();
       }
 
       const observer = new ResizeObserver(() => map.invalidateSize());
@@ -131,6 +154,7 @@ export function LeafletMapPane({
       baseLayerRef.current = null;
       overlayRef.current = null;
       geocodedRef.current = false;
+      initialViewportCapturedRef.current = false;
     };
   }, [workspace.id]);
 

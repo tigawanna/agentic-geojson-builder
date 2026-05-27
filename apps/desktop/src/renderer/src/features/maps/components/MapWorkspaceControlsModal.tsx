@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MapBaseMapStyle } from "@shared/maps.types";
 import { useReplaceMapSourceMutation } from "../hooks/useReplaceMapSourceMutation";
+import { useTileCacheStatusQuery } from "../hooks/useTileCacheStatusQuery";
 import { useWorkspacePersistence } from "../hooks/useWorkspacePersistence";
 import { defaultPdfTransform } from "../lib/pdf-view-transform";
 import {
@@ -33,8 +34,10 @@ export function MapWorkspaceControlsModal({ mapHandle }: MapWorkspaceControlsMod
   const mapId = useMapWorkspaceState((state) => state.mapId);
   const isOpen = useMapWorkspaceUiState((state) => state.controlsOpen);
   const closeControls = useMapWorkspaceUiActions().closeControls;
+  const openTileCacheBounds = useMapWorkspaceUiActions().openTileCacheBounds;
   const { queueSave } = useWorkspacePersistence();
   const replaceSource = useReplaceMapSourceMutation();
+  const tileCache = useTileCacheStatusQuery(mapId);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -231,6 +234,25 @@ export function MapWorkspaceControlsModal({ mapHandle }: MapWorkspaceControlsMod
               />
             </label>
             {replaceError ? <p className="text-sm text-error">{replaceError}</p> : null}
+          </section>
+
+          <section className="flex flex-col gap-4 border-t border-base-content/10 pt-6">
+            <div>
+              <h3 className="text-sm font-semibold">{t("maps.workspace.tileCacheSection")}</h3>
+              <p className="mt-1 text-sm text-base-content/60">
+                {t("maps.workspace.tileCacheSectionHint")}
+              </p>
+            </div>
+
+            <p className="text-sm text-base-content/70">
+              {tileCache.data?.builtAt
+                ? `${tileCache.data.tileCount.toLocaleString()} tiles cached · ${tileCache.data.style}`
+                : t("maps.workspace.tileCacheMissing")}
+            </p>
+
+            <button type="button" className="btn btn-outline btn-sm" onClick={openTileCacheBounds}>
+              {t("maps.workspace.configureTileCache")}
+            </button>
           </section>
 
           <section className="flex flex-col gap-4 border-t border-base-content/10 pt-6">

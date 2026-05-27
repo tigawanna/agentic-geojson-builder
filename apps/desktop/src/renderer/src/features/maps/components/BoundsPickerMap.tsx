@@ -4,30 +4,39 @@ import type { MapBaseMapStyle } from "@shared/maps.types";
 import type { TileCacheCorner } from "@shared/tile-cache.types";
 import { createBaseLayer, DEFAULT_MAP_VIEWPORT, geocodePlace } from "../lib/map-handle";
 
-type WizardBoundsMapProps = {
+type BoundsPickerMapProps = {
   corners: TileCacheCorner[];
   locationQuery: string;
   latitude: string;
   longitude: string;
   style: MapBaseMapStyle;
   onCornerAdd: (corner: TileCacheCorner) => void;
+  onCornerMove: (index: number, corner: TileCacheCorner) => void;
+  mapHeightClassName?: string;
 };
 
-export function WizardBoundsMap({
+export function BoundsPickerMap({
   corners,
   locationQuery,
   latitude,
   longitude,
   style,
   onCornerAdd,
-}: WizardBoundsMapProps) {
+  onCornerMove,
+  mapHeightClassName = "h-72",
+}: BoundsPickerMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
+  const baseLayerRef = useRef<import("leaflet").TileLayer | null>(null);
   const markersLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const overlayRef = useRef<import("leaflet").Rectangle | null>(null);
   const onCornerAddRef = useRef(onCornerAdd);
+  const onCornerMoveRef = useRef(onCornerMove);
+  const cornersCountRef = useRef(corners.length);
 
   onCornerAddRef.current = onCornerAdd;
+  onCornerMoveRef.current = onCornerMove;
+  cornersCountRef.current = corners.length;
 
   const previewBounds = useMemo(() => {
     if (corners.length !== 4) {
@@ -62,7 +71,7 @@ export function WizardBoundsMap({
         doubleClickZoom: false,
       });
 
-      createBaseLayer(L, style).addTo(map);
+      baseLayerRef.current = createBaseLayer(L, style).addTo(map);
       markersLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
 
@@ -76,6 +85,10 @@ export function WizardBoundsMap({
       }
 
       map.on("click", (event) => {
+        if (cornersCountRef.current >= 4) {
+          return;
+        }
+
         onCornerAddRef.current({
           latitude: event.latlng.lat,
           longitude: event.latlng.lng,
@@ -93,10 +106,26 @@ export function WizardBoundsMap({
       void cleanupPromise.then((cleanup) => cleanup?.());
       mapRef.current?.remove();
       mapRef.current = null;
+      baseLayerRef.current = null;
       markersLayerRef.current = null;
       overlayRef.current = null;
     };
-  }, [latitude, locationQuery, longitude, style]);
+  }, [latitude, locationQuery, longitude]);
+
+  useEffect(() => {
+    async function swapBaseLayer() {
+      const map = mapRef.current;
+      if (!map) {
+        return;
+      }
+
+      const L = await import("leaflet");
+      baseLayerRef.current?.remove();
+      baseLayerRef.current = createBaseLayer(L, style).addTo(map);
+    }
+
+    void swapBaseLayer();
+  }, [style]);
 
   useEffect(() => {
     async function updateMarkers() {
@@ -111,15 +140,27 @@ export function WizardBoundsMap({
       overlayRef.current?.remove();
 
       corners.forEach((corner, index) => {
-        L.circleMarker([corner.latitude, corner.longitude], {
-          radius: 8,
-          color: "#ffffff",
-          weight: 2,
-          fillColor: "#16a34a",
-          fillOpacity: 1,
-        })
-          .bindTooltip(String(index + 1), { permanent: true, direction: "top", offset: [0, -8] })
-          .addTo(markersLayer);
+        const icon = L.divIcon({
+          className: "",
+          html: `<div style="width:28px;height:28px;border-radius:9999px;background:#16a34a;border:2px solid white;color:white;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,0.35);cursor:grab;">${index + 1}</div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+        });
+
+        const marker = L.marker([corner.latitude, corner.longitude], {
+          icon,
+          draggable: true,
+        });
+
+        marker.on("dragend", () => {
+          const position = marker.getLatLng();
+          onCornerMoveRef.current(index, {
+            latitude: position.lat,
+            longitude: position.lng,
+          });
+        });
+
+        marker.addTo(markersLayer);
       });
 
       if (corners.length === 4 && previewBounds) {
@@ -145,7 +186,7 @@ export function WizardBoundsMap({
     <div className="space-y-2">
       <div
         ref={containerRef}
-        className="h-72 w-full overflow-hidden rounded-box border border-base-content/10"
+        className={`${mapHeightClassName} w-full overflow-hidden rounded-box border border-base-content/10`}
       />
       {estimatedTiles != null ? (
         <p className="text-xs text-base-content/60">

@@ -6,8 +6,12 @@ export type MapCoordinates = {
   longitude: number;
 };
 
+import type { MapViewport } from "../lib/map-handle";
+
 type MapWorkspaceUiState = {
   controlsOpen: boolean;
+  tileCacheBoundsOpen: boolean;
+  homeViewport: MapViewport | null;
   cursorCoordinates: MapCoordinates | null;
   selectedCoordinates: MapCoordinates | null;
   statusMessage: string | null;
@@ -16,6 +20,9 @@ type MapWorkspaceUiState = {
 type MapWorkspaceUiActions = {
   openControls: () => void;
   closeControls: () => void;
+  openTileCacheBounds: () => void;
+  closeTileCacheBounds: () => void;
+  setHomeViewport: (viewport: MapViewport | null) => void;
   setCursorCoordinates: (coordinates: MapCoordinates | null) => void;
   setSelectedCoordinates: (coordinates: MapCoordinates | null) => void;
   setStatusMessage: (message: string | null) => void;
@@ -26,6 +33,8 @@ export type MapWorkspaceUiStore = StoreApi<MapWorkspaceUiState & MapWorkspaceUiA
 
 const initialState: MapWorkspaceUiState = {
   controlsOpen: false,
+  tileCacheBoundsOpen: false,
+  homeViewport: null,
   cursorCoordinates: null,
   selectedCoordinates: null,
   statusMessage: null,
@@ -36,6 +45,9 @@ export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
     ...initialState,
     openControls: () => set({ controlsOpen: true }),
     closeControls: () => set({ controlsOpen: false }),
+    openTileCacheBounds: () => set({ tileCacheBoundsOpen: true, controlsOpen: false }),
+    closeTileCacheBounds: () => set({ tileCacheBoundsOpen: false }),
+    setHomeViewport: (homeViewport) => set({ homeViewport }),
     setCursorCoordinates: (cursorCoordinates) => set({ cursorCoordinates }),
     setSelectedCoordinates: (selectedCoordinates) => set({ selectedCoordinates }),
     setStatusMessage: (statusMessage) => set({ statusMessage }),
