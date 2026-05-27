@@ -5,7 +5,7 @@ import type { ControlPointRecord } from "@shared/control-points.types";
 import type { MapSourceFilePayload } from "@shared/maps.types";
 import { fileBase64ToDataUrl } from "../hooks/map-workspace-api";
 import { clampPdfScale, PDF_RENDER_SCALE, type PdfViewTransform } from "../lib/pdf-view-transform";
-import { getImageCoordinatesFromClick } from "../lib/pdf-image-coordinates";
+import { getImageCoordinatesFromPointer } from "../lib/pdf-image-coordinates";
 import { isPickModifierEvent, usePickModifierHeld } from "../lib/pick-modifier";
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
@@ -39,6 +39,7 @@ export function SourceDocumentPane({
   onCaptureReady,
 }: SourceDocumentPaneProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const imageRef = useRef<HTMLImageElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<{
     pointerId: number;
@@ -217,13 +218,17 @@ export function SourceDocumentPane({
     }
   }
 
+  function getSourceElement(): HTMLCanvasElement | HTMLImageElement | null {
+    return canvasRef.current ?? imageRef.current;
+  }
+
   function handleCanvasClick(event: React.MouseEvent<HTMLCanvasElement>) {
     if (!canPickPdfPoint || !canvasRef.current || !isPickModifierEvent(event)) {
       return;
     }
 
     event.stopPropagation();
-    const coords = getImageCoordinatesFromClick(canvasRef.current, event);
+    const coords = getImageCoordinatesFromPointer(canvasRef.current, event.clientX, event.clientY);
     onPdfLocationPick?.(coords.imageX, coords.imageY);
   }
 
@@ -231,6 +236,14 @@ export function SourceDocumentPane({
     event: React.PointerEvent<HTMLDivElement>,
     controlPointId: number,
   ) {
+    if (event.button !== 0) {
+      return;
+    }
+
+    if (canPickPdfPoint && isPickModifierEvent(event)) {
+      return;
+    }
+
     event.stopPropagation();
     markerDragRef.current = { pointerId: event.pointerId, controlPointId };
     setIsDraggingMarker(true);
@@ -239,30 +252,26 @@ export function SourceDocumentPane({
 
   function handleMarkerPointerMove(event: React.PointerEvent<HTMLDivElement>) {
     const drag = markerDragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId || !canvasRef.current) {
+    const sourceElement = getSourceElement();
+    if (!drag || drag.pointerId !== event.pointerId || !sourceElement) {
       return;
     }
 
     event.stopPropagation();
-    const coords = getImageCoordinatesFromClick(canvasRef.current, event);
+    const coords = getImageCoordinatesFromPointer(sourceElement, event.clientX, event.clientY);
     setPdfDragPreview({ id: drag.controlPointId, imageX: coords.imageX, imageY: coords.imageY });
   }
 
   function handleMarkerPointerUp(event: React.PointerEvent<HTMLDivElement>) {
     const drag = markerDragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) {
+    const sourceElement = getSourceElement();
+    if (!drag || drag.pointerId !== event.pointerId || !sourceElement) {
       return;
     }
 
     event.stopPropagation();
-    if (pdfDragPreview && pdfDragPreview.id === drag.controlPointId) {
-      onControlPointPdfMoveRef.current?.(
-        drag.controlPointId,
-        pdfDragPreview.imageX,
-        pdfDragPreview.imageY,
-      );
-    }
-
+    const coords = getImageCoordinatesFromPointer(sourceElement, event.clientX, event.clientY);
+    onControlPointPdfMoveRef.current?.(drag.controlPointId, coords.imageX, coords.imageY);
     markerDragRef.current = null;
     setIsDraggingMarker(false);
     setPdfDragPreview(null);
@@ -283,6 +292,7 @@ export function SourceDocumentPane({
   ) : (
     imageUrl && (
       <img
+        ref={imageRef}
         src={imageUrl}
         alt={sourceFile.fileName}
         draggable={false}
@@ -290,10 +300,17 @@ export function SourceDocumentPane({
           canPickPdfPoint ? "pointer-events-auto cursor-crosshair" : "pointer-events-none"
         }`}
         onClick={(event) => {
-          if (!canPickPdfPoint || !isPickModifierEvent(event)) {
+          if (!canPickPdfPoint || !imageRef.current || !isPickModifierEvent(event)) {
             return;
           }
-          onPdfLocationPick?.(event.nativeEvent.offsetX, event.nativeEvent.offsetY);
+
+          event.stopPropagation();
+          const coords = getImageCoordinatesFromPointer(
+            imageRef.current,
+            event.clientX,
+            event.clientY,
+          );
+          onPdfLocationPick?.(coords.imageX, coords.imageY);
         }}
       />
     )
@@ -323,32 +340,28 @@ export function SourceDocumentPane({
           }}
         >
           {content}
-          {isPdf
-            ? controlPoints.map((point, index) => {
-                const displayX =
-                  pdfDragPreview?.id === point.id ? pdfDragPreview.imageX : point.imageX;
-                const displayY =
-                  pdfDragPreview?.id === point.id ? pdfDragPreview.imageY : point.imageY;
+          {controlPoints.map((point, index) => {
+            const displayX = pdfDragPreview?.id === point.id ? pdfDragPreview.imageX : point.imageX;
+            const displayY = pdfDragPreview?.id === point.id ? pdfDragPreview.imageY : point.imageY;
 
-                return (
-                  <div
-                    key={point.id}
-                    className={`absolute flex -translate-x-1/2 -translate-y-1/2 touch-none items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white select-none ${
-                      selectedControlPointId === point.id
-                        ? "size-5 cursor-grab bg-blue-600 active:cursor-grabbing"
-                        : "size-4 cursor-grab bg-primary active:cursor-grabbing"
-                    }`}
-                    style={{ left: displayX, top: displayY }}
-                    onPointerDown={(event) => handleMarkerPointerDown(event, point.id)}
-                    onPointerMove={handleMarkerPointerMove}
-                    onPointerUp={handleMarkerPointerUp}
-                    onPointerCancel={handleMarkerPointerUp}
-                  >
-                    {index + 1}
-                  </div>
-                );
-              })
-            : null}
+            return (
+              <div
+                key={point.id}
+                className={`pointer-events-auto absolute flex -translate-x-1/2 -translate-y-1/2 touch-none items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white select-none ${
+                  selectedControlPointId === point.id
+                    ? "z-10 size-5 cursor-grab bg-blue-600 active:cursor-grabbing"
+                    : "size-4 cursor-grab bg-primary active:cursor-grabbing"
+                }`}
+                style={{ left: displayX, top: displayY }}
+                onPointerDown={(event) => handleMarkerPointerDown(event, point.id)}
+                onPointerMove={handleMarkerPointerMove}
+                onPointerUp={handleMarkerPointerUp}
+                onPointerCancel={handleMarkerPointerUp}
+              >
+                {index + 1}
+              </div>
+            );
+          })}
         </div>
       </div>
       {referenceMode ? (
