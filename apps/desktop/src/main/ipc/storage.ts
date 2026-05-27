@@ -19,8 +19,4 @@ export const storageHandlers: { [K in IpcChannel]?: Handler<K> } = {
     await storage.clear();
     return { ok: true as const };
   },
-  "db:run": async ({ sql, params }) =>
-    storage.run?.(sql, params) ?? { changes: 0, lastInsertRowid: 0 },
-  "db:all": async ({ sql, params }) => storage.all?.(sql, params) ?? [],
-  "db:get": async ({ sql, params }) => storage.getRow?.(sql, params),
 };

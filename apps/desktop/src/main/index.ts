@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import log from "electron-log/main";
 import { registerIpcHandlers } from "./ipc/index.js";
+import { initPgliteDb } from "./lib/pglite/client.js";
 import { initUpdater } from "./updater.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,6 +55,7 @@ function createWindow(): BrowserWindow {
 }
 
 app.whenReady().then(async () => {
+  await initPgliteDb();
   registerIpcHandlers();
 
   mainWindow = createWindow();

@@ -13,10 +13,12 @@ files:
 
 asar: true
 asarUnpack:
-  # better-sqlite3 native .node files can't live inside asar
-  - node_modules/better-sqlite3/**/*
+  - node_modules/@electric-sql/pglite/**/*
+  - node_modules/@electric-sql/pglite-postgis/**/*
 
-extraResources: []
+extraResources:
+  - from: drizzle-pglite/migrations
+    to: drizzle-pglite/migrations
 
 # --- Publish -----------------------------------------------------------------
 publish:

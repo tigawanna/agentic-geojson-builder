@@ -2,6 +2,7 @@ import { app, ipcMain } from "electron";
 import log from "electron-log/main";
 import type { IpcChannel, IpcRequest, IpcResponse } from "../../shared/ipc-contract.js";
 import { storageHandlers } from "./storage.js";
+import { pgliteHandlers } from "./pglite.js";
 import { updaterHandlers } from "./updater.js";
 
 /**
@@ -37,6 +38,7 @@ export function registerIpcHandlers(): void {
     "app:getVersion": () => app.getVersion(),
     "app:getPlatform": () => process.platform,
     ...storageHandlers,
+    ...pgliteHandlers,
     ...updaterHandlers,
   };
 

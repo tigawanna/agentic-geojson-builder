@@ -26,6 +26,7 @@ export interface IpcContract {
   };
   "db:all": { req: { sql: string; params?: unknown[] }; res: unknown[] };
   "db:get": { req: { sql: string; params?: unknown[] }; res: unknown };
+  "db:ping": { req: void; res: { ok: boolean } };
 
   // --- Auto updater ---------------------------------------------------------
   "updater:check": { req: void; res: { updateAvailable: boolean; version?: string } };
