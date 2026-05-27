@@ -8,6 +8,8 @@ import type { StorageBackend } from "./types.js";
 export interface AppSettings {
   theme: "light" | "dark" | "system";
   language: string;
+  mcpEnabled: boolean;
+  mcpPort: number;
   kv: Record<string, unknown>;
 }
 
@@ -16,6 +18,8 @@ const store = new Store<AppSettings>({
   defaults: {
     theme: "system",
     language: "en",
+    mcpEnabled: true,
+    mcpPort: 3847,
     kv: {},
   },
 });

@@ -56,6 +56,18 @@
     "clear": "Clear",
     "saved": "Saved."
   },
+  "settings.mcp": {
+    "heading": "Local MCP server",
+    "description": "Expose local PGlite tools over streamable HTTP on localhost. No authentication — only enable if you trust clients on this machine.",
+    "enabled": "Enabled",
+    "status": "Status",
+    "running": "Running",
+    "stopped": "Stopped",
+    "endpoint": "Endpoint",
+    "cursorConfig": "Cursor / VS Code config",
+    "copy": "Copy config",
+    "copied": "Copied"
+  },
   "theme": {
     "light": "Light",
     "dark": "Dark",

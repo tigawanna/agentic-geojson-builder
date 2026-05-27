@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import log from "electron-log/main";
 import { registerIpcHandlers } from "./ipc/index.js";
 import { initPgliteDb } from "./lib/pglite/client.js";
+import { initMcpServer, shutdownMcpServer } from "./mcp/index.js";
 import { initUpdater } from "./updater.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -39,24 +40,25 @@ function createWindow(): BrowserWindow {
   win.on("ready-to-show", () => win.show());
 
   win.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    void shell.openExternal(url);
     return { action: "deny" };
   });
 
   const devUrl = process.env["ELECTRON_RENDERER_URL"];
   if (!app.isPackaged && devUrl) {
-    win.loadURL(devUrl);
+    void win.loadURL(devUrl);
     win.webContents.openDevTools({ mode: "detach" });
   } else {
-    win.loadFile(join(__dirname, "../renderer/index.html"));
+    void win.loadFile(join(__dirname, "../renderer/index.html"));
   }
 
   return win;
 }
 
-app.whenReady().then(async () => {
+void app.whenReady().then(async () => {
   await initPgliteDb();
   registerIpcHandlers();
+  await initMcpServer();
 
   mainWindow = createWindow();
 
@@ -73,6 +75,10 @@ app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {
     app.quit();
   }
+});
+
+app.on("before-quit", () => {
+  void shutdownMcpServer();
 });
 
 process.on("uncaughtException", (err) => {

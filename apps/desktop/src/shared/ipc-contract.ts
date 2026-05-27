@@ -1,4 +1,5 @@
 import type { CreateMapInput, MapListItem, MapsChangedEvent } from "./maps.types.js";
+import type { McpStatus } from "./mcp.types.js";
 
 /**
  * Single source of truth for every IPC channel in the app.
@@ -33,6 +34,10 @@ export interface IpcContract {
   // --- Maps (PGlite domain) --------------------------------------------------
   "maps:list": { req: void; res: MapListItem[] };
   "maps:create": { req: CreateMapInput; res: MapListItem };
+
+  // --- Local MCP server ------------------------------------------------------
+  "mcp:getStatus": { req: void; res: McpStatus };
+  "mcp:setEnabled": { req: { enabled: boolean }; res: McpStatus };
 
   // --- Auto updater ---------------------------------------------------------
   "updater:check": { req: void; res: { updateAvailable: boolean; version?: string } };
