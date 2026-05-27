@@ -20,8 +20,7 @@
     "package:mac": "pnpm run build && electron-builder --mac --publish never",
     "package:win": "pnpm run build && electron-builder --win --publish never",
     "package:linux": "pnpm run build && electron-builder --linux --publish never",
-    "release": "pnpm run build && electron-builder --publish always",
-    "postinstall": "electron-builder install-app-deps"
+    "release": "pnpm run build && electron-builder --publish always"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.62.7",
@@ -53,8 +52,8 @@
     "oxlint": "^1.62.0",
     "tailwindcss": "^4.0.0",
     "typescript": "catalog:",
-    "vite": "catalog:",
-    "vitest": "catalog:"
+    "vite": "^7.0.0",
+    "vitest": "^3.0.0"
   },
   "engines": {
     "node": ">=20.19.0"
