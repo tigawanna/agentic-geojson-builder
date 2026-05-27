@@ -69,6 +69,8 @@ See the [`docs/`](./docs) folder:
 8. [Auto-update](./docs/08-auto-update.md)
 9. [Migrating from ERB](./docs/10-migration-from-erb.md)
 
+**Map workspace / PGlite / MCP handoff:** [`docs/desktop-app-handoff.md`](../../docs/desktop-app-handoff.md) (repo root)
+
 ## License
 
 MIT

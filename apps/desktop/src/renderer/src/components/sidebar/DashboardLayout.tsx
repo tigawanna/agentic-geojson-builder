@@ -1,4 +1,4 @@
-import { Outlet } from "@tanstack/react-router";
+import { Outlet, useRouterState } from "@tanstack/react-router";
 import { usePageTitle } from "../../hooks/usePageTitle";
 import { AppConfig } from "../../utils/system";
 import { UpdateToast } from "../UpdateToast";
@@ -9,6 +9,12 @@ import { SidebarProvider, useSidebar } from "./SidebarProvider";
 function DashboardShell() {
   const { toggleSidebar, isCollapsed } = useSidebar();
   const pageTitle = usePageTitle();
+  const isFullWidth = useRouterState({
+    select: (state) => {
+      const path = state.location.pathname.replace(/\/$/, "") || "/";
+      return /^\/maps\/[^/]+$/.test(path) && path !== "/maps/new";
+    },
+  });
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-base-100 text-base-content">
@@ -28,8 +34,12 @@ function DashboardShell() {
           </div>
         </header>
 
-        <main className="no-drag min-h-0 flex-1 overflow-y-auto">
-          <div className="mx-auto w-full max-w-5xl px-6 py-8 pb-12 lg:px-10">
+        <main
+          className={`no-drag min-h-0 flex-1 ${isFullWidth ? "overflow-hidden" : "overflow-y-auto"}`}
+        >
+          <div
+            className={isFullWidth ? "h-full" : "mx-auto w-full max-w-5xl px-6 py-8 pb-12 lg:px-10"}
+          >
             <Outlet />
           </div>
         </main>

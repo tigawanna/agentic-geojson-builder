@@ -5,6 +5,7 @@
   },
   "nav": {
     "home": "Home",
+    "maps": "Maps",
     "posts": "Posts",
     "settings": "Settings",
     "about": "About"
@@ -35,6 +36,44 @@
         "emit": "Main → renderer: maps:changed event broadcast",
         "invalidate": "Renderer: event listener invalidates maps:list query"
       }
+    },
+    "list": {
+      "heading": "Maps",
+      "description": "Open a map workspace or start a new georeferencing project.",
+      "create": "New map project",
+      "loading": "Loading maps…",
+      "error": "Could not load maps.",
+      "empty": "No maps yet."
+    },
+    "create": {
+      "heading": "New map project",
+      "description": "Upload a PDF or image, add details, and we will prepare your split workspace.",
+      "stepUpload": "Step 1 of 2",
+      "stepDetails": "Step 2 of 2",
+      "uploadHeading": "Load your map sheet",
+      "uploadDescription": "Choose a PDF or image of the trail map you want to georeference.",
+      "detailsHeading": "Project details",
+      "detailsDescription": "Add a name and optional location hints so we can find the right place on the base map.",
+      "fileLabel": "Map image or PDF",
+      "fileDropLabel": "Choose a PDF or image",
+      "fileHint": "PDF, PNG, JPEG, or WebP",
+      "selectedFile": "Source file: {{name}}",
+      "continue": "Continue",
+      "back": "Back",
+      "close": "Close",
+      "processingHeading": "Preparing workspace…",
+      "processingDescription": "Saving your file and opening the split map view.",
+      "nameLabel": "Name",
+      "namePlaceholder": "Samburu trail map",
+      "descriptionLabel": "Description (optional)",
+      "descriptionPlaceholder": "Short notes about this map sheet",
+      "locationLabel": "Location keywords (optional)",
+      "locationPlaceholder": "Samburu National Reserve, Kenya",
+      "latitudeLabel": "Latitude (optional)",
+      "longitudeLabel": "Longitude (optional)",
+      "submit": "Create workspace",
+      "processing": "Creating workspace…",
+      "error": "Could not create the map project."
     }
   },
   "posts": {

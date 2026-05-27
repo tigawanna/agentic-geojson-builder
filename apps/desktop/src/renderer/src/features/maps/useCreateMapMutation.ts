@@ -20,6 +20,8 @@ export function useCreateMapMutation() {
       const optimistic: MapListItem = {
         id: tempId,
         name: input.name?.trim() || "Untitled map",
+        description: null,
+        locationQuery: null,
         updatedAt: new Date().toISOString(),
       };
 

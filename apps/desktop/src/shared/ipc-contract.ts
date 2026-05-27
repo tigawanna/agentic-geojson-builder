@@ -1,4 +1,11 @@
-import type { CreateMapInput, MapListItem, MapsChangedEvent } from "./maps.types.js";
+import type {
+  CreateMapInput,
+  CreateMapProjectInput,
+  MapListItem,
+  MapSourceFilePayload,
+  MapWorkspaceState,
+  MapsChangedEvent,
+} from "./maps.types.js";
 import type { McpStatus } from "./mcp.types.js";
 
 /**
@@ -34,6 +41,9 @@ export interface IpcContract {
   // --- Maps (PGlite domain) --------------------------------------------------
   "maps:list": { req: void; res: MapListItem[] };
   "maps:create": { req: CreateMapInput; res: MapListItem };
+  "maps:createProject": { req: CreateMapProjectInput; res: MapWorkspaceState };
+  "maps:getWorkspace": { req: { mapId: number }; res: MapWorkspaceState | null };
+  "maps:readSource": { req: { mapId: number }; res: MapSourceFilePayload | null };
 
   // --- Local MCP server ------------------------------------------------------
   "mcp:getStatus": { req: void; res: McpStatus };

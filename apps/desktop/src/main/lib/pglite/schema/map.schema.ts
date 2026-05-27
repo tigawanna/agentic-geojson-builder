@@ -4,6 +4,8 @@ import { bytea } from "./bytea";
 export const mapTable = pgTable("map", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   name: varchar({ length: 255 }).notNull(),
+  description: varchar({ length: 1024 }),
+  folderPath: varchar("folder_path", { length: 1024 }),
   locationQuery: varchar("location_query", { length: 512 }),
   mapCenterLat: real("map_center_lat"),
   mapCenterLng: real("map_center_lng"),
