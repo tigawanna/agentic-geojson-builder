@@ -20,6 +20,12 @@ import type {
   SetTileCacheBoundsInput,
   TileCacheBuildProgressEvent,
 } from "./tile-cache.types.js";
+import type {
+  GetRenderedMapViewResult,
+  RenderedMapView,
+  WorkspaceCaptureRequestEvent,
+  WorkspaceCaptureResponseInput,
+} from "./rendered-map-view.types.js";
 
 /**
  * Single source of truth for every IPC channel in the app.
@@ -70,6 +76,15 @@ export interface IpcContract {
   "tileCache:build": { req: { mapId: number }; res: BuildTileCacheResult };
   "tileCache:getSectorView": { req: GetMapSectorViewInput; res: MapSectorViewResult };
 
+  // --- Workspace snapshots (PDF + map pane capture) -------------------------
+  "workspace:captureResponse": { req: WorkspaceCaptureResponseInput; res: { ok: true } };
+  "workspace:saveRenderedView": { req: { snapshot: RenderedMapView }; res: { ok: true } };
+  "workspace:getRenderedView": { req: { mapId: number }; res: GetRenderedMapViewResult };
+  "workspace:requestRenderedView": {
+    req: { mapId: number; liveCapture?: boolean };
+    res: GetRenderedMapViewResult;
+  };
+
   // --- Local MCP server ------------------------------------------------------
   "mcp:getStatus": { req: void; res: McpStatus };
   "mcp:setEnabled": { req: { enabled: boolean }; res: McpStatus };
@@ -91,6 +106,7 @@ export interface IpcEventMap {
   "app:menuAction": AppMenuAction;
   "maps:changed": MapsChangedEvent;
   "tileCache:buildProgress": TileCacheBuildProgressEvent;
+  "workspace:captureRequest": WorkspaceCaptureRequestEvent;
   "updater:status": {
     state: "checking" | "available" | "not-available" | "downloading" | "downloaded" | "error";
     version?: string;

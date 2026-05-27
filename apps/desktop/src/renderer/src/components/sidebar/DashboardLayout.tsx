@@ -2,6 +2,7 @@ import { Outlet, useRouterState } from "@tanstack/react-router";
 import { usePageTitle } from "../../hooks/usePageTitle";
 import { AppConfig } from "../../utils/system";
 import { AppMenuBridge } from "../AppMenuBridge";
+import { WorkspaceCaptureBridge } from "../WorkspaceCaptureBridge";
 import { UpdateToast } from "../UpdateToast";
 import { accountRoutes, primaryRoutes } from "./dashboard-routes";
 import { DashboardSidebar, DashboardSidebarTrigger } from "./DashboardSidebar";
@@ -48,6 +49,7 @@ function DashboardShell() {
 
       <UpdateToast />
       <AppMenuBridge />
+      <WorkspaceCaptureBridge />
     </div>
   );
 }

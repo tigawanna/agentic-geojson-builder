@@ -11,12 +11,17 @@ type SourceDocumentPaneProps = {
   sourceFile: MapSourceFilePayload;
   transform: PdfViewTransform;
   onTransformChange: (patch: Partial<PdfViewTransform>) => void;
+  onCaptureReady?: (elements: {
+    getPdfCanvas: () => HTMLCanvasElement | null;
+    getSourceViewport: () => HTMLDivElement | null;
+  }) => void;
 };
 
 export function SourceDocumentPane({
   sourceFile,
   transform,
   onTransformChange,
+  onCaptureReady,
 }: SourceDocumentPaneProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const viewportRef = useRef<HTMLDivElement | null>(null);
@@ -35,6 +40,13 @@ export function SourceDocumentPane({
 
   transformRef.current = localTransform;
   onTransformChangeRef.current = onTransformChange;
+
+  useEffect(() => {
+    onCaptureReady?.({
+      getPdfCanvas: () => canvasRef.current,
+      getSourceViewport: () => viewportRef.current,
+    });
+  }, [onCaptureReady, sourceFile.fileName]);
 
   useEffect(() => {
     if (!isDragging) {

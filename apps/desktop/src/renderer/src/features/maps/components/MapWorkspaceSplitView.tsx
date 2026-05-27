@@ -11,6 +11,8 @@ import { resolveLocalTileUrl } from "../hooks/tile-cache-api";
 import { copyMapCoordinates } from "../lib/copy-map-coordinates";
 import { workspaceToPdfTransform, pdfTransformToWorkspacePatch } from "../lib/pdf-view-transform";
 import type { MapHandle } from "../lib/map-handle";
+import { captureWorkspaceView } from "../lib/rendered-map-view/capture-workspace-view";
+import { registerWorkspaceCapture } from "../lib/workspace-capture-registry";
 import { useWorkspacePersistence } from "../hooks/useWorkspacePersistence";
 import {
   useMapWorkspaceState,
@@ -34,11 +36,59 @@ export function MapWorkspaceSplitView() {
     useMapWorkspaceUiActions();
   const { queueSave } = useWorkspacePersistence();
   const [mapHandle, setMapHandle] = useState<MapHandle | null>(null);
+  const mapHandleRef = useRef<MapHandle | null>(null);
+  const sourceCaptureRef = useRef<{
+    getPdfCanvas: () => HTMLCanvasElement | null;
+    getSourceViewport: () => HTMLDivElement | null;
+  } | null>(null);
   const statusTimerRef = useRef<number | undefined>(undefined);
   const tileCache = useTileCacheStatusQuery(workspace?.id ?? null);
   const localTileUrl = workspace
     ? resolveLocalTileUrl(workspace.id, workspace.baseMapStyle, tileCache.data)
     : null;
+
+  useEffect(() => {
+    mapHandleRef.current = mapHandle;
+  }, [mapHandle]);
+
+  const handleCaptureReady = useCallback(
+    (elements: {
+      getPdfCanvas: () => HTMLCanvasElement | null;
+      getSourceViewport: () => HTMLDivElement | null;
+    }) => {
+      sourceCaptureRef.current = elements;
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!workspace) {
+      return;
+    }
+
+    return registerWorkspaceCapture(workspace.id, async () => {
+      const handle = mapHandleRef.current;
+      if (!handle) {
+        throw new Error("Map pane is not ready yet.");
+      }
+
+      const mapPane = await handle.captureView({
+        controlPoints: [],
+        geoSegments: [],
+        pendingMapPoint: null,
+        pendingTracePoints: [],
+        baseMapStyle: workspace.baseMapStyle,
+      });
+
+      return captureWorkspaceView({
+        mapId: workspace.id,
+        pdfCanvas: sourceCaptureRef.current?.getPdfCanvas() ?? null,
+        sourceViewport: sourceCaptureRef.current?.getSourceViewport() ?? null,
+        pdfTransform: workspaceToPdfTransform(workspace),
+        mapPane,
+      });
+    });
+  }, [workspace]);
 
   useEffect(() => {
     if (!workspace) {
@@ -112,6 +162,7 @@ export function MapWorkspaceSplitView() {
                   sourceFile={sourceFile}
                   transform={workspaceToPdfTransform(workspace)}
                   onTransformChange={handlePdfTransformChange}
+                  onCaptureReady={handleCaptureReady}
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-sm text-base-content/50">

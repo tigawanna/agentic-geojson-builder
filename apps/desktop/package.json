@@ -38,6 +38,7 @@
     "electron-store": "^10.0.0",
     "electron-updater": "^6.8.3",
     "evlog": "^2.18.1",
+    "html-to-image": "^1.11.13",
     "i18next": "^24.1.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.561.0",

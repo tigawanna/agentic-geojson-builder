@@ -1,4 +1,9 @@
 import type { MapBaseMapStyle } from "@shared/maps.types";
+import type {
+  MapCaptureOverlayInput,
+  RenderedMapViewMapPane,
+} from "@shared/rendered-map-view.types";
+import { captureMapPaneFromDom } from "./rendered-map-view/capture-map-pane";
 
 export type MapViewport = {
   latitude: number;
@@ -9,6 +14,7 @@ export type MapViewport = {
 export type MapHandle = {
   panToQuery: (query: string) => Promise<{ error?: string }>;
   setViewport: (viewport: MapViewport) => void;
+  captureView: (overlays: MapCaptureOverlayInput) => Promise<RenderedMapViewMapPane>;
 };
 
 export const DEFAULT_MAP_VIEWPORT: MapViewport = {
@@ -108,5 +114,6 @@ export function createMapHandle(
       options.emitViewportChange();
       options.setSuppressViewportSync(false);
     },
+    captureView: (overlays) => captureMapPaneFromDom(map, overlays),
   };
 }

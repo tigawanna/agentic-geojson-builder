@@ -12,6 +12,12 @@ import {
 } from "../lib/tile-cache/tile-cache.service.js";
 import { broadcastToRenderers } from "../ipc/broadcast.js";
 import type { MapSectorViewResult } from "../../shared/tile-cache.types.js";
+import type { GetRenderedMapViewResult } from "../../shared/rendered-map-view.types.js";
+import {
+  getRenderedMapView,
+  renderedMapViewStructuredResult,
+  renderedMapViewToolResult,
+} from "../lib/workspace-snapshot/workspace-snapshot.service.js";
 
 function jsonToolResult(data: Record<string, unknown>): CallToolResult {
   return {
@@ -31,6 +37,14 @@ function mapSectorToolResult(data: MapSectorViewResult): CallToolResult {
   return {
     content: [{ type: "text", text: JSON.stringify(data, null, 2) }],
     structuredContent,
+  };
+}
+
+function renderedMapViewMcpResult(data: GetRenderedMapViewResult): CallToolResult {
+  const payload = renderedMapViewToolResult(data);
+  return {
+    content: [{ type: "text", text: JSON.stringify(payload, null, 2) }],
+    structuredContent: renderedMapViewStructuredResult(data),
   };
 }
 
@@ -147,6 +161,26 @@ export function createDesktopMcpServer(): McpServer {
       },
     },
     async (input) => mapSectorToolResult(await getMapSectorView(input)),
+  );
+
+  server.registerTool(
+    "get_rendered_map_view",
+    {
+      title: "Get Rendered Map View",
+      description:
+        "Capture or return the latest PDF and map pane PNG snapshots with viewport metadata. Requires the map workspace to be open for live capture.",
+      inputSchema: {
+        mapId: z.number().int().positive(),
+        liveCapture: z
+          .boolean()
+          .optional()
+          .describe("When true (default), capture the current on-screen workspace."),
+      },
+    },
+    async (input) =>
+      renderedMapViewMcpResult(
+        await getRenderedMapView(input.mapId, { liveCapture: input.liveCapture ?? true }),
+      ),
   );
 
   return server;
