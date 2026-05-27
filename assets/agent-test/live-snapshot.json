@@ -1,0 +1,48 @@
+{
+  "capturedAt": "2026-05-27T18:31:10.668Z",
+  "mapId": 1,
+  "source": "client",
+  "controlPointsVisible": true,
+  "overlays": {
+    "pendingMapPin": null,
+    "draftSegmentsDrawn": false
+  },
+  "pdfPane": {
+    "mimeType": "image/png",
+    "canvasWidth": 732,
+    "canvasHeight": 614,
+    "coordinateSpace": "pdf-pixels",
+    "origin": "top-left",
+    "pdfRenderScale": 1.5,
+    "viewTransform": {
+      "scale": 0.564006,
+      "rotation": 0,
+      "panX": -3.750857,
+      "panY": -43.64881
+    },
+    "note": "Viewport capture of the visible source document pane including pan, zoom, and rotation.",
+    "sourceDocumentWidth": 1267,
+    "sourceDocumentHeight": 881
+  },
+  "mapPane": {
+    "mimeType": "image/png",
+    "viewport": {
+      "center": {
+        "latitude": -1.234665725763061,
+        "longitude": 36.832825161379155
+      },
+      "zoom": 15,
+      "bounds": {
+        "north": -1.2214937414126141,
+        "south": -1.2478376448498238,
+        "east": 36.848532177370366,
+        "west": 36.817118145387944
+      }
+    },
+    "coordinateSpace": "wgs84",
+    "baseMapStyle": "standard",
+    "containerWidth": 732,
+    "containerHeight": 614,
+    "captureMode": "dom-screenshot"
+  }
+}

@@ -21,6 +21,8 @@ const acceptedTypes = "application/pdf,image/png,image/jpeg,image/webp";
 type MapWorkspaceControlsModalProps = {
   mapHandle: MapHandle | null;
   controlPoints: ControlPointRecord[];
+  selectedControlPointId: number | null;
+  onFocusControlPoint: (point: ControlPointRecord) => void;
 };
 
 type ControlsSectionProps = {
@@ -57,6 +59,8 @@ async function fileToBase64(file: File): Promise<string> {
 export function MapWorkspaceControlsModal({
   mapHandle,
   controlPoints,
+  selectedControlPointId,
+  onFocusControlPoint,
 }: MapWorkspaceControlsModalProps) {
   const { t } = useTranslation();
   const workspace = useMapWorkspaceState((state) => state.workspace);
@@ -64,6 +68,7 @@ export function MapWorkspaceControlsModal({
   const isOpen = useMapWorkspaceUiState((state) => state.controlsOpen);
   const closeControls = useMapWorkspaceUiActions().closeControls;
   const openTileCacheBounds = useMapWorkspaceUiActions().openTileCacheBounds;
+  const setSelectedControlPointId = useMapWorkspaceUiActions().setSelectedControlPointId;
   const { queueSave } = useWorkspacePersistence();
   const replaceSource = useReplaceMapSourceMutation();
   const deleteControlPoint = useIpcMutation("controlPoints:delete");
@@ -352,11 +357,20 @@ export function MapWorkspaceControlsModal({
                 {controlPoints.map((point, index) => (
                   <li
                     key={point.id}
-                    className="flex items-start justify-between gap-4 rounded-box bg-base-100/40 px-4 py-3"
+                    className={`flex items-start justify-between gap-4 rounded-box px-4 py-3 transition-colors ${
+                      selectedControlPointId === point.id
+                        ? "bg-primary/15 ring-1 ring-primary/40"
+                        : "bg-base-100/40"
+                    }`}
                   >
-                    <div className="min-w-0 space-y-1 text-sm">
+                    <button
+                      type="button"
+                      className="min-w-0 flex-1 space-y-1 text-left text-sm transition-colors hover:text-base-content"
+                      title={t("maps.workspace.focusReference")}
+                      onClick={() => onFocusControlPoint(point)}
+                    >
                       <p className="font-medium">
-                        {t("maps.workspace.referenceItem", { index: index + 1 })}
+                        {point.label ?? t("maps.workspace.referenceItem", { index: index + 1 })}
                       </p>
                       <p className="font-mono text-xs text-base-content/60">
                         PDF ({point.imageX.toFixed(1)}, {point.imageY.toFixed(1)})
@@ -364,16 +378,23 @@ export function MapWorkspaceControlsModal({
                       <p className="font-mono text-xs text-base-content/60">
                         Map ({point.latitude.toFixed(5)}, {point.longitude.toFixed(5)})
                       </p>
-                    </div>
+                    </button>
                     <button
                       type="button"
                       className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-error"
-                      onClick={() =>
-                        void deleteControlPoint.mutateAsync({
-                          mapId: currentMapId,
-                          controlPointId: point.id,
-                        })
-                      }
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void deleteControlPoint
+                          .mutateAsync({
+                            mapId: currentMapId,
+                            controlPointId: point.id,
+                          })
+                          .then(() => {
+                            if (selectedControlPointId === point.id) {
+                              setSelectedControlPointId(null);
+                            }
+                          });
+                      }}
                     >
                       {t("maps.workspace.deleteReference")}
                     </button>

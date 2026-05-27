@@ -46,3 +46,23 @@ export function pdfTransformToWorkspacePatch(patch: Partial<PdfViewTransform>): 
     ...(patch.panY !== undefined ? { pdfPanY: patch.panY } : {}),
   };
 }
+
+export function computePdfPanToCenterOnImagePoint(input: {
+  imageX: number;
+  imageY: number;
+  documentWidth: number;
+  documentHeight: number;
+  scale: number;
+  rotation: number;
+}): Pick<PdfViewTransform, "panX" | "panY"> {
+  const scale = Math.max(input.scale, 0.0001);
+  const scaledX = (input.imageX - input.documentWidth / 2) * scale;
+  const scaledY = (input.imageY - input.documentHeight / 2) * scale;
+  const radians = (input.rotation * Math.PI) / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+  const relativeX = scaledX * cos - scaledY * sin;
+  const relativeY = scaledX * sin + scaledY * cos;
+
+  return { panX: -relativeX, panY: -relativeY };
+}

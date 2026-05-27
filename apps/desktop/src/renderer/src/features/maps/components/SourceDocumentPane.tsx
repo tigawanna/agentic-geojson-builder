@@ -23,6 +23,7 @@ type SourceDocumentPaneProps = {
   onCaptureReady?: (elements: {
     getPdfCanvas: () => HTMLCanvasElement | null;
     getSourceViewport: () => HTMLDivElement | null;
+    getDocumentDimensions: () => { width: number; height: number } | null;
   }) => void;
 };
 
@@ -71,6 +72,19 @@ export function SourceDocumentPane({
     onCaptureReady?.({
       getPdfCanvas: () => canvasRef.current,
       getSourceViewport: () => viewportRef.current,
+      getDocumentDimensions: () => {
+        const canvas = canvasRef.current;
+        if (canvas && canvas.width > 0 && canvas.height > 0) {
+          return { width: canvas.width, height: canvas.height };
+        }
+
+        const image = imageRef.current;
+        if (image && image.naturalWidth > 0 && image.naturalHeight > 0) {
+          return { width: image.naturalWidth, height: image.naturalHeight };
+        }
+
+        return null;
+      },
     });
   }, [onCaptureReady, sourceFile.fileName]);
 

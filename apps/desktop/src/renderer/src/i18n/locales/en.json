@@ -145,6 +145,7 @@
       "referencesSectionHint": "PDF-to-map pairs used for georeferencing.",
       "referencesEmpty": "No reference points yet.",
       "referenceItem": "Reference {{index}}",
+      "focusReference": "Show this reference on the PDF and map",
       "deleteReference": "Delete",
       "baseMap": {
         "satellite": "Satellite",

@@ -11,7 +11,12 @@ import { useControlPointsQuery } from "../hooks/useControlPointsQuery";
 import { useTileCacheStatusQuery } from "../hooks/useTileCacheStatusQuery";
 import { resolveLocalTileUrl } from "../hooks/tile-cache-api";
 import { copyMapCoordinates } from "../lib/copy-map-coordinates";
-import { workspaceToPdfTransform, pdfTransformToWorkspacePatch } from "../lib/pdf-view-transform";
+import {
+  workspaceToPdfTransform,
+  pdfTransformToWorkspacePatch,
+  computePdfPanToCenterOnImagePoint,
+} from "../lib/pdf-view-transform";
+import type { ControlPointRecord } from "@shared/control-points.types";
 import type { MapHandle } from "../lib/map-handle";
 import { captureWorkspaceView } from "../lib/rendered-map-view/capture-workspace-view";
 import { registerWorkspaceCapture } from "../lib/workspace-capture-registry";
@@ -33,8 +38,13 @@ export function MapWorkspaceSplitView() {
   const sourceFile = useMapWorkspaceState((state) => state.sourceFile);
   const { openControls } = useMapWorkspaceUiActions();
   const { setHomeViewport } = useMapWorkspaceUiActions();
-  const { setCursorCoordinates, setSelectedCoordinates, setStatusMessage, setPendingMapPoint } =
-    useMapWorkspaceUiActions();
+  const {
+    setCursorCoordinates,
+    setSelectedCoordinates,
+    setStatusMessage,
+    setPendingMapPoint,
+    setSelectedControlPointId,
+  } = useMapWorkspaceUiActions();
   const homeViewport = useMapWorkspaceUiState((state) => state.homeViewport);
   const referenceMode = useMapWorkspaceUiState((state) => state.referenceMode);
   const pendingMapPoint = useMapWorkspaceUiState((state) => state.pendingMapPoint);
@@ -49,6 +59,7 @@ export function MapWorkspaceSplitView() {
   const sourceCaptureRef = useRef<{
     getPdfCanvas: () => HTMLCanvasElement | null;
     getSourceViewport: () => HTMLDivElement | null;
+    getDocumentDimensions: () => { width: number; height: number } | null;
   } | null>(null);
   const statusTimerRef = useRef<number | undefined>(undefined);
   const tileCache = useTileCacheStatusQuery(workspace?.id ?? null);
@@ -81,10 +92,46 @@ export function MapWorkspaceSplitView() {
     (elements: {
       getPdfCanvas: () => HTMLCanvasElement | null;
       getSourceViewport: () => HTMLDivElement | null;
+      getDocumentDimensions: () => { width: number; height: number } | null;
     }) => {
       sourceCaptureRef.current = elements;
     },
     [],
+  );
+
+  const handleFocusControlPoint = useCallback(
+    (point: ControlPointRecord) => {
+      setSelectedControlPointId(point.id);
+
+      const focusZoom = Math.max(workspace?.mapZoom ?? 13, 16);
+      mapHandleRef.current?.setViewport({
+        latitude: point.latitude,
+        longitude: point.longitude,
+        zoom: focusZoom,
+      });
+      queueSave({
+        mapCenterLat: point.latitude,
+        mapCenterLng: point.longitude,
+        mapZoom: focusZoom,
+      });
+
+      const source = sourceCaptureRef.current;
+      const documentSize = source?.getDocumentDimensions() ?? null;
+      if (!workspace || !documentSize) {
+        return;
+      }
+
+      const pdfPan = computePdfPanToCenterOnImagePoint({
+        imageX: point.imageX,
+        imageY: point.imageY,
+        documentWidth: documentSize.width,
+        documentHeight: documentSize.height,
+        scale: workspace.pdfScale,
+        rotation: workspace.pdfRotation,
+      });
+      queueSave(pdfTransformToWorkspacePatch(pdfPan));
+    },
+    [queueSave, setSelectedControlPointId, workspace],
   );
 
   useEffect(() => {
@@ -342,7 +389,12 @@ export function MapWorkspaceSplitView() {
         </ResizablePanelGroup>
       </div>
 
-      <MapWorkspaceControlsModal mapHandle={mapHandle} controlPoints={controlPoints} />
+      <MapWorkspaceControlsModal
+        mapHandle={mapHandle}
+        controlPoints={controlPoints}
+        selectedControlPointId={selectedControlPointId}
+        onFocusControlPoint={handleFocusControlPoint}
+      />
       <MapTileCacheBoundsModal />
     </div>
   );
