@@ -15,6 +15,28 @@
     "version": "App version",
     "platform": "Platform"
   },
+  "maps": {
+    "demo": {
+      "heading": "Maps IPC demo",
+      "description": "Create a map in PGlite via IPC, list it back, and listen for main-process change events.",
+      "namePlaceholder": "Map name (optional)",
+      "create": "Create map",
+      "creating": "Creating…",
+      "loading": "Loading maps…",
+      "empty": "No maps yet. Create one above.",
+      "error": "Could not create the map.",
+      "loadError": "Could not load maps.",
+      "optimistic": "optimistic",
+      "lastEvent": "Event: {{reason}} · map #{{mapId}}",
+      "flow": {
+        "mutate": "Renderer: optimistic cache update (TanStack mutation onMutate)",
+        "invoke": "Renderer → preload → main: maps:create IPC invoke",
+        "persist": "Main: Drizzle insert into PGlite",
+        "emit": "Main → renderer: maps:changed event broadcast",
+        "invalidate": "Renderer: event listener invalidates maps:list query"
+      }
+    }
+  },
   "posts": {
     "heading": "Posts",
     "description": "An example feature fetching data with Axios + TanStack Query.",

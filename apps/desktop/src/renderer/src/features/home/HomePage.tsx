@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { PageShell } from "../../components/common/PageShell";
+import { MapsIpcDemo } from "../maps/MapsIpcDemo";
 import { useIpcQuery } from "../../hooks/useIpc";
 
 export function HomePage() {
@@ -24,6 +25,10 @@ export function HomePage() {
           </p>
           <p className="mt-2 font-mono text-2xl font-semibold capitalize">{platform.data ?? "—"}</p>
         </article>
+      </div>
+
+      <div className="mt-6">
+        <MapsIpcDemo />
       </div>
     </PageShell>
   );

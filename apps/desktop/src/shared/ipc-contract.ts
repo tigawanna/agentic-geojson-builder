@@ -1,3 +1,5 @@
+import type { CreateMapInput, MapListItem, MapsChangedEvent } from "./maps.types.js";
+
 /**
  * Single source of truth for every IPC channel in the app.
  *
@@ -28,6 +30,10 @@ export interface IpcContract {
   "db:get": { req: { sql: string; params?: unknown[] }; res: unknown };
   "db:ping": { req: void; res: { ok: boolean } };
 
+  // --- Maps (PGlite domain) --------------------------------------------------
+  "maps:list": { req: void; res: MapListItem[] };
+  "maps:create": { req: CreateMapInput; res: MapListItem };
+
   // --- Auto updater ---------------------------------------------------------
   "updater:check": { req: void; res: { updateAvailable: boolean; version?: string } };
   "updater:download": { req: void; res: { ok: true } };
@@ -42,6 +48,7 @@ export type IpcResponse<K extends IpcChannel> = IpcContract[K]["res"];
  * Events pushed from main -> renderer (fire-and-forget, no response).
  */
 export interface IpcEventMap {
+  "maps:changed": MapsChangedEvent;
   "updater:status": {
     state: "checking" | "available" | "not-available" | "downloading" | "downloaded" | "error";
     version?: string;
