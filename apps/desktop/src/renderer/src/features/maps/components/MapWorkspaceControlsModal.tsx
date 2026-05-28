@@ -15,13 +15,17 @@ import {
 } from "@renderer/features/maps/store/MapWorkspaceProvider";
 import type { MapHandle } from "@renderer/features/maps/lib/map-handle";
 import { BaseMapStylePicker } from "@renderer/features/maps/components/BaseMapStylePicker";
+import { MapReferenceGeoJsonSection } from "@renderer/features/maps/components/MapReferenceGeoJsonSection";
 
 const acceptedTypes = "application/pdf,image/png,image/jpeg,image/webp";
 
 type MapWorkspaceControlsModalProps = {
+  mapId: number;
   mapHandle: MapHandle | null;
   controlPoints: ControlPointRecord[];
   selectedControlPointId: number | null;
+  showReferenceOverlay: boolean;
+  onShowReferenceOverlayChange: (visible: boolean) => void;
   onFocusControlPoint: (point: ControlPointRecord) => void;
 };
 
@@ -57,14 +61,16 @@ async function fileToBase64(file: File): Promise<string> {
 }
 
 export function MapWorkspaceControlsModal({
+  mapId,
   mapHandle,
   controlPoints,
   selectedControlPointId,
+  showReferenceOverlay,
+  onShowReferenceOverlayChange,
   onFocusControlPoint,
 }: MapWorkspaceControlsModalProps) {
   const { t } = useTranslation();
   const workspace = useMapWorkspaceState((state) => state.workspace);
-  const mapId = useMapWorkspaceState((state) => state.mapId);
   const isOpen = useMapWorkspaceUiState((state) => state.controlsOpen);
   const closeControls = useMapWorkspaceUiActions().closeControls;
   const openTileCacheBounds = useMapWorkspaceUiActions().openTileCacheBounds;
@@ -403,6 +409,12 @@ export function MapWorkspaceControlsModal({
               </ul>
             )}
           </ControlsSection>
+
+          <MapReferenceGeoJsonSection
+            mapId={mapId}
+            showReferenceOverlay={showReferenceOverlay}
+            onShowReferenceOverlayChange={onShowReferenceOverlayChange}
+          />
 
           <ControlsSection
             title={t("maps.workspace.tileCacheSection")}

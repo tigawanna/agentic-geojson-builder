@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
+import type { ReferenceGeoJsonCollection } from "@repo/isomorphic/reference-geojson";
 import type { ControlPointRecord } from "@shared/control-points.types";
 import type { MapWorkspaceState } from "@shared/maps.types";
 import type { TileCacheBounds } from "@shared/tile-cache.types";
+import { referenceGeoJsonColor } from "@renderer/features/maps/lib/reference-geojson-color";
 import {
   createBaseLayer,
   createMapHandle,
@@ -20,10 +22,16 @@ type PendingMapPoint = {
   longitude: number;
 };
 
+function lineStringToLatLngs(coordinates: [number, number][]) {
+  return coordinates.map(([longitude, latitude]) => ({ lat: latitude, lng: longitude }));
+}
+
 type LeafletMapPaneProps = {
   workspace: MapWorkspaceState;
   localTileUrl?: string | null;
   tileCacheOverlay?: TileCacheBounds | null;
+  referenceOverlay?: ReferenceGeoJsonCollection | null;
+  showReferenceOverlay?: boolean;
   controlPoints?: ControlPointRecord[];
   pendingMapPoint?: PendingMapPoint | null;
   canPickMapPoint?: boolean;
@@ -41,6 +49,8 @@ export function LeafletMapPane({
   workspace,
   localTileUrl,
   tileCacheOverlay,
+  referenceOverlay = null,
+  showReferenceOverlay = true,
   controlPoints = [],
   pendingMapPoint = null,
   canPickMapPoint = false,
@@ -58,6 +68,7 @@ export function LeafletMapPane({
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
   const baseLayerRef = useRef<import("leaflet").Layer | null>(null);
   const overlayRef = useRef<import("leaflet").Rectangle | null>(null);
+  const referenceLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const markersLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const suppressViewportSyncRef = useRef(false);
   const onReadyRef = useRef(onReady);
@@ -108,6 +119,7 @@ export function LeafletMapPane({
       });
 
       baseLayerRef.current = createBaseLayer(L, workspace.baseMapStyle, localTileUrl).addTo(map);
+      referenceLayerRef.current = L.layerGroup().addTo(map);
       markersLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
       setMapReady(true);
@@ -188,6 +200,7 @@ export function LeafletMapPane({
       mapRef.current = null;
       baseLayerRef.current = null;
       overlayRef.current = null;
+      referenceLayerRef.current = null;
       markersLayerRef.current = null;
       geocodedRef.current = false;
       initialViewportCapturedRef.current = false;
@@ -203,8 +216,25 @@ export function LeafletMapPane({
       }
 
       const L = await import("leaflet");
+      const referenceLayer = referenceLayerRef.current;
+      const markersLayer = markersLayerRef.current;
+
+      if (referenceLayer) {
+        map.removeLayer(referenceLayer);
+      }
+      if (markersLayer) {
+        map.removeLayer(markersLayer);
+      }
+
       baseLayerRef.current?.remove();
       baseLayerRef.current = createBaseLayer(L, workspace.baseMapStyle, localTileUrl).addTo(map);
+
+      if (referenceLayer) {
+        referenceLayer.addTo(map);
+      }
+      if (markersLayer) {
+        markersLayer.addTo(map);
+      }
     }
 
     void swapBaseLayer();
@@ -240,6 +270,44 @@ export function LeafletMapPane({
 
     void updateOverlay();
   }, [tileCacheOverlay]);
+
+  useEffect(() => {
+    if (!mapReady) {
+      return;
+    }
+
+    void (async () => {
+      const L = await import("leaflet");
+      const referenceLayer = referenceLayerRef.current;
+      if (!referenceLayer) {
+        return;
+      }
+
+      referenceLayer.clearLayers();
+
+      if (!showReferenceOverlay || !referenceOverlay) {
+        return;
+      }
+
+      referenceOverlay.features.forEach((feature) => {
+        const featureName =
+          typeof feature.properties.name === "string" ? feature.properties.name : "Reference line";
+        const layerName =
+          typeof feature.properties.referenceLayerName === "string"
+            ? feature.properties.referenceLayerName
+            : "Reference layer";
+
+        L.polyline(lineStringToLatLngs(feature.geometry.coordinates), {
+          color: referenceGeoJsonColor(`${layerName}:${featureName}`),
+          weight: 5,
+          opacity: 0.95,
+          dashArray: "10 6",
+        })
+          .bindTooltip(`${featureName} · ${layerName}`, { sticky: true })
+          .addTo(referenceLayer);
+      });
+    })();
+  }, [mapReady, referenceOverlay, showReferenceOverlay]);
 
   useEffect(() => {
     if (!mapReady) {

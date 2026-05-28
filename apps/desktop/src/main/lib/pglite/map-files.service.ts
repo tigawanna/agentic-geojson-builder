@@ -16,6 +16,10 @@ export function getMapScreenshotsDir(mapId: number): string {
   return join(getMapDir(mapId), "screenshots");
 }
 
+export function getMapReferenceGeoJsonDir(mapId: number): string {
+  return join(getMapDir(mapId), "reference-geojson");
+}
+
 function sanitizeFileName(fileName: string): string {
   return fileName.replace(/[^a-zA-Z0-9._-]/g, "_");
 }

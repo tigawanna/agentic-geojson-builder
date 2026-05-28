@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LocateFixed } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { mergeReferenceGeoJsonCollections } from "@repo/isomorphic/reference-geojson";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -8,6 +9,7 @@ import {
 } from "@renderer/components/common/Resizable";
 import { useIpcMutation } from "@renderer/hooks/useIpc";
 import { useControlPointsQuery } from "@renderer/features/maps/hooks/useControlPointsQuery";
+import { useReferenceGeoJsonQuery } from "@renderer/features/maps/hooks/useReferenceGeoJsonQuery";
 import { useTileCacheStatusQuery } from "@renderer/features/maps/hooks/useTileCacheStatusQuery";
 import { resolveLocalTileUrl } from "@renderer/features/maps/hooks/tile-cache-api";
 import { copyMapCoordinates } from "@renderer/features/maps/lib/copy-map-coordinates";
@@ -48,10 +50,13 @@ export function MapWorkspaceSplitView() {
   } = useMapWorkspaceUiActions();
   const homeViewport = useMapWorkspaceUiState((state) => state.homeViewport);
   const referenceMode = useMapWorkspaceUiState((state) => state.referenceMode);
+  const showReferenceOverlay = useMapWorkspaceUiState((state) => state.showReferenceOverlay);
+  const setShowReferenceOverlay = useMapWorkspaceUiActions().setShowReferenceOverlay;
   const pendingMapPoint = useMapWorkspaceUiState((state) => state.pendingMapPoint);
   const selectedControlPointId = useMapWorkspaceUiState((state) => state.selectedControlPointId);
   const { queueSave } = useWorkspacePersistence();
   const controlPointsQuery = useControlPointsQuery(workspace?.id ?? null);
+  const referenceGeoJsonQuery = useReferenceGeoJsonQuery(workspace?.id ?? null);
   const createControlPoint = useIpcMutation("controlPoints:create");
   const updateControlPoint = useIpcMutation("controlPoints:update");
   const [mapHandle, setMapHandle] = useState<MapHandle | null>(null);
@@ -70,6 +75,19 @@ export function MapWorkspaceSplitView() {
 
   const controlPoints = controlPointsQuery.data?.controlPoints ?? [];
   controlPointsRef.current = controlPoints;
+
+  const referenceOverlay = useMemo(() => {
+    const layers = referenceGeoJsonQuery.data?.layers ?? [];
+    const visibleCollections = layers
+      .filter((layer) => layer.visible)
+      .map((layer) => layer.collection);
+    if (visibleCollections.length === 0) {
+      return null;
+    }
+    return mergeReferenceGeoJsonCollections(visibleCollections);
+  }, [referenceGeoJsonQuery.data?.layers]);
+
+  const referenceOverlayFeatureCount = referenceOverlay?.features.length ?? 0;
 
   const captureOverlays = useMemo(
     () => ({
@@ -383,6 +401,9 @@ export function MapWorkspaceSplitView() {
             <section className="relative h-full min-h-0 bg-base-200">
               <span className="pointer-events-none absolute top-3 left-3 z-10 rounded-box bg-base-100/90 px-2 py-1 text-xs font-medium">
                 {t(`maps.workspace.baseMap.${workspace.baseMapStyle}`)}
+                {showReferenceOverlay && referenceOverlayFeatureCount > 0
+                  ? ` · ${referenceOverlayFeatureCount} refs`
+                  : ""}
               </span>
               <button
                 type="button"
@@ -398,6 +419,8 @@ export function MapWorkspaceSplitView() {
                 workspace={workspace}
                 localTileUrl={localTileUrl}
                 tileCacheOverlay={tileCache.data?.bounds ?? null}
+                referenceOverlay={referenceOverlay}
+                showReferenceOverlay={showReferenceOverlay}
                 controlPoints={controlPoints}
                 pendingMapPoint={pendingMapPoint}
                 canPickMapPoint={referenceMode && pendingMapPoint === null}
@@ -418,9 +441,12 @@ export function MapWorkspaceSplitView() {
       </div>
 
       <MapWorkspaceControlsModal
+        mapId={workspace.id}
         mapHandle={mapHandle}
         controlPoints={controlPoints}
         selectedControlPointId={selectedControlPointId}
+        showReferenceOverlay={showReferenceOverlay}
+        onShowReferenceOverlayChange={setShowReferenceOverlay}
         onFocusControlPoint={handleFocusControlPoint}
       />
       <MapTileCacheBoundsModal />

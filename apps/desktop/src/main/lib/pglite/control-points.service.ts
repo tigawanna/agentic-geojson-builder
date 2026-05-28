@@ -60,13 +60,18 @@ export async function updateControlPoint(
   input: UpdateControlPointInput,
 ): Promise<ControlPointRecord> {
   const db = getPgliteDb();
+  const patch: Partial<typeof controlPointTable.$inferInsert> = {
+    imageX: input.imageX,
+    imageY: input.imageY,
+    location: { x: input.longitude, y: input.latitude },
+  };
+  if (input.label !== undefined) {
+    patch.label = input.label?.trim() || null;
+  }
+
   const [row] = await db
     .update(controlPointTable)
-    .set({
-      imageX: input.imageX,
-      imageY: input.imageY,
-      location: { x: input.longitude, y: input.latitude },
-    })
+    .set(patch)
     .where(
       and(eq(controlPointTable.id, input.controlPointId), eq(controlPointTable.mapId, input.mapId)),
     )

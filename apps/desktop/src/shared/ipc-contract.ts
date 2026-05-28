@@ -40,6 +40,15 @@ import type {
   WorkspaceCaptureRequestEvent,
   WorkspaceCaptureResponseInput,
 } from "./rendered-map-view.types.js";
+import type {
+  DeleteMapReferenceGeoJsonInput,
+  ImportMapReferenceGeoJsonInput,
+  ImportMapReferenceGeoJsonResult,
+  ListMapReferenceGeoJsonResult,
+  ReferenceGeoJsonChangedEvent,
+  SetMapReferenceGeoJsonVisibilityInput,
+} from "./reference-geojson.types.js";
+import type { MapReferenceGeoJsonLayer } from "./reference-geojson.types.js";
 
 /**
  * Single source of truth for every IPC channel in the app.
@@ -124,6 +133,18 @@ export interface IpcContract {
     };
   };
 
+  // --- Reference GeoJSON (per-map files under userData/maps/{id}/) ----------
+  "referenceGeoJson:list": { req: { mapId: number }; res: ListMapReferenceGeoJsonResult };
+  "referenceGeoJson:import": {
+    req: ImportMapReferenceGeoJsonInput;
+    res: ImportMapReferenceGeoJsonResult;
+  };
+  "referenceGeoJson:delete": { req: DeleteMapReferenceGeoJsonInput; res: { ok: true } };
+  "referenceGeoJson:setVisibility": {
+    req: SetMapReferenceGeoJsonVisibilityInput;
+    res: { layer: MapReferenceGeoJsonLayer };
+  };
+
   // --- Local MCP server ------------------------------------------------------
   "mcp:getStatus": { req: void; res: McpStatus };
   "mcp:setEnabled": { req: { enabled: boolean }; res: McpStatus };
@@ -147,6 +168,7 @@ export interface IpcEventMap {
   "tileCache:buildProgress": TileCacheBuildProgressEvent;
   "workspace:captureRequest": WorkspaceCaptureRequestEvent;
   "controlPoints:changed": ControlPointsChangedEvent;
+  "referenceGeoJson:changed": ReferenceGeoJsonChangedEvent;
   "workspace:setMapViewport": SetMapViewportEvent;
   "updater:status": {
     state: "checking" | "available" | "not-available" | "downloading" | "downloaded" | "error";

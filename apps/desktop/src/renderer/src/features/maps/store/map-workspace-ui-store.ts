@@ -16,6 +16,7 @@ type MapWorkspaceUiState = {
   selectedCoordinates: MapCoordinates | null;
   statusMessage: string | null;
   referenceMode: boolean;
+  showReferenceOverlay: boolean;
   pendingMapPoint: MapCoordinates | null;
   selectedControlPointId: number | null;
 };
@@ -30,6 +31,7 @@ type MapWorkspaceUiActions = {
   setSelectedCoordinates: (coordinates: MapCoordinates | null) => void;
   setStatusMessage: (message: string | null) => void;
   setReferenceMode: (enabled: boolean) => void;
+  setShowReferenceOverlay: (visible: boolean) => void;
   setPendingMapPoint: (point: MapCoordinates | null) => void;
   setSelectedControlPointId: (controlPointId: number | null) => void;
   stopReferenceMode: () => void;
@@ -46,6 +48,7 @@ const initialState: MapWorkspaceUiState = {
   selectedCoordinates: null,
   statusMessage: null,
   referenceMode: false,
+  showReferenceOverlay: true,
   pendingMapPoint: null,
   selectedControlPointId: null,
 };
@@ -62,6 +65,7 @@ export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
     setSelectedCoordinates: (selectedCoordinates) => set({ selectedCoordinates }),
     setStatusMessage: (statusMessage) => set({ statusMessage }),
     setReferenceMode: (referenceMode) => set({ referenceMode }),
+    setShowReferenceOverlay: (showReferenceOverlay) => set({ showReferenceOverlay }),
     setPendingMapPoint: (pendingMapPoint) => set({ pendingMapPoint }),
     setSelectedControlPointId: (selectedControlPointId) => set({ selectedControlPointId }),
     stopReferenceMode: () =>

@@ -25,6 +25,7 @@ export type UpdateControlPointInput = {
   imageY: number;
   longitude: number;
   latitude: number;
+  label?: string | null;
 };
 
 export type DeleteControlPointInput = {

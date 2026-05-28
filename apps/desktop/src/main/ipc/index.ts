@@ -6,6 +6,7 @@ import { storageHandlers } from "@main/ipc/storage.js";
 import { mapsHandlers } from "@main/ipc/maps.js";
 import { tileCacheHandlers } from "@main/ipc/tile-cache.js";
 import { controlPointsHandlers } from "@main/ipc/control-points.js";
+import { referenceGeoJsonHandlers } from "@main/ipc/reference-geojson.js";
 import { mcpSettingsHandlers } from "@main/ipc/mcp-settings.js";
 import { workspaceSnapshotHandlers } from "@main/ipc/workspace-snapshot.js";
 import { pgliteHandlers } from "@main/ipc/pglite.js";
@@ -78,6 +79,7 @@ export function registerIpcHandlers(): void {
     ...tileCacheHandlers,
     ...workspaceSnapshotHandlers,
     ...controlPointsHandlers,
+    ...referenceGeoJsonHandlers,
     ...mcpSettingsHandlers,
     ...updaterHandlers,
   };

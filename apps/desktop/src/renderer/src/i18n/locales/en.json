@@ -142,6 +142,17 @@
       "centerMap": "Center map",
       "addReference": "Add reference",
       "referenceHint": "Ctrl+click the base map or paste coordinates, then Ctrl+click the PDF.",
+      "referenceGeoJson": {
+        "title": "Reference GeoJSON",
+        "hint": "Import trail or boundary GeoJSON for overlay on the base map. Files are stored under this app's user data folder for each map project.",
+        "import": "Import GeoJSON",
+        "overlayOn": "Overlay on ({{count}})",
+        "overlayOff": "Overlay off",
+        "shown": "Shown",
+        "hidden": "Hidden",
+        "remove": "Remove {{name}}",
+        "empty": "No reference GeoJSON imported yet."
+      },
       "referencePendingPdf": "Map pin set at {{value}}. Ctrl+click the same spot on the PDF.",
       "referenceCreated": "Reference point created.",
       "referenceError": "Could not create the reference point.",

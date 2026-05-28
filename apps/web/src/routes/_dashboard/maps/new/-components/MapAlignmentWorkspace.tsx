@@ -39,6 +39,14 @@ import {
   setMapTileCacheBoundsMutationOptions,
 } from "@/data-access-layer/tile-cache/tile-cache-query-options";
 import { useDebouncedValue } from "@/hooks/use-debouncer";
+import {
+  importMapReferenceGeoJsonMutationOptions,
+  mapReferenceGeoJsonQueryOptions,
+} from "@/lib/reference-geojson/reference-geojson-query-options";
+import { mergeReferenceGeoJsonCollections } from "@/lib/reference-geojson/parse-reference-geojson";
+import type { ReferenceGeoJsonCollection } from "@/lib/reference-geojson/reference-geojson.types";
+import { referenceGeoJsonColor } from "@/lib/reference-geojson/reference-geojson-color";
+import { MapReferenceGeoJsonPanel } from "./MapReferenceGeoJsonPanel";
 import { buildChatScreenshotBlob } from "@/lib/rendered-map-view/build-chat-screenshot";
 import {
   capturePdfPanePngBlob,
@@ -60,6 +68,7 @@ import {
   Crosshair,
   Download,
   Image,
+  Layers,
   MapPin,
   Pencil,
   RotateCcw,
@@ -204,6 +213,7 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [isSearchingLocation, setIsSearchingLocation] = useState(false);
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [showReferenceOverlay, setShowReferenceOverlay] = useState(true);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [screenshotDialogOpen, setScreenshotDialogOpen] = useState(false);
   const [screenshotPreviewUrl, setScreenshotPreviewUrl] = useState<string | null>(null);
@@ -257,6 +267,22 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
       debouncedControlPointSignature.length > 0 ? debouncedControlPointSignature : null,
     ),
   });
+  const localReferenceGeoJsonQuery = useQuery(mapReferenceGeoJsonQueryOptions(mapId));
+
+  const referenceOverlay = useMemo(() => {
+    const visibleCollections = (localReferenceGeoJsonQuery.data ?? [])
+      .filter((layer) => layer.visible)
+      .map((layer) => layer.collection);
+
+    if (visibleCollections.length === 0) {
+      return null;
+    }
+
+    return mergeReferenceGeoJsonCollections(visibleCollections);
+  }, [localReferenceGeoJsonQuery.data]);
+
+  const referenceOverlayFeatureCount = referenceOverlay?.features.length ?? 0;
+
   const geoSegmentsQuery = useQuery({
     ...listGeoSegmentsQueryOptions(mapId),
   });
@@ -272,6 +298,9 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
   const updateGeoSegmentMutation = useMutation(updateGeoSegmentMutationOptions());
   const exportGeoJsonMutation = useMutation(exportGeoJsonMutationOptions());
   const deleteGeoSegmentMutation = useMutation(deleteGeoSegmentMutationOptions());
+  const importReferenceGeoJsonMutation = useMutation(
+    importMapReferenceGeoJsonMutationOptions(mapId),
+  );
   const savePdfMutation = useMutation(saveMapPdfMutationOptions());
   const saveWorkspaceMutation = useMutation(updateMapWorkspaceMutationOptions());
   const saveSnapshotMutation = useMutation({
@@ -941,6 +970,29 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
             onChange={handleFileChange}
             data-test="pdf-upload-input"
           />
+          <Label
+            htmlFor="reference-geojson-header"
+            className="btn cursor-pointer btn-outline btn-sm"
+            data-test="reference-geojson-header-upload-label"
+          >
+            <Upload className="size-4" />
+            GeoJSON
+          </Label>
+          <Input
+            id="reference-geojson-header"
+            type="file"
+            accept=".geojson,.json,application/geo+json,application/json"
+            className="sr-only"
+            data-test="reference-geojson-header-upload-input"
+            onChange={(event) => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = "";
+              if (!file) {
+                return;
+              }
+              importReferenceGeoJsonMutation.mutate({ file });
+            }}
+          />
           <Button
             type="button"
             size="sm"
@@ -977,6 +1029,19 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
           >
             <Pencil className="size-4" />
             Trace trail
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={showReferenceOverlay ? "default" : "outline"}
+            disabled={referenceOverlayFeatureCount === 0}
+            title="Toggle reference GeoJSON overlays"
+            onClick={() => setShowReferenceOverlay((current) => !current)}
+            data-test="reference-geojson-overlay-toggle"
+          >
+            <Layers className="size-4" />
+            Refs
+            {referenceOverlayFeatureCount > 0 ? ` (${referenceOverlayFeatureCount})` : ""}
           </Button>
           <Button
             type="button"
@@ -1208,12 +1273,19 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
         </section>
 
         <section className="relative min-h-0 bg-base-200">
-          <PanelLabel>Base map</PanelLabel>
+          <PanelLabel>
+            Base map
+            {showReferenceOverlay && referenceOverlayFeatureCount > 0
+              ? ` · ${referenceOverlayFeatureCount} reference lines`
+              : ""}
+          </PanelLabel>
           <LeafletMapPane
             baseMapStyle={baseMapStyle}
             localTileUrl={localTileUrl}
             tileCacheOverlay={tileCacheOverlay}
             controlPoints={controlPointsQuery.data ?? []}
+            referenceOverlay={referenceOverlay}
+            showReferenceOverlay={showReferenceOverlay}
             geoSegments={geoSegmentsQuery.data ?? []}
             editingSegmentId={editingSegmentId}
             pendingMapPoint={pendingMapPoint}
@@ -1320,6 +1392,8 @@ export function MapAlignmentWorkspace({ mapId }: MapAlignmentWorkspaceProps) {
                 trails.
               </p>
             </div>
+
+            <MapReferenceGeoJsonPanel mapId={mapId} />
 
             <div className="space-y-3 border-t border-base-content/10 pt-5">
               <div className="space-y-1">
@@ -1793,6 +1867,8 @@ type LeafletMapPaneProps = {
     west: number;
   };
   controlPoints: ControlPointViewModel[];
+  referenceOverlay: ReferenceGeoJsonCollection | null;
+  showReferenceOverlay: boolean;
   geoSegments: GeoSegmentViewModel[];
   editingSegmentId: number | null;
   pendingMapPoint: PendingMapPoint | null;
@@ -1815,6 +1891,8 @@ function LeafletMapPane({
   localTileUrl,
   tileCacheOverlay,
   controlPoints,
+  referenceOverlay,
+  showReferenceOverlay,
   geoSegments,
   editingSegmentId,
   pendingMapPoint,
@@ -1837,6 +1915,7 @@ function LeafletMapPane({
   const baseLayerRef = useRef<Leaflet.TileLayer | null>(null);
   const cacheOverlayLayerRef = useRef<Leaflet.Rectangle | null>(null);
   const markersLayerRef = useRef<Leaflet.LayerGroup | null>(null);
+  const referenceTrailsLayerRef = useRef<Leaflet.LayerGroup | null>(null);
   const segmentsLayerRef = useRef<Leaflet.LayerGroup | null>(null);
   const onReadyRef = useRef(onReady);
   const onMapLocationPickRef = useRef(onMapLocationPick);
@@ -1895,8 +1974,9 @@ function LeafletMapPane({
       });
 
       baseLayerRef.current = createBaseLayer(L, baseMapStyle, localTileUrl).addTo(map);
-      markersLayerRef.current = L.layerGroup().addTo(map);
+      referenceTrailsLayerRef.current = L.layerGroup().addTo(map);
       segmentsLayerRef.current = L.layerGroup().addTo(map);
+      markersLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
       hasAppliedInitialStyleRef.current = true;
 
@@ -1995,6 +2075,7 @@ function LeafletMapPane({
     const currentLayer = baseLayerRef.current;
 
     const markersLayer = markersLayerRef.current;
+    const referenceTrailsLayer = referenceTrailsLayerRef.current;
     const segmentsLayer = segmentsLayerRef.current;
 
     if (!map || !L || !currentLayer) {
@@ -2007,10 +2088,16 @@ function LeafletMapPane({
     if (segmentsLayer) {
       map.removeLayer(segmentsLayer);
     }
+    if (referenceTrailsLayer) {
+      map.removeLayer(referenceTrailsLayer);
+    }
 
     map.removeLayer(currentLayer);
     baseLayerRef.current = createBaseLayer(L, baseMapStyle, localTileUrl).addTo(map);
 
+    if (referenceTrailsLayer) {
+      referenceTrailsLayer.addTo(map);
+    }
     if (segmentsLayer) {
       segmentsLayer.addTo(map);
     }
@@ -2018,6 +2105,45 @@ function LeafletMapPane({
       markersLayer.addTo(map);
     }
   }, [baseMapStyle, localTileUrl]);
+
+  useEffect(() => {
+    if (!mapReady) {
+      return;
+    }
+
+    const L = leafletRef.current;
+    const referenceTrailsLayer = referenceTrailsLayerRef.current;
+
+    if (!L || !referenceTrailsLayer) {
+      return;
+    }
+
+    referenceTrailsLayer.clearLayers();
+
+    if (!showReferenceOverlay || !referenceOverlay) {
+      return;
+    }
+
+    referenceOverlay.features.forEach((feature) => {
+      const featureName =
+        typeof feature.properties.name === "string" ? feature.properties.name : "Reference line";
+      const layerName =
+        typeof feature.properties.referenceLayerName === "string"
+          ? feature.properties.referenceLayerName
+          : "Reference layer";
+      const colorKey = `${layerName}:${featureName}`;
+      const latlngs = lineStringToLatLngs(feature.geometry.coordinates);
+
+      L.polyline(latlngs, {
+        color: referenceGeoJsonColor(colorKey),
+        weight: 3,
+        opacity: 0.8,
+        dashArray: "7 5",
+      })
+        .bindTooltip(`${featureName} · ${layerName}`, { sticky: true })
+        .addTo(referenceTrailsLayer);
+    });
+  }, [mapReady, referenceOverlay, showReferenceOverlay]);
 
   useEffect(() => {
     if (!mapReady) {

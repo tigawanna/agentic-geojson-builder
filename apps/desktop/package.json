@@ -29,6 +29,7 @@
     "@electric-sql/pglite": "^0.4.5",
     "@electric-sql/pglite-postgis": "^0.0.7",
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "@repo/isomorphic": "workspace:*",
     "@repo/tile-cache": "workspace:*",
     "@tanstack/react-query": "^5.62.7",
     "@tanstack/react-query-devtools": "^5.62.7",

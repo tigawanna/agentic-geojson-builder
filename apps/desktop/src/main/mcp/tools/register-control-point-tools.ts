@@ -71,6 +71,7 @@ export function registerControlPointTools(server: McpServer) {
         imageY: z.number(),
         longitude: z.number(),
         latitude: z.number(),
+        label: z.string().nullable().optional(),
       },
     },
     async (input) => {
