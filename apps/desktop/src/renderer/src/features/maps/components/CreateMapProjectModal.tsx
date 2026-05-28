@@ -1,9 +1,9 @@
 import { useTranslation } from "react-i18next";
-import { useCreateMapWizardStore } from "../store/create-map-wizard-store";
-import { CreateMapCacheBoundsStep } from "./CreateMapCacheBoundsStep";
-import { CreateMapCacheBuildingStep } from "./CreateMapCacheBuildingStep";
-import { CreateMapDetailsStep } from "./CreateMapDetailsStep";
-import { CreateMapUploadStep } from "./CreateMapUploadStep";
+import { useCreateMapWizardStore } from "@renderer/features/maps/store/create-map-wizard-store";
+import { CreateMapCacheBoundsStep } from "@renderer/features/maps/components/CreateMapCacheBoundsStep";
+import { CreateMapCacheBuildingStep } from "@renderer/features/maps/components/CreateMapCacheBuildingStep";
+import { CreateMapDetailsStep } from "@renderer/features/maps/components/CreateMapDetailsStep";
+import { CreateMapUploadStep } from "@renderer/features/maps/components/CreateMapUploadStep";
 
 export function CreateMapProjectModal() {
   const { t } = useTranslation();

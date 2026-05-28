@@ -1,5 +1,5 @@
 import { Home, Info, Map, Newspaper, Settings } from "lucide-react";
-import type { SidebarItem } from "./types";
+import type { SidebarItem } from "@renderer/components/sidebar/types";
 
 export const primaryRoutes = [
   { title: "Home", href: "/", labelKey: "nav.home", icon: Home },

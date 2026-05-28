@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useIpcQuery } from "../../../hooks/useIpc";
-import { useIpcEvent } from "../../../hooks/useIpcEvent";
+import { useIpcQuery } from "@renderer/hooks/useIpc";
+import { useIpcEvent } from "@renderer/hooks/useIpcEvent";
 
 export function useControlPointsQuery(mapId: number | null) {
   const queryClient = useQueryClient();

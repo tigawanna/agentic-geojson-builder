@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useIpcEvent } from "../../hooks/useIpcEvent";
-import { useCreateMapMutation } from "./useCreateMapMutation";
-import { useMapsListQuery } from "./useMapsListQuery";
+import { useIpcEvent } from "@renderer/hooks/useIpcEvent";
+import { useCreateMapMutation } from "@renderer/features/maps/useCreateMapMutation";
+import { useMapsListQuery } from "@renderer/features/maps/useMapsListQuery";
 
 export function MapsIpcDemo() {
   const { t } = useTranslation();

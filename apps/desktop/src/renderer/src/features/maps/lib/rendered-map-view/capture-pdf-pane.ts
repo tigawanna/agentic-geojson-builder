@@ -1,6 +1,9 @@
 import type { PdfViewTransform, RenderedMapViewPdfPane } from "@shared/rendered-map-view.types";
-import { PDF_RENDER_SCALE } from "../pdf-view-transform";
-import { drawPdfAgentGuides, drawPdfControlPointLabel } from "./capture-agent-guides";
+import { PDF_RENDER_SCALE } from "@renderer/features/maps/lib/pdf-view-transform";
+import {
+  drawPdfAgentGuides,
+  drawPdfControlPointLabel,
+} from "@renderer/features/maps/lib/rendered-map-view/capture-agent-guides";
 
 export type PdfCaptureControlPoint = {
   id: number;

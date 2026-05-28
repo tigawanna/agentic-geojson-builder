@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { mapWorkspaceStore } from "../store/map-workspace-store";
-import { useCreateMapWizardStore } from "../store/create-map-wizard-store";
-import { mapWorkspaceQueryKeys } from "./map-workspace-api";
-import { mapsQueryKeys } from "../maps-query-keys";
-import { tileCacheQueryKeys } from "./tile-cache-api";
-import { generateSourceThumbnail } from "../lib/generate-source-thumbnail";
+import { mapWorkspaceStore } from "@renderer/features/maps/store/map-workspace-store";
+import { useCreateMapWizardStore } from "@renderer/features/maps/store/create-map-wizard-store";
+import { mapWorkspaceQueryKeys } from "@renderer/features/maps/hooks/map-workspace-api";
+import { mapsQueryKeys } from "@renderer/features/maps/maps-query-keys";
+import { tileCacheQueryKeys } from "@renderer/features/maps/hooks/tile-cache-api";
+import { generateSourceThumbnail } from "@renderer/features/maps/lib/generate-source-thumbnail";
 
 async function fileToBase64(file: File): Promise<string> {
   const buffer = await file.arrayBuffer();

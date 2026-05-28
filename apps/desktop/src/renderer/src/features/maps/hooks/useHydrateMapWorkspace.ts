@@ -1,7 +1,11 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useMapWorkspaceActions } from "../store/MapWorkspaceProvider";
-import { fetchMapSource, fetchMapWorkspace, mapWorkspaceQueryKeys } from "./map-workspace-api";
+import { useMapWorkspaceActions } from "@renderer/features/maps/store/MapWorkspaceProvider";
+import {
+  fetchMapSource,
+  fetchMapWorkspace,
+  mapWorkspaceQueryKeys,
+} from "@renderer/features/maps/hooks/map-workspace-api";
 
 export function useHydrateMapWorkspace(mapId: number) {
   const { setLoading, setReady, setError } = useMapWorkspaceActions();

@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { useCreateMapProjectMutation } from "../hooks/useCreateMapProjectMutation";
-import { useCreateMapWizardStore } from "../store/create-map-wizard-store";
-import { TileCacheBoundsPanel } from "./TileCacheBoundsPanel";
+import { useCreateMapProjectMutation } from "@renderer/features/maps/hooks/useCreateMapProjectMutation";
+import { useCreateMapWizardStore } from "@renderer/features/maps/store/create-map-wizard-store";
+import { TileCacheBoundsPanel } from "@renderer/features/maps/components/TileCacheBoundsPanel";
 
 export function CreateMapCacheBoundsStep() {
   const { t } = useTranslation();

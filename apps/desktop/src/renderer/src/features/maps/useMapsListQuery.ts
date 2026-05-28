@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { mapsQueryKeys } from "./maps-query-keys";
+import { mapsQueryKeys } from "@renderer/features/maps/maps-query-keys";
 
 export function useMapsListQuery() {
   const queryClient = useQueryClient();

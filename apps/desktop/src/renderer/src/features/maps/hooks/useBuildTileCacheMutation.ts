@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { MapBaseMapStyle } from "@shared/maps.types";
 import type { TileCacheCorner } from "@shared/tile-cache.types";
-import { tileCacheQueryKeys } from "./tile-cache-api";
+import { tileCacheQueryKeys } from "@renderer/features/maps/hooks/tile-cache-api";
 
 type BuildTileCacheInput = {
   mapId: number;

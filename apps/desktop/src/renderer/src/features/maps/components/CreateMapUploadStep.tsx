@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useCreateMapWizardStore } from "../store/create-map-wizard-store";
+import { useCreateMapWizardStore } from "@renderer/features/maps/store/create-map-wizard-store";
 
 const acceptedTypes = "application/pdf,image/png,image/jpeg,image/webp";
 

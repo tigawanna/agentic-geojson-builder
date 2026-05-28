@@ -1,5 +1,5 @@
 import { integer, pgTable, real, timestamp, uniqueIndex, varchar } from "drizzle-orm/pg-core";
-import { mapTable } from "./map.schema.js";
+import { mapTable } from "@main/lib/pglite/schema/map.schema.js";
 
 export const mapTileCacheTable = pgTable(
   "map_tile_cache",

@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
-import type { IpcChannel, IpcRequest, IpcResponse } from "../../shared/ipc-contract.js";
-import { getPgliteClient, getPgliteDb } from "../lib/pglite/client.js";
+import type { IpcChannel, IpcRequest, IpcResponse } from "@shared/ipc-contract.js";
+import { getPgliteClient, getPgliteDb } from "@main/lib/pglite/client.js";
 
 type Handler<K extends IpcChannel> = (
   req: IpcRequest<K>,

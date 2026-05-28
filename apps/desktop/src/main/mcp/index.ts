@@ -1,13 +1,13 @@
-import type { McpStatus } from "../../shared/mcp.types.js";
-import { log } from "../lib/logger.js";
-import { getMcpEnabled, getMcpPort } from "../storage/app-settings.js";
+import type { McpStatus } from "@shared/mcp.types.js";
+import { log } from "@main/lib/logger.js";
+import { getMcpEnabled, getMcpPort } from "@main/storage/app-settings.js";
 import {
   getMcpListenPort,
   getMcpStartError,
   isMcpHttpServerRunning,
   startMcpHttpServerSafe,
   stopMcpHttpServer,
-} from "./http-server.js";
+} from "@main/mcp/http-server.js";
 
 function buildMcpUrl(port: number): string {
   return `http://127.0.0.1:${port}/mcp`;

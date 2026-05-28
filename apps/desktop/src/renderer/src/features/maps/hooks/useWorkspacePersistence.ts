@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef } from "react";
 import type { MapWorkspaceState, UpdateMapWorkspaceInput } from "@shared/maps.types";
-import { useMapWorkspaceActions, useMapWorkspaceState } from "../store/MapWorkspaceProvider";
-import { useUpdateMapWorkspaceMutation } from "./useUpdateMapWorkspaceMutation";
+import {
+  useMapWorkspaceActions,
+  useMapWorkspaceState,
+} from "@renderer/features/maps/store/MapWorkspaceProvider";
+import { useUpdateMapWorkspaceMutation } from "@renderer/features/maps/hooks/useUpdateMapWorkspaceMutation";
 
 const SAVE_DELAY_MS = 800;
 

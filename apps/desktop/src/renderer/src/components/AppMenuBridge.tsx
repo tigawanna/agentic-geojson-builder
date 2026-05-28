@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { CreateMapProjectModal } from "../features/maps/components/CreateMapProjectModal";
-import { useAppMenuActions } from "../hooks/useAppMenuActions";
+import { CreateMapProjectModal } from "@renderer/features/maps/components/CreateMapProjectModal";
+import { useAppMenuActions } from "@renderer/hooks/useAppMenuActions";
 
 export function AppMenuBridge() {
   useAppMenuActions();

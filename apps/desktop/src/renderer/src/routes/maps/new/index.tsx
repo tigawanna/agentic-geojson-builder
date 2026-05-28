@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { useCreateMapWizardStore } from "../../../features/maps/store/create-map-wizard-store";
+import { useCreateMapWizardStore } from "@renderer/features/maps/store/create-map-wizard-store";
 
 export const Route = createFileRoute("/maps/new/")({
   component: CreateMapNewRedirect,

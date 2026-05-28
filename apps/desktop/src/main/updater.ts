@@ -1,7 +1,7 @@
 import { BrowserWindow, app } from "electron";
 import electronUpdater from "electron-updater";
-import type { IpcEventPayload } from "../shared/ipc-contract.js";
-import { log } from "./lib/logger.js";
+import type { IpcEventPayload } from "@shared/ipc-contract.js";
+import { log } from "@main/lib/logger.js";
 
 // `electron-updater` is published as CJS. `esModuleInterop` gives us the full
 // namespace under `default`, so we destructure `autoUpdater` here.

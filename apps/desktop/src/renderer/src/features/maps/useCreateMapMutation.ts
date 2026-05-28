@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import type { CreateMapInput, MapListItem } from "../../../../shared/maps.types";
-import { mapsQueryKeys } from "./maps-query-keys";
+import type { CreateMapInput, MapListItem } from "@shared/maps.types";
+import { mapsQueryKeys } from "@renderer/features/maps/maps-query-keys";
 
 type CreateMapContext = {
   previous: MapListItem[] | undefined;

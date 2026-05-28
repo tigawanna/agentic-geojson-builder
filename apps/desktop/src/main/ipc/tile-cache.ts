@@ -1,11 +1,11 @@
-import type { IpcChannel, IpcRequest, IpcResponse } from "../../shared/ipc-contract.js";
-import { broadcastToRenderers } from "./broadcast.js";
+import type { IpcChannel, IpcRequest, IpcResponse } from "@shared/ipc-contract.js";
+import { broadcastToRenderers } from "@main/ipc/broadcast.js";
 import {
   buildMapTileCache,
   getMapSectorView,
   getMapTileCache,
   setMapTileCacheBoundsFromCorners,
-} from "../lib/tile-cache/tile-cache.service.js";
+} from "@main/lib/tile-cache/tile-cache.service.js";
 
 type Handler<K extends IpcChannel> = (
   req: IpcRequest<K>,

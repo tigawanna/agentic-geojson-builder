@@ -9,8 +9,11 @@ import {
   DEFAULT_MAP_VIEWPORT,
   type MapHandle,
   type MapViewport,
-} from "../lib/map-handle";
-import { isPickModifierEvent, usePickModifierHeld } from "../lib/pick-modifier";
+} from "@renderer/features/maps/lib/map-handle";
+import {
+  isPickModifierEvent,
+  usePickModifierHeld,
+} from "@renderer/features/maps/lib/pick-modifier";
 
 type PendingMapPoint = {
   latitude: number;

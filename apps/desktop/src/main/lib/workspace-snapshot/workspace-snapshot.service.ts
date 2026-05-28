@@ -5,9 +5,9 @@ import type {
   GetRenderedMapViewResult,
   RenderedMapView,
   WorkspaceCaptureResponseInput,
-} from "../../../shared/rendered-map-view.types.js";
-import { getMapScreenshotsDir } from "../pglite/map-files.service.js";
-import { broadcastToRenderers } from "../../ipc/broadcast.js";
+} from "@shared/rendered-map-view.types.js";
+import { getMapScreenshotsDir } from "@main/lib/pglite/map-files.service.js";
+import { broadcastToRenderers } from "@main/ipc/broadcast.js";
 
 const snapshots = new Map<number, RenderedMapView>();
 

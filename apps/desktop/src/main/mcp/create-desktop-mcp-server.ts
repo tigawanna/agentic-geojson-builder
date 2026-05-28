@@ -2,33 +2,33 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { sql } from "drizzle-orm";
 import * as z from "zod/v4";
-import { createMap, listMaps } from "../lib/pglite/maps.service.js";
-import { getPgliteDb } from "../lib/pglite/client.js";
+import { createMap, listMaps } from "@main/lib/pglite/maps.service.js";
+import { getPgliteDb } from "@main/lib/pglite/client.js";
 import {
   buildMapTileCache,
   getMapSectorView,
   getMapTileCache,
   setMapTileCacheBoundsFromCorners,
-} from "../lib/tile-cache/tile-cache.service.js";
-import { broadcastToRenderers } from "../ipc/broadcast.js";
+} from "@main/lib/tile-cache/tile-cache.service.js";
+import { broadcastToRenderers } from "@main/ipc/broadcast.js";
 import {
   createControlPoint,
   deleteControlPoint,
   listControlPoints,
   updateControlPoint,
-} from "../lib/pglite/control-points.service.js";
+} from "@main/lib/pglite/control-points.service.js";
 import {
   convertMapPanePixel,
   convertPdfPanePixel,
   createControlPointFromViewportPixels,
-} from "../lib/viewport-coordinates/viewport-coordinates.service.js";
-import type { MapSectorViewResult } from "../../shared/tile-cache.types.js";
-import type { GetRenderedMapViewResult } from "../../shared/rendered-map-view.types.js";
+} from "@main/lib/viewport-coordinates/viewport-coordinates.service.js";
+import type { MapSectorViewResult } from "@shared/tile-cache.types.js";
+import type { GetRenderedMapViewResult } from "@shared/rendered-map-view.types.js";
 import {
   getRenderedMapView,
   renderedMapViewStructuredResult,
   renderedMapViewToolResult,
-} from "../lib/workspace-snapshot/workspace-snapshot.service.js";
+} from "@main/lib/workspace-snapshot/workspace-snapshot.service.js";
 
 function jsonToolResult(data: Record<string, unknown>): CallToolResult {
   return {

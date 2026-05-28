@@ -2,7 +2,11 @@ import { boundsFromCorners } from "@repo/tile-cache/tile-math";
 import { useEffect, useMemo, useRef } from "react";
 import type { MapBaseMapStyle } from "@shared/maps.types";
 import type { TileCacheCorner } from "@shared/tile-cache.types";
-import { createBaseLayer, DEFAULT_MAP_VIEWPORT, geocodePlace } from "../lib/map-handle";
+import {
+  createBaseLayer,
+  DEFAULT_MAP_VIEWPORT,
+  geocodePlace,
+} from "@renderer/features/maps/lib/map-handle";
 
 type BoundsPickerMapProps = {
   corners: TileCacheCorner[];

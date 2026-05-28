@@ -1,8 +1,8 @@
 import { createRootRoute } from "@tanstack/react-router";
-import { AppLayout } from "../components/AppLayout";
-import { RouterErrorComponent } from "../lib/tanstack/router/RouterErrorComponent";
-import { RouterNotFoundComponent } from "../lib/tanstack/router/RouterNotFoundComponent";
-import { RouterPendingComponent } from "../lib/tanstack/router/RouterPendingComponent";
+import { AppLayout } from "@renderer/components/AppLayout";
+import { RouterErrorComponent } from "@renderer/lib/tanstack/router/RouterErrorComponent";
+import { RouterNotFoundComponent } from "@renderer/lib/tanstack/router/RouterNotFoundComponent";
+import { RouterPendingComponent } from "@renderer/lib/tanstack/router/RouterPendingComponent";
 
 export const Route = createRootRoute({
   component: AppLayout,

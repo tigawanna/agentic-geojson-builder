@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { AppConfig } from "../../utils/system";
-import { cn } from "../../lib/utils";
-import { useSidebar } from "./SidebarProvider";
+import { AppConfig } from "@renderer/utils/system";
+import { cn } from "@renderer/lib/utils";
+import { useSidebar } from "@renderer/components/sidebar/SidebarProvider";
 
 export function DashboardSidebarHeader() {
   const { isCollapsed } = useSidebar();

@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { MapIcon, MoreVertical } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { MapListItem } from "@shared/maps.types";
-import { useMapThumbnailQuery } from "../hooks/useMapThumbnailQuery";
+import { useMapThumbnailQuery } from "@renderer/features/maps/hooks/useMapThumbnailQuery";
 
 type MapProjectCardProps = {
   map: MapListItem;

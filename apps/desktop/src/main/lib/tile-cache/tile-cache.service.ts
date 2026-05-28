@@ -17,18 +17,18 @@ import type {
   MapTileCacheConfig,
   SetTileCacheBoundsInput,
   TileCacheBuildProgressEvent,
-} from "../../../shared/tile-cache.types.js";
+} from "@shared/tile-cache.types.js";
 import {
   TILE_CACHE_DEFAULT_MAX_ZOOM,
   TILE_CACHE_DEFAULT_MIN_ZOOM,
-} from "../../../shared/tile-cache.types.js";
-import type { MapBaseMapStyle } from "../../../shared/maps.types.js";
-import { getPgliteDb } from "../pglite/client.js";
+} from "@shared/tile-cache.types.js";
+import type { MapBaseMapStyle } from "@shared/maps.types.js";
+import { getPgliteDb } from "@main/lib/pglite/client.js";
 import {
   mapTileCacheTable,
   type MapTileCacheRecord,
-} from "../pglite/schema/map-tile-cache.schema.js";
-import { getTileCacheBaseDir } from "./paths.js";
+} from "@main/lib/pglite/schema/map-tile-cache.schema.js";
+import { getTileCacheBaseDir } from "@main/lib/tile-cache/paths.js";
 
 function toTileStyle(value: string): TileStyle {
   if (value === "outline" || value === "standard" || value === "satellite") {

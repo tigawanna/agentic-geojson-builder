@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { IpcEventName, IpcEventPayload } from "../../../shared/ipc-contract";
+import type { IpcEventName, IpcEventPayload } from "@shared/ipc-contract";
 
 export function useIpcEvent<K extends IpcEventName>(
   event: K,

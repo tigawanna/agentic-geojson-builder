@@ -1,8 +1,8 @@
 import { useTranslation } from "react-i18next";
-import { PageShell } from "../../components/common/PageShell";
-import { MapProjectCard } from "./components/MapProjectCard";
-import { useCreateMapWizardStore } from "./store/create-map-wizard-store";
-import { useMapsListQuery } from "./useMapsListQuery";
+import { PageShell } from "@renderer/components/common/PageShell";
+import { MapProjectCard } from "@renderer/features/maps/components/MapProjectCard";
+import { useCreateMapWizardStore } from "@renderer/features/maps/store/create-map-wizard-store";
+import { useMapsListQuery } from "@renderer/features/maps/useMapsListQuery";
 
 export function MapsListPage() {
   const { t } = useTranslation();

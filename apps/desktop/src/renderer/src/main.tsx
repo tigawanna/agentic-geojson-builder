@@ -4,10 +4,10 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { RouterProvider } from "@tanstack/react-router";
 import { I18nextProvider } from "react-i18next";
-import { queryClient } from "./lib/query-client";
-import { router } from "./router";
-import { i18n } from "./i18n";
-import { ThemeProvider } from "./features/theme/ThemeProvider";
+import { queryClient } from "@renderer/lib/query-client";
+import { router } from "@renderer/router";
+import { i18n } from "@renderer/i18n";
+import { ThemeProvider } from "@renderer/features/theme/ThemeProvider";
 import "./styles/globals.css";
 
 const root = document.getElementById("root");

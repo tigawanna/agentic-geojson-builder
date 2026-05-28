@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { MapWorkspaceState, UpdateMapWorkspaceInput } from "@shared/maps.types";
-import { useMapWorkspaceActions } from "../store/MapWorkspaceProvider";
-import { mapWorkspaceQueryKeys } from "./map-workspace-api";
-import { mapsQueryKeys } from "../maps-query-keys";
+import { useMapWorkspaceActions } from "@renderer/features/maps/store/MapWorkspaceProvider";
+import { mapWorkspaceQueryKeys } from "@renderer/features/maps/hooks/map-workspace-api";
+import { mapsQueryKeys } from "@renderer/features/maps/maps-query-keys";
 
 function patchFromSavedInput(
   workspace: MapWorkspaceState,

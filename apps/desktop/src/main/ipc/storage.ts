@@ -1,5 +1,5 @@
-import type { IpcChannel, IpcRequest, IpcResponse } from "../../shared/ipc-contract.js";
-import { storage } from "../storage/index.js";
+import type { IpcChannel, IpcRequest, IpcResponse } from "@shared/ipc-contract.js";
+import { storage } from "@main/storage/index.js";
 
 type Handler<K extends IpcChannel> = (
   req: IpcRequest<K>,

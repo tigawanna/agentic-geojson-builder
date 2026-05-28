@@ -1,6 +1,6 @@
 import type { BrowserWindow } from "electron";
-import type { IpcChannel, IpcRequest, IpcResponse } from "../../shared/ipc-contract.js";
-import { showMapContextMenu } from "../menu/show-map-context-menu.js";
+import type { IpcChannel, IpcRequest, IpcResponse } from "@shared/ipc-contract.js";
+import { showMapContextMenu } from "@main/menu/show-map-context-menu.js";
 
 type Handler<K extends IpcChannel> = (
   req: IpcRequest<K>,

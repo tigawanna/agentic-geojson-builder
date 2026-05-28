@@ -1,4 +1,4 @@
-import type { IpcChannel, IpcRequest, IpcResponse } from "../../shared/ipc-contract.js";
+import type { IpcChannel, IpcRequest, IpcResponse } from "@shared/ipc-contract.js";
 import {
   createMap,
   createMapProject,
@@ -9,8 +9,8 @@ import {
   readMapThumbnail,
   replaceMapSource,
   updateMapWorkspace,
-} from "../lib/pglite/maps.service.js";
-import { broadcastToRenderers } from "./broadcast.js";
+} from "@main/lib/pglite/maps.service.js";
+import { broadcastToRenderers } from "@main/ipc/broadcast.js";
 
 type Handler<K extends IpcChannel> = (
   req: IpcRequest<K>,

@@ -4,7 +4,7 @@ import type {
   MapCaptureOverlayInput,
   RenderedMapViewMapPane,
 } from "@shared/rendered-map-view.types";
-import { captureMapPaneFromDom } from "./rendered-map-view/capture-map-pane";
+import { captureMapPaneFromDom } from "@renderer/features/maps/lib/rendered-map-view/capture-map-pane";
 
 export type MapViewport = {
   latitude: number;

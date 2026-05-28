@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { mapsQueryKeys } from "../maps-query-keys";
-import { fileBase64ToDataUrl } from "../hooks/map-workspace-api";
+import { mapsQueryKeys } from "@renderer/features/maps/maps-query-keys";
+import { fileBase64ToDataUrl } from "@renderer/features/maps/hooks/map-workspace-api";
 
 export const mapThumbnailQueryKeys = {
   thumbnail: (mapId: number) => [...mapsQueryKeys.all, "thumbnail", mapId] as const,

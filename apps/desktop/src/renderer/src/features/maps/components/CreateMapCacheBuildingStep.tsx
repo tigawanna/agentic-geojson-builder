@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { useIpcEvent } from "../../../hooks/useIpcEvent";
-import { useCreateMapProjectMutation } from "../hooks/useCreateMapProjectMutation";
-import { useCreateMapWizardStore } from "../store/create-map-wizard-store";
+import { useIpcEvent } from "@renderer/hooks/useIpcEvent";
+import { useCreateMapProjectMutation } from "@renderer/features/maps/hooks/useCreateMapProjectMutation";
+import { useCreateMapWizardStore } from "@renderer/features/maps/store/create-map-wizard-store";
 
 export function CreateMapCacheBuildingStep() {
   const { t } = useTranslation();

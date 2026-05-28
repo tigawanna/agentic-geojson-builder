@@ -4,9 +4,9 @@ import type {
   CreateControlPointInput,
   DeleteControlPointInput,
   UpdateControlPointInput,
-} from "../../../shared/control-points.types.js";
-import { getPgliteDb } from "./client.js";
-import { controlPointTable } from "./schema/control-point.schema.js";
+} from "@shared/control-points.types.js";
+import { getPgliteDb } from "@main/lib/pglite/client.js";
+import { controlPointTable } from "@main/lib/pglite/schema/control-point.schema.js";
 
 type ControlPointRow = typeof controlPointTable.$inferSelect;
 

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { MapWorkspacePage } from "../../../features/maps/MapWorkspacePage";
+import { MapWorkspacePage } from "@renderer/features/maps/MapWorkspacePage";
 
 export const Route = createFileRoute("/maps/$mapId/")({
   component: MapWorkspaceRoutePage,

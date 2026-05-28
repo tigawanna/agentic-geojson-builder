@@ -1,16 +1,16 @@
-import type { IpcChannel, IpcRequest, IpcResponse } from "../../shared/ipc-contract.js";
+import type { IpcChannel, IpcRequest, IpcResponse } from "@shared/ipc-contract.js";
 import {
   createControlPoint,
   deleteControlPoint,
   listControlPoints,
   updateControlPoint,
-} from "../lib/pglite/control-points.service.js";
+} from "@main/lib/pglite/control-points.service.js";
 import {
   convertMapPanePixel,
   convertPdfPanePixel,
   createControlPointFromViewportPixels,
-} from "../lib/viewport-coordinates/viewport-coordinates.service.js";
-import { broadcastToRenderers } from "./broadcast.js";
+} from "@main/lib/viewport-coordinates/viewport-coordinates.service.js";
+import { broadcastToRenderers } from "@main/ipc/broadcast.js";
 
 type Handler<K extends IpcChannel> = (
   req: IpcRequest<K>,

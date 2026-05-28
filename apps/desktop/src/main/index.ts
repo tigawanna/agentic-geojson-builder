@@ -1,13 +1,13 @@
 import { app, BrowserWindow, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import { registerIpcHandlers } from "./ipc/index.js";
-import { initPgliteDb, shutdownPgliteDb } from "./lib/pglite/client.js";
-import { initAppLogger, log } from "./lib/logger.js";
-import { createApplicationMenu } from "./menu/create-application-menu.js";
-import { initMcpServer, shutdownMcpServer } from "./mcp/index.js";
-import { startTileServer, stopTileServer } from "./tile-server.js";
-import { initUpdater } from "./updater.js";
+import { registerIpcHandlers } from "@main/ipc/index.js";
+import { initPgliteDb, shutdownPgliteDb } from "@main/lib/pglite/client.js";
+import { initAppLogger, log } from "@main/lib/logger.js";
+import { createApplicationMenu } from "@main/menu/create-application-menu.js";
+import { initMcpServer, shutdownMcpServer } from "@main/mcp/index.js";
+import { startTileServer, stopTileServer } from "@main/tile-server.js";
+import { initUpdater } from "@main/updater.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

@@ -1,5 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchTileCacheStatus, tileCacheQueryKeys } from "./tile-cache-api";
+import {
+  fetchTileCacheStatus,
+  tileCacheQueryKeys,
+} from "@renderer/features/maps/hooks/tile-cache-api";
 
 export function useTileCacheStatusQuery(mapId: number | null) {
   return useQuery({

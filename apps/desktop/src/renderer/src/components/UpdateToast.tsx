@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { useUpdater } from "../hooks/useUpdater";
+import { useUpdater } from "@renderer/hooks/useUpdater";
 
 export function UpdateToast() {
   const { status, downloadUpdate, quitAndInstall } = useUpdater();

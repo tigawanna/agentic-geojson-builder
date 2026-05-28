@@ -1,8 +1,8 @@
 import { createHashHistory, createRouter } from "@tanstack/react-router";
-import { RouterErrorComponent } from "./lib/tanstack/router/RouterErrorComponent";
-import { RouterNotFoundComponent } from "./lib/tanstack/router/RouterNotFoundComponent";
-import { RouterPendingComponent } from "./lib/tanstack/router/RouterPendingComponent";
-import { routeTree } from "./routeTree.gen";
+import { RouterErrorComponent } from "@renderer/lib/tanstack/router/RouterErrorComponent";
+import { RouterNotFoundComponent } from "@renderer/lib/tanstack/router/RouterNotFoundComponent";
+import { RouterPendingComponent } from "@renderer/lib/tanstack/router/RouterPendingComponent";
+import { routeTree } from "@renderer/routeTree.gen";
 
 const hashHistory = createHashHistory();
 

@@ -3,10 +3,10 @@ import { postgis } from "@electric-sql/pglite-postgis";
 import { sql } from "drizzle-orm";
 import { drizzle, type PgliteDatabase } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
-import { log } from "../logger.js";
-import * as schema from "./schema/index.js";
-import { getMigrationsFolder, getPgliteDataDir } from "./paths.js";
-import { removeStalePostmasterPid } from "./prepare-data-dir.js";
+import { log } from "@main/lib/logger.js";
+import * as schema from "@main/lib/pglite/schema/index.js";
+import { getMigrationsFolder, getPgliteDataDir } from "@main/lib/pglite/paths.js";
+import { removeStalePostmasterPid } from "@main/lib/pglite/prepare-data-dir.js";
 
 let pgliteClient: PGlite | null = null;
 let db: (PgliteDatabase<typeof schema> & { $client: PGlite }) | null = null;

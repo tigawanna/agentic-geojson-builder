@@ -4,8 +4,8 @@ import { useTranslation } from "react-i18next";
 import type { MapBaseMapStyle } from "@shared/maps.types";
 import type { TileCacheCorner } from "@shared/tile-cache.types";
 import { TILE_CACHE_ZOOM_MAX, TILE_CACHE_ZOOM_MIN } from "@shared/tile-cache.types";
-import { BoundsPickerMap } from "./BoundsPickerMap";
-import { BaseMapStylePicker } from "./BaseMapStylePicker";
+import { BoundsPickerMap } from "@renderer/features/maps/components/BoundsPickerMap";
+import { BaseMapStylePicker } from "@renderer/features/maps/components/BaseMapStylePicker";
 
 type TileCacheBoundsPanelProps = {
   corners: TileCacheCorner[];

@@ -1,10 +1,10 @@
-import type { IpcChannel, IpcRequest, IpcResponse } from "../../shared/ipc-contract.js";
+import type { IpcChannel, IpcRequest, IpcResponse } from "@shared/ipc-contract.js";
 import {
   completeCaptureResponse,
   getRenderedMapView,
   getStoredRenderedMapView,
   saveRenderedMapView,
-} from "../lib/workspace-snapshot/workspace-snapshot.service.js";
+} from "@main/lib/workspace-snapshot/workspace-snapshot.service.js";
 
 type Handler<K extends IpcChannel> = (
   req: IpcRequest<K>,

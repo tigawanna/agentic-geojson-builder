@@ -6,7 +6,7 @@ export type MapCoordinates = {
   longitude: number;
 };
 
-import type { MapViewport } from "../lib/map-handle";
+import type { MapViewport } from "@renderer/features/maps/lib/map-handle";
 
 type MapWorkspaceUiState = {
   controlsOpen: boolean;

@@ -1,5 +1,5 @@
 import { app, Menu, shell } from "electron";
-import { sendAppMenuAction } from "./menu-actions.js";
+import { sendAppMenuAction } from "@main/menu/menu-actions.js";
 
 function buildAppMenu(): Menu {
   const isMac = process.platform === "darwin";

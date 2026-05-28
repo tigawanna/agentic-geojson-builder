@@ -1,5 +1,5 @@
 import type { MapWorkspaceState } from "@shared/maps.types";
-import { mapsQueryKeys } from "../maps-query-keys";
+import { mapsQueryKeys } from "@renderer/features/maps/maps-query-keys";
 
 export const mapWorkspaceQueryKeys = {
   workspace: (mapId: number) => [...mapsQueryKeys.all, "workspace", mapId] as const,

@@ -1,9 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { ReplaceMapSourceInput } from "@shared/maps.types";
-import { useMapWorkspaceActions } from "../store/MapWorkspaceProvider";
-import { mapsQueryKeys } from "../maps-query-keys";
-import { mapWorkspaceQueryKeys } from "./map-workspace-api";
-import { mapThumbnailQueryKeys } from "./useMapThumbnailQuery";
+import { useMapWorkspaceActions } from "@renderer/features/maps/store/MapWorkspaceProvider";
+import { mapsQueryKeys } from "@renderer/features/maps/maps-query-keys";
+import { mapWorkspaceQueryKeys } from "@renderer/features/maps/hooks/map-workspace-api";
+import { mapThumbnailQueryKeys } from "@renderer/features/maps/hooks/useMapThumbnailQuery";
 
 export function useReplaceMapSourceMutation() {
   const queryClient = useQueryClient();

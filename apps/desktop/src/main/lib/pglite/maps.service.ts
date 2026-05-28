@@ -8,16 +8,20 @@ import type {
   MapWorkspaceState,
   ReplaceMapSourceInput,
   UpdateMapWorkspaceInput,
-} from "../../../shared/maps.types.js";
-import { deleteMapAssets, readMapSourceFile, saveMapSourceFile } from "./map-files.service.js";
+} from "@shared/maps.types.js";
+import {
+  deleteMapAssets,
+  readMapSourceFile,
+  saveMapSourceFile,
+} from "@main/lib/pglite/map-files.service.js";
 import {
   generateMapThumbnailFromSource,
   readMapThumbnailPayload,
   saveMapThumbnailFromBase64,
-} from "./map-thumbnail.service.js";
-import { getPgliteDb } from "./client.js";
-import { mapTable, type MapRecord } from "./schema/map.schema.js";
-import { getTileCacheBaseDir } from "../tile-cache/paths.js";
+} from "@main/lib/pglite/map-thumbnail.service.js";
+import { getPgliteDb } from "@main/lib/pglite/client.js";
+import { mapTable, type MapRecord } from "@main/lib/pglite/schema/map.schema.js";
+import { getTileCacheBaseDir } from "@main/lib/tile-cache/paths.js";
 import { rm } from "node:fs/promises";
 import { getMapCacheRoot } from "@repo/tile-cache/paths";
 

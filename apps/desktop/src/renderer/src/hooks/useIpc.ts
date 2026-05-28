@@ -5,7 +5,7 @@ import {
   type UseMutationOptions,
   type UseQueryOptions,
 } from "@tanstack/react-query";
-import type { IpcChannel, IpcRequest, IpcResponse } from "../../../shared/ipc-contract";
+import type { IpcChannel, IpcRequest, IpcResponse } from "@shared/ipc-contract";
 
 /**
  * Typed wrapper around `window.api.invoke` + TanStack Query.

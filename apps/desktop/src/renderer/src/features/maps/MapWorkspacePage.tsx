@@ -1,10 +1,10 @@
-import { MapWorkspaceSplitView } from "./components/MapWorkspaceSplitView";
-import { useHydrateMapWorkspace } from "./hooks/useHydrateMapWorkspace";
+import { MapWorkspaceSplitView } from "@renderer/features/maps/components/MapWorkspaceSplitView";
+import { useHydrateMapWorkspace } from "@renderer/features/maps/hooks/useHydrateMapWorkspace";
 import {
   MapWorkspaceProvider,
   useMapWorkspacePhase,
   useMapWorkspaceState,
-} from "./store/MapWorkspaceProvider";
+} from "@renderer/features/maps/store/MapWorkspaceProvider";
 
 function MapWorkspaceContent({ mapId }: { mapId: number }) {
   useHydrateMapWorkspace(mapId);

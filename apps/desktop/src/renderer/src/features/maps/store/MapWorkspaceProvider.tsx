@@ -4,12 +4,12 @@ import {
   useScopedMapWorkspaceStore,
   type MapWorkspacePhase,
   type MapWorkspaceStore,
-} from "./map-workspace-store";
+} from "@renderer/features/maps/store/map-workspace-store";
 import {
   createMapWorkspaceUiStore,
   useScopedMapWorkspaceUiStore,
   type MapWorkspaceUiStore,
-} from "./map-workspace-ui-store";
+} from "@renderer/features/maps/store/map-workspace-ui-store";
 
 const MapWorkspaceStoreContext = createContext<MapWorkspaceStore | null>(null);
 const MapWorkspaceUiStoreContext = createContext<MapWorkspaceUiStore | null>(null);

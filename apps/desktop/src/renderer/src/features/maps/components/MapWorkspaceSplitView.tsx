@@ -5,32 +5,32 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from "../../../components/common/Resizable";
-import { useIpcMutation } from "../../../hooks/useIpc";
-import { useControlPointsQuery } from "../hooks/useControlPointsQuery";
-import { useTileCacheStatusQuery } from "../hooks/useTileCacheStatusQuery";
-import { resolveLocalTileUrl } from "../hooks/tile-cache-api";
-import { copyMapCoordinates } from "../lib/copy-map-coordinates";
+} from "@renderer/components/common/Resizable";
+import { useIpcMutation } from "@renderer/hooks/useIpc";
+import { useControlPointsQuery } from "@renderer/features/maps/hooks/useControlPointsQuery";
+import { useTileCacheStatusQuery } from "@renderer/features/maps/hooks/useTileCacheStatusQuery";
+import { resolveLocalTileUrl } from "@renderer/features/maps/hooks/tile-cache-api";
+import { copyMapCoordinates } from "@renderer/features/maps/lib/copy-map-coordinates";
 import {
   workspaceToPdfTransform,
   pdfTransformToWorkspacePatch,
   computePdfPanToCenterOnImagePoint,
-} from "../lib/pdf-view-transform";
+} from "@renderer/features/maps/lib/pdf-view-transform";
 import type { ControlPointRecord } from "@shared/control-points.types";
-import type { MapHandle } from "../lib/map-handle";
-import { captureWorkspaceView } from "../lib/rendered-map-view/capture-workspace-view";
-import { registerWorkspaceCapture } from "../lib/workspace-capture-registry";
-import { useWorkspacePersistence } from "../hooks/useWorkspacePersistence";
+import type { MapHandle } from "@renderer/features/maps/lib/map-handle";
+import { captureWorkspaceView } from "@renderer/features/maps/lib/rendered-map-view/capture-workspace-view";
+import { registerWorkspaceCapture } from "@renderer/features/maps/lib/workspace-capture-registry";
+import { useWorkspacePersistence } from "@renderer/features/maps/hooks/useWorkspacePersistence";
 import {
   useMapWorkspaceState,
   useMapWorkspaceUiActions,
   useMapWorkspaceUiState,
-} from "../store/MapWorkspaceProvider";
-import { LeafletMapPane } from "./LeafletMapPane";
-import { MapTileCacheBoundsModal } from "./MapTileCacheBoundsModal";
-import { MapWorkspaceControlsModal } from "./MapWorkspaceControlsModal";
-import { MapWorkspaceHeader } from "./MapWorkspaceHeader";
-import { SourceDocumentPane } from "./SourceDocumentPane";
+} from "@renderer/features/maps/store/MapWorkspaceProvider";
+import { LeafletMapPane } from "@renderer/features/maps/components/LeafletMapPane";
+import { MapTileCacheBoundsModal } from "@renderer/features/maps/components/MapTileCacheBoundsModal";
+import { MapWorkspaceControlsModal } from "@renderer/features/maps/components/MapWorkspaceControlsModal";
+import { MapWorkspaceHeader } from "@renderer/features/maps/components/MapWorkspaceHeader";
+import { SourceDocumentPane } from "@renderer/features/maps/components/SourceDocumentPane";
 
 export function MapWorkspaceSplitView() {
   const { t } = useTranslation();

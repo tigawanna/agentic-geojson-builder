@@ -1,5 +1,5 @@
 import { integer, pgTable, real, timestamp, varchar } from "drizzle-orm/pg-core";
-import { bytea } from "./bytea";
+import { bytea } from "@main/lib/pglite/schema/bytea";
 
 export const mapTable = pgTable("map", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),

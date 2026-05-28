@@ -1,7 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import type { AppMenuAction } from "@shared/menu.types";
-import { useCreateMapWizardStore } from "../features/maps/store/create-map-wizard-store";
+import { useCreateMapWizardStore } from "@renderer/features/maps/store/create-map-wizard-store";
 
 export function useAppMenuActions() {
   const navigate = useNavigate();

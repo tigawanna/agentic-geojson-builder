@@ -1,6 +1,6 @@
-import type { IpcChannel, IpcRequest, IpcResponse } from "../../shared/ipc-contract.js";
-import { setMcpEnabled } from "../storage/app-settings.js";
-import { getMcpStatus, syncMcpServer } from "../mcp/index.js";
+import type { IpcChannel, IpcRequest, IpcResponse } from "@shared/ipc-contract.js";
+import { setMcpEnabled } from "@main/storage/app-settings.js";
+import { getMcpStatus, syncMcpServer } from "@main/mcp/index.js";
 
 type Handler<K extends IpcChannel> = (
   req: IpcRequest<K>,

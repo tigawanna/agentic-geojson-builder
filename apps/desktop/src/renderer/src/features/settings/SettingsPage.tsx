@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { PageShell } from "../../components/common/PageShell";
-import { McpSettingsSection } from "./McpSettingsSection";
-import { useIpcMutation, useIpcQuery } from "../../hooks/useIpc";
-import { useTheme, type Theme } from "../theme/ThemeProvider";
+import { PageShell } from "@renderer/components/common/PageShell";
+import { McpSettingsSection } from "@renderer/features/settings/McpSettingsSection";
+import { useIpcMutation, useIpcQuery } from "@renderer/hooks/useIpc";
+import { useTheme, type Theme } from "@renderer/features/theme/ThemeProvider";
 
 const DEMO_KEY = "demo:value";
 

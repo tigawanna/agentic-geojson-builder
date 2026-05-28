@@ -5,7 +5,7 @@ import type {
   IpcEventPayload,
   IpcRequest,
   IpcResponse,
-} from "../shared/ipc-contract.js";
+} from "@shared/ipc-contract.js";
 
 /**
  * Strongly-typed bridge exposed to the renderer as `window.api`.

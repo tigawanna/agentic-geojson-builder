@@ -1,5 +1,5 @@
-import type { IpcChannel, IpcRequest, IpcResponse } from "../../shared/ipc-contract.js";
-import { checkForUpdates, downloadUpdate, quitAndInstallUpdate } from "../updater.js";
+import type { IpcChannel, IpcRequest, IpcResponse } from "@shared/ipc-contract.js";
+import { checkForUpdates, downloadUpdate, quitAndInstallUpdate } from "@main/updater.js";
 
 type Handler<K extends IpcChannel> = (
   req: IpcRequest<K>,

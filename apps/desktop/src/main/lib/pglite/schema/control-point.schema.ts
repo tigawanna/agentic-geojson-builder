@@ -1,5 +1,5 @@
 import { geometry, integer, pgTable, real, timestamp, varchar } from "drizzle-orm/pg-core";
-import { mapTable } from "./map.schema";
+import { mapTable } from "@main/lib/pglite/schema/map.schema";
 
 export const controlPointTable = pgTable("control_point", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),

@@ -4,7 +4,7 @@ import type {
   MapCaptureOverlayInput,
   RenderedMapViewMapPane,
 } from "@shared/rendered-map-view.types";
-import { annotateMapCaptureImage } from "./capture-agent-guides";
+import { annotateMapCaptureImage } from "@renderer/features/maps/lib/rendered-map-view/capture-agent-guides";
 
 function readMapBounds(map: Leaflet.Map) {
   const bounds = map.getBounds();

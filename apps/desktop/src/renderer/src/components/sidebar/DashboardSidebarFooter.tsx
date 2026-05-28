@@ -1,7 +1,7 @@
 import { Moon, Sun } from "lucide-react";
-import { useTheme } from "../../features/theme/ThemeProvider";
-import { cn } from "../../lib/utils";
-import { useSidebar } from "./SidebarProvider";
+import { useTheme } from "@renderer/features/theme/ThemeProvider";
+import { cn } from "@renderer/lib/utils";
+import { useSidebar } from "@renderer/components/sidebar/SidebarProvider";
 
 export function DashboardSidebarFooter() {
   const { theme, resolved, setTheme } = useTheme();

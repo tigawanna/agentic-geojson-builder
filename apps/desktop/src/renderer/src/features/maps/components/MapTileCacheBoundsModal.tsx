@@ -3,17 +3,17 @@ import { useTranslation } from "react-i18next";
 import type { MapBaseMapStyle } from "@shared/maps.types";
 import type { TileCacheCorner } from "@shared/tile-cache.types";
 import { TILE_CACHE_DEFAULT_MAX_ZOOM, TILE_CACHE_DEFAULT_MIN_ZOOM } from "@shared/tile-cache.types";
-import { useIpcEvent } from "../../../hooks/useIpcEvent";
-import { useBuildTileCacheMutation } from "../hooks/useBuildTileCacheMutation";
-import { useTileCacheStatusQuery } from "../hooks/useTileCacheStatusQuery";
-import { useWorkspacePersistence } from "../hooks/useWorkspacePersistence";
-import { cornersFromBounds } from "../lib/tile-cache-bounds";
+import { useIpcEvent } from "@renderer/hooks/useIpcEvent";
+import { useBuildTileCacheMutation } from "@renderer/features/maps/hooks/useBuildTileCacheMutation";
+import { useTileCacheStatusQuery } from "@renderer/features/maps/hooks/useTileCacheStatusQuery";
+import { useWorkspacePersistence } from "@renderer/features/maps/hooks/useWorkspacePersistence";
+import { cornersFromBounds } from "@renderer/features/maps/lib/tile-cache-bounds";
 import {
   useMapWorkspaceState,
   useMapWorkspaceUiActions,
   useMapWorkspaceUiState,
-} from "../store/MapWorkspaceProvider";
-import { TileCacheBoundsPanel } from "./TileCacheBoundsPanel";
+} from "@renderer/features/maps/store/MapWorkspaceProvider";
+import { TileCacheBoundsPanel } from "@renderer/features/maps/components/TileCacheBoundsPanel";
 
 export function MapTileCacheBoundsModal() {
   const { t } = useTranslation();

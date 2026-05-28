@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { PageShell } from "../../components/common/PageShell";
-import { MapsIpcDemo } from "../maps/MapsIpcDemo";
-import { useIpcQuery } from "../../hooks/useIpc";
+import { PageShell } from "@renderer/components/common/PageShell";
+import { MapsIpcDemo } from "@renderer/features/maps/MapsIpcDemo";
+import { useIpcQuery } from "@renderer/hooks/useIpc";
 
 export function HomePage() {
   const { t } = useTranslation();

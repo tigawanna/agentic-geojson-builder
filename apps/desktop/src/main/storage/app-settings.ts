@@ -1,5 +1,5 @@
-import { DEFAULT_MCP_PORT } from "../../shared/mcp.types.js";
-import { rawStore } from "./backend-store.js";
+import { DEFAULT_MCP_PORT } from "@shared/mcp.types.js";
+import { rawStore } from "@main/storage/backend-store.js";
 
 export function getMcpEnabled(): boolean {
   return rawStore.get("mcpEnabled");

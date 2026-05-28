@@ -3,7 +3,10 @@ import type {
   RenderedMapView,
   RenderedMapViewMapPane,
 } from "@shared/rendered-map-view.types";
-import { capturePdfPaneCanvas, type PdfCaptureControlPoint } from "./capture-pdf-pane";
+import {
+  capturePdfPaneCanvas,
+  type PdfCaptureControlPoint,
+} from "@renderer/features/maps/lib/rendered-map-view/capture-pdf-pane";
 
 type CaptureWorkspaceViewInput = {
   mapId: number;

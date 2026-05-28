@@ -1,9 +1,9 @@
 import { RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { PageShell } from "../../components/common/PageShell";
-import { RouterErrorComponent } from "../../lib/tanstack/router/RouterErrorComponent";
-import { RouterPendingComponent } from "../../lib/tanstack/router/RouterPendingComponent";
-import { usePostsQuery } from "./usePostsQuery";
+import { PageShell } from "@renderer/components/common/PageShell";
+import { RouterErrorComponent } from "@renderer/lib/tanstack/router/RouterErrorComponent";
+import { RouterPendingComponent } from "@renderer/lib/tanstack/router/RouterPendingComponent";
+import { usePostsQuery } from "@renderer/features/posts/usePostsQuery";
 
 export function PostsPage() {
   const { t } = useTranslation();

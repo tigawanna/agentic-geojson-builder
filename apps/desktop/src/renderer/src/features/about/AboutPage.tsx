@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { PageShell } from "../../components/common/PageShell";
-import { useUpdater } from "../../hooks/useUpdater";
+import { PageShell } from "@renderer/components/common/PageShell";
+import { useUpdater } from "@renderer/hooks/useUpdater";
 
 export function AboutPage() {
   const { t } = useTranslation();

@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { ipcInvoke } from "../../hooks/useIpc";
+import { ipcInvoke } from "@renderer/hooks/useIpc";
 
 export type Theme = "light" | "dark" | "system";
 

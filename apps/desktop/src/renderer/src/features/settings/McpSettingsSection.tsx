@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import type { McpStatus } from "../../../../shared/mcp.types";
+import type { McpStatus } from "@shared/mcp.types";
 
 const mcpStatusQueryKey = ["mcp", "status"] as const;
 

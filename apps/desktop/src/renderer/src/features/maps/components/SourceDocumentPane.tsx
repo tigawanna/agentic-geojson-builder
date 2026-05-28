@@ -3,10 +3,17 @@ import * as pdfjs from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 import type { ControlPointRecord } from "@shared/control-points.types";
 import type { MapSourceFilePayload } from "@shared/maps.types";
-import { fileBase64ToDataUrl } from "../hooks/map-workspace-api";
-import { clampPdfScale, PDF_RENDER_SCALE, type PdfViewTransform } from "../lib/pdf-view-transform";
-import { getImageCoordinatesFromPointer } from "../lib/pdf-image-coordinates";
-import { isPickModifierEvent, usePickModifierHeld } from "../lib/pick-modifier";
+import { fileBase64ToDataUrl } from "@renderer/features/maps/hooks/map-workspace-api";
+import {
+  clampPdfScale,
+  PDF_RENDER_SCALE,
+  type PdfViewTransform,
+} from "@renderer/features/maps/lib/pdf-view-transform";
+import { getImageCoordinatesFromPointer } from "@renderer/features/maps/lib/pdf-image-coordinates";
+import {
+  isPickModifierEvent,
+  usePickModifierHeld,
+} from "@renderer/features/maps/lib/pick-modifier";
 
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
 

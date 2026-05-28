@@ -1,12 +1,15 @@
 import { Outlet, useRouterState } from "@tanstack/react-router";
-import { usePageTitle } from "../../hooks/usePageTitle";
-import { AppConfig } from "../../utils/system";
-import { AppMenuBridge } from "../AppMenuBridge";
-import { WorkspaceCaptureBridge } from "../WorkspaceCaptureBridge";
-import { UpdateToast } from "../UpdateToast";
-import { accountRoutes, primaryRoutes } from "./dashboard-routes";
-import { DashboardSidebar, DashboardSidebarTrigger } from "./DashboardSidebar";
-import { SidebarProvider, useSidebar } from "./SidebarProvider";
+import { usePageTitle } from "@renderer/hooks/usePageTitle";
+import { AppConfig } from "@renderer/utils/system";
+import { AppMenuBridge } from "@renderer/components/AppMenuBridge";
+import { WorkspaceCaptureBridge } from "@renderer/components/WorkspaceCaptureBridge";
+import { UpdateToast } from "@renderer/components/UpdateToast";
+import { accountRoutes, primaryRoutes } from "@renderer/components/sidebar/dashboard-routes";
+import {
+  DashboardSidebar,
+  DashboardSidebarTrigger,
+} from "@renderer/components/sidebar/DashboardSidebar";
+import { SidebarProvider, useSidebar } from "@renderer/components/sidebar/SidebarProvider";
 
 function DashboardShell() {
   const { toggleSidebar, isCollapsed } = useSidebar();

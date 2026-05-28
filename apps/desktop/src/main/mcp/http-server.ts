@@ -4,8 +4,8 @@ import { createMcpExpressApp } from "@modelcontextprotocol/sdk/server/express.js
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import type { Express } from "express";
-import { log } from "../lib/logger.js";
-import { createDesktopMcpServer } from "./create-desktop-mcp-server.js";
+import { log } from "@main/lib/logger.js";
+import { createDesktopMcpServer } from "@main/mcp/create-desktop-mcp-server.js";
 
 const MCP_PATH = "/mcp";
 

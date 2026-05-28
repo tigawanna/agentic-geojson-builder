@@ -1,5 +1,5 @@
 import { BrowserWindow } from "electron";
-import type { IpcEventName, IpcEventPayload } from "../../shared/ipc-contract.js";
+import type { IpcEventName, IpcEventPayload } from "@shared/ipc-contract.js";
 
 export function broadcastToRenderers<K extends IpcEventName>(
   event: K,

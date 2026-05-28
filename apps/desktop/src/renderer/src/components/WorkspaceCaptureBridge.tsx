@@ -1,6 +1,6 @@
 import type { WorkspaceCaptureRequestEvent } from "@shared/rendered-map-view.types";
-import { getWorkspaceCapture } from "../features/maps/lib/workspace-capture-registry";
-import { useIpcEvent } from "../hooks/useIpcEvent";
+import { getWorkspaceCapture } from "@renderer/features/maps/lib/workspace-capture-registry";
+import { useIpcEvent } from "@renderer/hooks/useIpcEvent";
 
 export function WorkspaceCaptureBridge() {
   useIpcEvent("workspace:captureRequest", (payload: WorkspaceCaptureRequestEvent) => {

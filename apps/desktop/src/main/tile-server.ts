@@ -1,8 +1,8 @@
 import { createServer, type Server } from "node:http";
-import type { MapBaseMapStyle } from "../shared/maps.types.js";
-import { TILE_SERVER_PORT } from "../shared/tile-cache.types.js";
-import { log } from "./lib/logger.js";
-import { readCachedTileForMap } from "./lib/tile-cache/tile-cache.service.js";
+import type { MapBaseMapStyle } from "@shared/maps.types.js";
+import { TILE_SERVER_PORT } from "@shared/tile-cache.types.js";
+import { log } from "@main/lib/logger.js";
+import { readCachedTileForMap } from "@main/lib/tile-cache/tile-cache.service.js";
 
 let tileServer: Server | null = null;
 

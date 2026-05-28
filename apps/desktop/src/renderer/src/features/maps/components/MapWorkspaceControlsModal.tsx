@@ -2,19 +2,19 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { ControlPointRecord } from "@shared/control-points.types";
 import type { MapBaseMapStyle } from "@shared/maps.types";
-import { useIpcMutation } from "../../../hooks/useIpc";
-import { useReplaceMapSourceMutation } from "../hooks/useReplaceMapSourceMutation";
-import { generateSourceThumbnail } from "../lib/generate-source-thumbnail";
-import { useTileCacheStatusQuery } from "../hooks/useTileCacheStatusQuery";
-import { useWorkspacePersistence } from "../hooks/useWorkspacePersistence";
-import { defaultPdfTransform } from "../lib/pdf-view-transform";
+import { useIpcMutation } from "@renderer/hooks/useIpc";
+import { useReplaceMapSourceMutation } from "@renderer/features/maps/hooks/useReplaceMapSourceMutation";
+import { generateSourceThumbnail } from "@renderer/features/maps/lib/generate-source-thumbnail";
+import { useTileCacheStatusQuery } from "@renderer/features/maps/hooks/useTileCacheStatusQuery";
+import { useWorkspacePersistence } from "@renderer/features/maps/hooks/useWorkspacePersistence";
+import { defaultPdfTransform } from "@renderer/features/maps/lib/pdf-view-transform";
 import {
   useMapWorkspaceState,
   useMapWorkspaceUiActions,
   useMapWorkspaceUiState,
-} from "../store/MapWorkspaceProvider";
-import type { MapHandle } from "../lib/map-handle";
-import { BaseMapStylePicker } from "./BaseMapStylePicker";
+} from "@renderer/features/maps/store/MapWorkspaceProvider";
+import type { MapHandle } from "@renderer/features/maps/lib/map-handle";
+import { BaseMapStylePicker } from "@renderer/features/maps/components/BaseMapStylePicker";
 
 const acceptedTypes = "application/pdf,image/png,image/jpeg,image/webp";
 

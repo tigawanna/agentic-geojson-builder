@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
-import type { IpcEventPayload } from "../../../shared/ipc-contract";
-import { ipcInvoke } from "./useIpc";
+import type { IpcEventPayload } from "@shared/ipc-contract";
+import { ipcInvoke } from "@renderer/hooks/useIpc";
 
 export type UpdaterStatus = IpcEventPayload<"updater:status">;
 

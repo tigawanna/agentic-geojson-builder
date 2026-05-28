@@ -4,16 +4,13 @@ import type {
   LonLatResult,
   MapPanePixelInput,
   PdfPanePixelInput,
-} from "../../../shared/control-points.types.js";
-import {
-  mapPanePixelToLonLat,
-  pdfPanePixelToImageXY,
-} from "../../../shared/viewport-coordinates.js";
-import { createControlPoint } from "../pglite/control-points.service.js";
+} from "@shared/control-points.types.js";
+import { mapPanePixelToLonLat, pdfPanePixelToImageXY } from "@shared/viewport-coordinates.js";
+import { createControlPoint } from "@main/lib/pglite/control-points.service.js";
 import {
   getRenderedMapView,
   getStoredRenderedMapView,
-} from "../workspace-snapshot/workspace-snapshot.service.js";
+} from "@main/lib/workspace-snapshot/workspace-snapshot.service.js";
 
 async function resolveSnapshot(mapId: number, liveCapture?: boolean) {
   if (liveCapture ?? true) {

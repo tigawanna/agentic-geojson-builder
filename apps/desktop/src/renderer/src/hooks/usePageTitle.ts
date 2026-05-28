@@ -1,5 +1,5 @@
 import { useRouterState } from "@tanstack/react-router";
-import { accountRoutes, primaryRoutes } from "../components/sidebar/dashboard-routes";
+import { accountRoutes, primaryRoutes } from "@renderer/components/sidebar/dashboard-routes";
 
 function normalizePath(path: string): string {
   const base = path.split("?")[0] ?? "";

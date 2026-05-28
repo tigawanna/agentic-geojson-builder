@@ -1,5 +1,5 @@
 import Store from "electron-store";
-import type { StorageBackend } from "./types.js";
+import type { StorageBackend } from "@main/storage/types.js";
 
 /**
  * Schema of the persisted settings. Extend freely — `electron-store` validates

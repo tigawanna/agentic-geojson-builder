@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-import type { Api } from "../../preload";
+import type { Api } from "@preload/index";
 
 interface ImportMetaEnv {
   readonly VITE_API_BASE_URL: string;

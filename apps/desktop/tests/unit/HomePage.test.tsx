@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { I18nextProvider } from "react-i18next";
-import { i18n } from "../../src/renderer/src/i18n";
-import { HomePage } from "../../src/renderer/src/features/home/HomePage";
+import { i18n } from "@renderer/i18n";
+import { HomePage } from "@renderer/features/home/HomePage";
 
 function renderWithProviders(ui: React.ReactElement) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });

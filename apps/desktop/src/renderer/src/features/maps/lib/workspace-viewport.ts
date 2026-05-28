@@ -1,5 +1,5 @@
 import type { MapWorkspaceState } from "@shared/maps.types";
-import { DEFAULT_MAP_VIEWPORT, type MapViewport } from "./map-handle";
+import { DEFAULT_MAP_VIEWPORT, type MapViewport } from "@renderer/features/maps/lib/map-handle";
 
 export function getWorkspaceHomeViewport(workspace: MapWorkspaceState): MapViewport {
   return {

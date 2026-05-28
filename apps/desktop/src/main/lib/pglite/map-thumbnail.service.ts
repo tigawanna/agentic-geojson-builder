@@ -3,7 +3,7 @@ import {
   MAP_THUMBNAIL_FILE_NAME,
   readMapThumbnailFile,
   saveMapThumbnailFile,
-} from "./map-files.service.js";
+} from "@main/lib/pglite/map-files.service.js";
 
 const THUMBNAIL_MAX_WIDTH = 480;
 

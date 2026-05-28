@@ -1,10 +1,10 @@
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
-import { cn } from "../../lib/utils";
-import { SidebarLinks } from "./SidebarLinks";
-import { DashboardSidebarFooter } from "./DashboardSidebarFooter";
-import { DashboardSidebarHeader } from "./DashboardSidebarHeader";
-import { useSidebar } from "./SidebarProvider";
-import type { SidebarItem } from "./types";
+import { cn } from "@renderer/lib/utils";
+import { SidebarLinks } from "@renderer/components/sidebar/SidebarLinks";
+import { DashboardSidebarFooter } from "@renderer/components/sidebar/DashboardSidebarFooter";
+import { DashboardSidebarHeader } from "@renderer/components/sidebar/DashboardSidebarHeader";
+import { useSidebar } from "@renderer/components/sidebar/SidebarProvider";
+import type { SidebarItem } from "@renderer/components/sidebar/types";
 
 interface DashboardSidebarProps {
   primaryRoutes: SidebarItem[];

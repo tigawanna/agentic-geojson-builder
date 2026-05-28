@@ -1,15 +1,15 @@
 import { app, BrowserWindow, ipcMain } from "electron";
-import type { IpcChannel, IpcRequest, IpcResponse } from "../../shared/ipc-contract.js";
-import { log } from "../lib/logger.js";
-import { appMenuHandlers } from "./app-menu.js";
-import { storageHandlers } from "./storage.js";
-import { mapsHandlers } from "./maps.js";
-import { tileCacheHandlers } from "./tile-cache.js";
-import { controlPointsHandlers } from "./control-points.js";
-import { mcpSettingsHandlers } from "./mcp-settings.js";
-import { workspaceSnapshotHandlers } from "./workspace-snapshot.js";
-import { pgliteHandlers } from "./pglite.js";
-import { updaterHandlers } from "./updater.js";
+import type { IpcChannel, IpcRequest, IpcResponse } from "@shared/ipc-contract.js";
+import { log } from "@main/lib/logger.js";
+import { appMenuHandlers } from "@main/ipc/app-menu.js";
+import { storageHandlers } from "@main/ipc/storage.js";
+import { mapsHandlers } from "@main/ipc/maps.js";
+import { tileCacheHandlers } from "@main/ipc/tile-cache.js";
+import { controlPointsHandlers } from "@main/ipc/control-points.js";
+import { mcpSettingsHandlers } from "@main/ipc/mcp-settings.js";
+import { workspaceSnapshotHandlers } from "@main/ipc/workspace-snapshot.js";
+import { pgliteHandlers } from "@main/ipc/pglite.js";
+import { updaterHandlers } from "@main/ipc/updater.js";
 
 /**
  * Strongly-typed IPC handler definition.

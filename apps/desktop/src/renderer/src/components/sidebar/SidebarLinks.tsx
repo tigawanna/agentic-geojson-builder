@@ -1,8 +1,8 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { cn } from "../../lib/utils";
-import type { SidebarItem } from "./types";
-import { useSidebar } from "./SidebarProvider";
+import { cn } from "@renderer/lib/utils";
+import type { SidebarItem } from "@renderer/components/sidebar/types";
+import { useSidebar } from "@renderer/components/sidebar/SidebarProvider";
 
 interface SidebarLinksProps {
   links: SidebarItem[];

@@ -1,12 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, RotateCw, Settings2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { formatMapCoordinates } from "../lib/copy-map-coordinates";
+import { formatMapCoordinates } from "@renderer/features/maps/lib/copy-map-coordinates";
 import {
   useMapWorkspaceUiActions,
   useMapWorkspaceUiState,
   useMapWorkspaceState,
-} from "../store/MapWorkspaceProvider";
+} from "@renderer/features/maps/store/MapWorkspaceProvider";
 
 type MapWorkspaceHeaderProps = {
   onOpenControls: () => void;
