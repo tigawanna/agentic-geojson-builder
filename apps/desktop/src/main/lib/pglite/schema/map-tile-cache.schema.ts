@@ -15,7 +15,7 @@ export const mapTileCacheTable = pgTable(
     boundsSouth: real("bounds_south").notNull(),
     boundsEast: real("bounds_east").notNull(),
     boundsWest: real("bounds_west").notNull(),
-    minZoom: integer("min_zoom").notNull().default(14),
+    minZoom: integer("min_zoom").notNull().default(11),
     maxZoom: integer("max_zoom").notNull().default(17),
     style: varchar({ length: 32 }).notNull().default("satellite"),
     tileCount: integer("tile_count").notNull().default(0),

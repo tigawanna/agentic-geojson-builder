@@ -1,3 +1,4 @@
+import { buildTileUrlFallback } from "@repo/tile-cache/tile-url";
 import type { MapBaseMapStyle } from "@shared/maps.types";
 import type {
   MapCaptureOverlayInput,
@@ -36,7 +37,7 @@ export const BASE_MAP_CONFIG: Record<
     maxZoom: 20,
   },
   standard: {
-    url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
     attribution: "&copy; OpenStreetMap",
     maxZoom: 19,
   },
@@ -78,17 +79,99 @@ export async function geocodePlace(query: string) {
   };
 }
 
+function hideFailedTile(tile: HTMLImageElement | undefined) {
+  if (tile) {
+    tile.style.visibility = "hidden";
+  }
+}
+
+function showLoadedTile(tile: HTMLImageElement | undefined) {
+  if (tile) {
+    tile.style.visibility = "";
+  }
+}
+
+function parseTileCoordsFromSrc(src: string): { z: number; x: number; y: number } | null {
+  const match = src.match(/\/(\d+)\/(\d+)\/(\d+)(?:@2x)?\.png(?:\?|$)/);
+  if (!match) {
+    return null;
+  }
+
+  const z = Number(match[1]);
+  const x = Number(match[2]);
+  const y = Number(match[3]);
+  if (!Number.isFinite(z) || !Number.isFinite(x) || !Number.isFinite(y)) {
+    return null;
+  }
+
+  return { z, x, y };
+}
+
+function attachRemoteTileFallback(layer: import("leaflet").TileLayer, style: MapBaseMapStyle) {
+  if (style !== "standard") {
+    return;
+  }
+
+  layer.on("tileerror", (event) => {
+    const tile = event.tile as HTMLImageElement | undefined;
+    if (!tile) {
+      return;
+    }
+
+    if (tile.dataset.fallback === "1") {
+      hideFailedTile(tile);
+      return;
+    }
+
+    const coords =
+      "coords" in event && event.coords
+        ? (event.coords as { z: number; x: number; y: number })
+        : parseTileCoordsFromSrc(tile.src);
+
+    if (!coords) {
+      hideFailedTile(tile);
+      return;
+    }
+
+    tile.dataset.fallback = "1";
+    tile.src = buildTileUrlFallback("standard", coords.z, coords.x, coords.y);
+  });
+}
+
 export function createBaseLayer(
   L: typeof import("leaflet"),
   style: MapBaseMapStyle,
   tileUrlOverride?: string | null,
 ) {
   const config = BASE_MAP_CONFIG[style];
-  return L.tileLayer(tileUrlOverride ?? config.url, {
+  const layerOptions = {
     maxZoom: config.maxZoom,
     attribution: config.attribution,
+    crossOrigin: "anonymous" as const,
+  };
+
+  if (!tileUrlOverride) {
+    const remote = L.tileLayer(config.url, layerOptions);
+    attachRemoteTileFallback(remote, style);
+    return remote;
+  }
+
+  const remote = L.tileLayer(config.url, layerOptions);
+  attachRemoteTileFallback(remote, style);
+  const local = L.tileLayer(tileUrlOverride, {
+    maxZoom: config.maxZoom,
+    attribution: "",
     crossOrigin: "anonymous",
   });
+
+  local.on("tileerror", (event) => {
+    hideFailedTile(event.tile as HTMLImageElement | undefined);
+  });
+  local.on("tileload", (event) => {
+    showLoadedTile(event.tile as HTMLImageElement | undefined);
+  });
+
+  return L.layerGroup([remote, local]);
 }
 
 export function createMapHandle(

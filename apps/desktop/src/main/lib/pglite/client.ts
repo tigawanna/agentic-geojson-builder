@@ -6,6 +6,7 @@ import { migrate } from "drizzle-orm/pglite/migrator";
 import { log } from "../logger.js";
 import * as schema from "./schema/index.js";
 import { getMigrationsFolder, getPgliteDataDir } from "./paths.js";
+import { removeStalePostmasterPid } from "./prepare-data-dir.js";
 
 let pgliteClient: PGlite | null = null;
 let db: (PgliteDatabase<typeof schema> & { $client: PGlite }) | null = null;
@@ -20,10 +21,13 @@ export function initPgliteDb(): Promise<void> {
       const dataDir = getPgliteDataDir();
       const migrationsFolder = getMigrationsFolder();
 
+      const removedStalePid = removeStalePostmasterPid(dataDir);
+
       log.info({
         action: "pglite",
         message: "opening database",
         dataDir,
+        removedStalePid,
       });
 
       pgliteClient = new PGlite({
@@ -77,4 +81,15 @@ export function getPgliteClient(): PGlite {
     throw new Error("PGlite has not been initialized. Call initPgliteDb() during app startup.");
   }
   return pgliteClient;
+}
+
+export async function shutdownPgliteDb(): Promise<void> {
+  if (!pgliteClient) return;
+
+  const client = pgliteClient;
+  pgliteClient = null;
+  db = null;
+  initPromise = null;
+
+  await client.close();
 }

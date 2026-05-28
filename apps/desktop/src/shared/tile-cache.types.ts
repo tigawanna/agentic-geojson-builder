@@ -82,6 +82,11 @@ export type MapSectorViewResult = {
   cacheBounds: TileCacheBounds;
 };
 
+export const TILE_CACHE_ZOOM_MIN = 10;
+export const TILE_CACHE_ZOOM_MAX = 19;
+export const TILE_CACHE_DEFAULT_MIN_ZOOM = 11;
+export const TILE_CACHE_DEFAULT_MAX_ZOOM = 17;
+
 export const TILE_SERVER_PORT = 3848;
 
 export function getLocalTileUrl(mapId: number, style: MapBaseMapStyle): string {

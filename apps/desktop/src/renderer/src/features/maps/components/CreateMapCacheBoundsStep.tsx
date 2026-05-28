@@ -13,11 +13,14 @@ export function CreateMapCacheBoundsStep() {
   const longitude = useCreateMapWizardStore((state) => state.longitude);
   const cacheCorners = useCreateMapWizardStore((state) => state.cacheCorners);
   const cacheStyle = useCreateMapWizardStore((state) => state.cacheStyle);
+  const cacheMinZoom = useCreateMapWizardStore((state) => state.cacheMinZoom);
+  const cacheMaxZoom = useCreateMapWizardStore((state) => state.cacheMaxZoom);
   const setStep = useCreateMapWizardStore((state) => state.setStep);
   const addCacheCorner = useCreateMapWizardStore((state) => state.addCacheCorner);
   const updateCacheCorner = useCreateMapWizardStore((state) => state.updateCacheCorner);
   const resetCacheCorners = useCreateMapWizardStore((state) => state.resetCacheCorners);
   const setCacheStyle = useCreateMapWizardStore((state) => state.setCacheStyle);
+  const setCacheZoomRange = useCreateMapWizardStore((state) => state.setCacheZoomRange);
 
   return (
     <div className="flex flex-col gap-6 pr-6">
@@ -31,10 +34,14 @@ export function CreateMapCacheBoundsStep() {
       <TileCacheBoundsPanel
         corners={cacheCorners}
         cacheStyle={cacheStyle}
+        minZoom={cacheMinZoom}
+        maxZoom={cacheMaxZoom}
         locationQuery={locationQuery}
         latitude={latitude}
         longitude={longitude}
         onStyleChange={setCacheStyle}
+        onMinZoomChange={(zoom) => setCacheZoomRange(zoom, cacheMaxZoom)}
+        onMaxZoomChange={(zoom) => setCacheZoomRange(cacheMinZoom, zoom)}
         onCornerAdd={addCacheCorner}
         onCornerMove={updateCacheCorner}
         onResetCorners={resetCacheCorners}

@@ -33,6 +33,8 @@ export function useCreateMapProjectMutation() {
         longitude,
         cacheCorners,
         cacheStyle,
+        cacheMinZoom,
+        cacheMaxZoom,
       } = state;
 
       if (!file || !name.trim() || cacheCorners.length !== 4) {
@@ -71,6 +73,8 @@ export function useCreateMapProjectMutation() {
         mapId: workspace.id,
         corners: cacheCorners,
         style: cacheStyle,
+        minZoom: cacheMinZoom,
+        maxZoom: cacheMaxZoom,
       });
 
       useCreateMapWizardStore.getState().setBuildMessage("Downloading map tiles locally…");

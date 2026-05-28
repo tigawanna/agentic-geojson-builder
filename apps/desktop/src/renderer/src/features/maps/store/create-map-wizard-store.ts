@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { MapBaseMapStyle } from "@shared/maps.types";
 import type { TileCacheCorner } from "@shared/tile-cache.types";
+import { TILE_CACHE_DEFAULT_MAX_ZOOM, TILE_CACHE_DEFAULT_MIN_ZOOM } from "@shared/tile-cache.types";
 
 export type CreateMapWizardStep = "upload" | "details" | "cacheBounds" | "cacheBuilding";
 
@@ -15,6 +16,8 @@ type CreateMapWizardState = {
   longitude: string;
   cacheCorners: TileCacheCorner[];
   cacheStyle: MapBaseMapStyle;
+  cacheMinZoom: number;
+  cacheMaxZoom: number;
   buildProgress: { completed: number; total: number } | null;
   buildMessage: string | null;
 };
@@ -34,6 +37,7 @@ type CreateMapWizardActions = {
   updateCacheCorner: (index: number, corner: TileCacheCorner) => void;
   resetCacheCorners: () => void;
   setCacheStyle: (style: MapBaseMapStyle) => void;
+  setCacheZoomRange: (minZoom: number, maxZoom: number) => void;
   setBuildProgress: (progress: { completed: number; total: number } | null) => void;
   setBuildMessage: (message: string | null) => void;
 };
@@ -49,6 +53,8 @@ const initialState: CreateMapWizardState = {
   longitude: "",
   cacheCorners: [],
   cacheStyle: "standard",
+  cacheMinZoom: TILE_CACHE_DEFAULT_MIN_ZOOM,
+  cacheMaxZoom: TILE_CACHE_DEFAULT_MAX_ZOOM,
   buildProgress: null,
   buildMessage: null,
 };
@@ -87,6 +93,7 @@ export const useCreateMapWizardStore = create<CreateMapWizardState & CreateMapWi
       })),
     resetCacheCorners: () => set({ cacheCorners: [] }),
     setCacheStyle: (cacheStyle) => set({ cacheStyle }),
+    setCacheZoomRange: (cacheMinZoom, cacheMaxZoom) => set({ cacheMinZoom, cacheMaxZoom }),
     setBuildProgress: (buildProgress) => set({ buildProgress }),
     setBuildMessage: (buildMessage) => set({ buildMessage }),
   }),

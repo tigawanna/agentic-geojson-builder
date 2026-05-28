@@ -2,7 +2,7 @@ import { app, BrowserWindow, shell } from "electron";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { registerIpcHandlers } from "./ipc/index.js";
-import { initPgliteDb } from "./lib/pglite/client.js";
+import { initPgliteDb, shutdownPgliteDb } from "./lib/pglite/client.js";
 import { initAppLogger, log } from "./lib/logger.js";
 import { createApplicationMenu } from "./menu/create-application-menu.js";
 import { initMcpServer, shutdownMcpServer } from "./mcp/index.js";
@@ -85,6 +85,7 @@ app.on("window-all-closed", () => {
 });
 
 app.on("before-quit", () => {
+  void shutdownPgliteDb();
   void shutdownMcpServer();
   void stopTileServer();
 });

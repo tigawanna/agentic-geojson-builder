@@ -7,17 +7,21 @@ type BuildTileCacheInput = {
   mapId: number;
   corners: TileCacheCorner[];
   style: MapBaseMapStyle;
+  minZoom?: number;
+  maxZoom?: number;
 };
 
 export function useBuildTileCacheMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ mapId, corners, style }: BuildTileCacheInput) => {
+    mutationFn: async ({ mapId, corners, style, minZoom, maxZoom }: BuildTileCacheInput) => {
       await window.api.invoke("tileCache:setBoundsFromCorners", {
         mapId,
         corners,
         style,
+        minZoom,
+        maxZoom,
       });
       return window.api.invoke("tileCache:build", { mapId });
     },

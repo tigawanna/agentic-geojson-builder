@@ -1,4 +1,4 @@
-import { boundsFromCorners, estimateTileCount } from "@repo/tile-cache/tile-math";
+import { boundsFromCorners } from "@repo/tile-cache/tile-math";
 import { useEffect, useMemo, useRef } from "react";
 import type { MapBaseMapStyle } from "@shared/maps.types";
 import type { TileCacheCorner } from "@shared/tile-cache.types";
@@ -27,7 +27,7 @@ export function BoundsPickerMap({
 }: BoundsPickerMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
-  const baseLayerRef = useRef<import("leaflet").TileLayer | null>(null);
+  const baseLayerRef = useRef<import("leaflet").Layer | null>(null);
   const markersLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const overlayRef = useRef<import("leaflet").Rectangle | null>(null);
   const onCornerAddRef = useRef(onCornerAdd);
@@ -44,13 +44,6 @@ export function BoundsPickerMap({
     }
     return boundsFromCorners(corners);
   }, [corners]);
-
-  const estimatedTiles = useMemo(() => {
-    if (!previewBounds) {
-      return null;
-    }
-    return estimateTileCount(previewBounds, 14, 17);
-  }, [previewBounds]);
 
   useEffect(() => {
     let disposed = false;
@@ -188,11 +181,6 @@ export function BoundsPickerMap({
         ref={containerRef}
         className={`${mapHeightClassName} w-full overflow-hidden rounded-box border border-base-content/10`}
       />
-      {estimatedTiles != null ? (
-        <p className="text-xs text-base-content/60">
-          About {estimatedTiles.toLocaleString()} tiles will be cached (zoom 14–17).
-        </p>
-      ) : null}
     </div>
   );
 }

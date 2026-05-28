@@ -53,7 +53,7 @@ export function LeafletMapPane({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
-  const baseLayerRef = useRef<import("leaflet").TileLayer | null>(null);
+  const baseLayerRef = useRef<import("leaflet").Layer | null>(null);
   const overlayRef = useRef<import("leaflet").Rectangle | null>(null);
   const markersLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const suppressViewportSyncRef = useRef(false);

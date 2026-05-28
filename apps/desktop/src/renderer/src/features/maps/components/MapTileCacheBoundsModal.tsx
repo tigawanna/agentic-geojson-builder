@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MapBaseMapStyle } from "@shared/maps.types";
 import type { TileCacheCorner } from "@shared/tile-cache.types";
+import { TILE_CACHE_DEFAULT_MAX_ZOOM, TILE_CACHE_DEFAULT_MIN_ZOOM } from "@shared/tile-cache.types";
 import { useIpcEvent } from "../../../hooks/useIpcEvent";
 import { useBuildTileCacheMutation } from "../hooks/useBuildTileCacheMutation";
 import { useTileCacheStatusQuery } from "../hooks/useTileCacheStatusQuery";
@@ -26,6 +27,8 @@ export function MapTileCacheBoundsModal() {
 
   const [corners, setCorners] = useState<TileCacheCorner[]>([]);
   const [cacheStyle, setCacheStyle] = useState<MapBaseMapStyle>("standard");
+  const [minZoom, setMinZoom] = useState(TILE_CACHE_DEFAULT_MIN_ZOOM);
+  const [maxZoom, setMaxZoom] = useState(TILE_CACHE_DEFAULT_MAX_ZOOM);
   const [buildProgress, setBuildProgress] = useState<{ completed: number; total: number } | null>(
     null,
   );
@@ -45,9 +48,19 @@ export function MapTileCacheBoundsModal() {
 
     setCacheStyle(tileCache.data?.style ?? workspace.baseMapStyle);
     setCorners(tileCache.data?.bounds ? cornersFromBounds(tileCache.data.bounds) : []);
+    setMinZoom(tileCache.data?.minZoom ?? TILE_CACHE_DEFAULT_MIN_ZOOM);
+    setMaxZoom(tileCache.data?.maxZoom ?? TILE_CACHE_DEFAULT_MAX_ZOOM);
     setBuildProgress(null);
     setBuildMessage(null);
-  }, [isOpen, workspace, tileCache.data?.builtAt, tileCache.data?.bounds, tileCache.data?.style]);
+  }, [
+    isOpen,
+    workspace,
+    tileCache.data?.builtAt,
+    tileCache.data?.bounds,
+    tileCache.data?.style,
+    tileCache.data?.minZoom,
+    tileCache.data?.maxZoom,
+  ]);
 
   if (!isOpen || !workspace || !mapId) {
     return null;
@@ -89,6 +102,8 @@ export function MapTileCacheBoundsModal() {
         mapId: currentMapId,
         corners,
         style: cacheStyle,
+        minZoom,
+        maxZoom,
       });
       closeTileCacheBounds();
     } catch (error) {
@@ -138,10 +153,14 @@ export function MapTileCacheBoundsModal() {
             <TileCacheBoundsPanel
               corners={corners}
               cacheStyle={cacheStyle}
+              minZoom={minZoom}
+              maxZoom={maxZoom}
               locationQuery={currentWorkspace.locationQuery}
               latitude={currentWorkspace.mapCenterLat?.toString() ?? ""}
               longitude={currentWorkspace.mapCenterLng?.toString() ?? ""}
               onStyleChange={setCacheStyle}
+              onMinZoomChange={setMinZoom}
+              onMaxZoomChange={setMaxZoom}
               onCornerAdd={addCorner}
               onCornerMove={moveCorner}
               onResetCorners={() => setCorners([])}

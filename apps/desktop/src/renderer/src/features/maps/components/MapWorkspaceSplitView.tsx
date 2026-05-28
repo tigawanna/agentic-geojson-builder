@@ -360,7 +360,7 @@ export function MapWorkspaceSplitView() {
           <ResizablePanel defaultSize={50} minSize={25}>
             <section className="relative h-full min-h-0 bg-base-200">
               <span className="pointer-events-none absolute top-3 left-3 z-10 rounded-box bg-base-100/90 px-2 py-1 text-xs font-medium">
-                Base map
+                {t(`maps.workspace.baseMap.${workspace.baseMapStyle}`)}
               </span>
               <button
                 type="button"

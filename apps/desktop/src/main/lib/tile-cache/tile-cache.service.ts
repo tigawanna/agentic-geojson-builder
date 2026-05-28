@@ -18,6 +18,10 @@ import type {
   SetTileCacheBoundsInput,
   TileCacheBuildProgressEvent,
 } from "../../../shared/tile-cache.types.js";
+import {
+  TILE_CACHE_DEFAULT_MAX_ZOOM,
+  TILE_CACHE_DEFAULT_MIN_ZOOM,
+} from "../../../shared/tile-cache.types.js";
 import type { MapBaseMapStyle } from "../../../shared/maps.types.js";
 import { getPgliteDb } from "../pglite/client.js";
 import {
@@ -89,8 +93,8 @@ export async function setMapTileCacheBoundsFromCorners(
       boundsSouth: bounds.south,
       boundsEast: bounds.east,
       boundsWest: bounds.west,
-      minZoom: input.minZoom ?? 14,
-      maxZoom: input.maxZoom ?? 17,
+      minZoom: input.minZoom ?? TILE_CACHE_DEFAULT_MIN_ZOOM,
+      maxZoom: input.maxZoom ?? TILE_CACHE_DEFAULT_MAX_ZOOM,
       style,
       tileCount: 0,
       builtAt: null,
@@ -106,8 +110,8 @@ export async function setMapTileCacheBoundsFromCorners(
         boundsSouth: bounds.south,
         boundsEast: bounds.east,
         boundsWest: bounds.west,
-        minZoom: input.minZoom ?? 14,
-        maxZoom: input.maxZoom ?? 17,
+        minZoom: input.minZoom ?? TILE_CACHE_DEFAULT_MIN_ZOOM,
+        maxZoom: input.maxZoom ?? TILE_CACHE_DEFAULT_MAX_ZOOM,
         style,
         tileCount: 0,
         builtAt: null,

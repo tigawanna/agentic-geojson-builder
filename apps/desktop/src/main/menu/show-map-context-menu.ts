@@ -1,5 +1,8 @@
 import { BrowserWindow, Menu } from "electron";
 import type { ShowMapContextMenuInput } from "../../shared/menu.types.js";
+import { deleteMap } from "../lib/pglite/maps.service.js";
+import { broadcastToRenderers } from "../ipc/broadcast.js";
+import { confirmDeleteMap } from "./confirm-delete-map.js";
 import { sendAppMenuAction } from "./menu-actions.js";
 
 export function showMapContextMenu(window: BrowserWindow, input: ShowMapContextMenuInput): void {
@@ -14,11 +17,15 @@ export function showMapContextMenu(window: BrowserWindow, input: ShowMapContextM
     {
       label: "Delete",
       click: () => {
-        sendAppMenuAction({
-          type: "map-delete",
-          mapId: input.mapId,
-          mapName: input.mapName,
-        });
+        void (async () => {
+          const confirmed = await confirmDeleteMap(window, input.mapName);
+          if (!confirmed) {
+            return;
+          }
+
+          await deleteMap(input.mapId);
+          broadcastToRenderers("maps:changed", { reason: "deleted", mapId: input.mapId });
+        })();
       },
     },
   ]);

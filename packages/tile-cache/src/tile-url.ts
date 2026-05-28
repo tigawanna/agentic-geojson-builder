@@ -10,6 +10,20 @@ export function getTileAttribution(style: TileStyle) {
   return STYLE_ATTRIBUTION[style];
 }
 
+export function buildTileUrlFallback(style: TileStyle, z: number, x: number, y: number) {
+  switch (style) {
+    case "standard":
+      return `https://tile.openstreetmap.de/${z}/${x}/${y}.png`;
+    case "satellite":
+    case "outline":
+      return buildTileUrl(style, z, x, y);
+    default: {
+      const exhaustive: never = style;
+      return exhaustive;
+    }
+  }
+}
+
 export function buildTileUrl(style: TileStyle, z: number, x: number, y: number) {
   switch (style) {
     case "standard":
