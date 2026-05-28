@@ -2,16 +2,18 @@
 
 All docs describe the **same current reality**: server Postgres, `/maps` routes, no active PGLite in the web app.
 
-| File                                                           | Read when you need…                                                   |
-| -------------------------------------------------------------- | --------------------------------------------------------------------- |
-| [`map-workspace-features.md`](map-workspace-features.md)       | What the UI already does (reference points, PDF, Leaflet, etc.)       |
-| [`desktop-app-handoff.md`](desktop-app-handoff.md)             | **Desktop app:** PGlite, IPC, MCP, map project flow, disk layout      |
-| [`agent-tile-cache-handoff.md`](agent-tile-cache-handoff.md)   | Agent tile cache prototype: sectors, disk cache, MCP tools, georef    |
-| [`agent-digitization-design.md`](agent-digitization-design.md) | How agents should work: chunking, coordinates, verification tools     |
-| [`../TODOS.md`](../TODOS.md)                                   | What's done vs next phases; full tool inventory with UI/Agent columns |
-| [`../GAMEPLAN.md`](../GAMEPLAN.md)                             | Product workflow mapped to implementation status                      |
-| [`../ARCHITECTURE.md`](../ARCHITECTURE.md)                     | Stack, data layer diagram, key paths                                  |
-| [`../VISION.md`](../VISION.md)                                 | Why we're building this                                               |
+| File                                                                                                        | Read when you need…                                                   |
+| ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| [`map-workspace-features.md`](map-workspace-features.md)                                                    | What the UI already does (reference points, PDF, Leaflet, etc.)       |
+| [`desktop-app-handoff.md`](desktop-app-handoff.md)                                                          | **Desktop app:** PGlite, IPC, MCP, map project flow, disk layout      |
+| [`agent-tile-cache-handoff.md`](agent-tile-cache-handoff.md)                                                | Agent tile cache prototype: sectors, disk cache, MCP tools, georef    |
+| [`agent-control-point-placement.md`](agent-control-point-placement.md)                                      | **Desktop MCP:** reference point placement prompt, workflow, overlays |
+| [`.cursor/skills/desktop-reference-point-placement/`](../.cursor/skills/desktop-reference-point-placement/) | **Cursor skill:** placement workflow + accuracy improvements backlog  |
+| [`agent-digitization-design.md`](agent-digitization-design.md)                                              | How agents should work: chunking, coordinates, verification tools     |
+| [`../TODOS.md`](../TODOS.md)                                                                                | What's done vs next phases; full tool inventory with UI/Agent columns |
+| [`../GAMEPLAN.md`](../GAMEPLAN.md)                                                                          | Product workflow mapped to implementation status                      |
+| [`../ARCHITECTURE.md`](../ARCHITECTURE.md)                                                                  | Stack, data layer diagram, key paths                                  |
+| [`../VISION.md`](../VISION.md)                                                                              | Why we're building this                                               |
 
 ## Conventions
 

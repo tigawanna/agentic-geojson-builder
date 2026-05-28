@@ -83,3 +83,39 @@ export type WorkspaceCaptureResponseInput = {
   snapshot?: RenderedMapView;
   error?: string;
 };
+
+export type TileCacheCoverage = {
+  hasTileCache: boolean;
+  viewportFullyCovered: boolean;
+  overlapPercent: number;
+  cacheBounds: {
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  } | null;
+};
+
+export type SetMapViewportEvent = {
+  requestId: string;
+  mapId: number;
+  latitude?: number;
+  longitude?: number;
+  zoom?: number;
+  fitBounds?: {
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  };
+};
+
+export type SetMapViewportResponse = {
+  requestId: string;
+  viewport?: {
+    latitude: number;
+    longitude: number;
+    zoom: number;
+  };
+  error?: string;
+};

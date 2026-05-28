@@ -2,6 +2,7 @@ import { Outlet, useRouterState } from "@tanstack/react-router";
 import { usePageTitle } from "@renderer/hooks/usePageTitle";
 import { AppConfig } from "@renderer/utils/system";
 import { AppMenuBridge } from "@renderer/components/AppMenuBridge";
+import { ViewportCommandBridge } from "@renderer/components/ViewportCommandBridge";
 import { WorkspaceCaptureBridge } from "@renderer/components/WorkspaceCaptureBridge";
 import { UpdateToast } from "@renderer/components/UpdateToast";
 import { accountRoutes, primaryRoutes } from "@renderer/components/sidebar/dashboard-routes";
@@ -53,6 +54,7 @@ function DashboardShell() {
       <UpdateToast />
       <AppMenuBridge />
       <WorkspaceCaptureBridge />
+      <ViewportCommandBridge />
     </div>
   );
 }

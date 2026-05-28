@@ -35,6 +35,8 @@ import type {
 import type {
   GetRenderedMapViewResult,
   RenderedMapView,
+  SetMapViewportEvent,
+  SetMapViewportResponse,
   WorkspaceCaptureRequestEvent,
   WorkspaceCaptureResponseInput,
 } from "./rendered-map-view.types.js";
@@ -96,6 +98,10 @@ export interface IpcContract {
     req: { mapId: number; liveCapture?: boolean };
     res: GetRenderedMapViewResult;
   };
+  "workspace:setMapViewportResponse": {
+    req: SetMapViewportResponse;
+    res: { ok: true };
+  };
 
   // --- Control points (PDF ↔ map references) -------------------------------
   "controlPoints:list": { req: { mapId: number }; res: { controlPoints: ControlPointRecord[] } };
@@ -141,6 +147,7 @@ export interface IpcEventMap {
   "tileCache:buildProgress": TileCacheBuildProgressEvent;
   "workspace:captureRequest": WorkspaceCaptureRequestEvent;
   "controlPoints:changed": ControlPointsChangedEvent;
+  "workspace:setMapViewport": SetMapViewportEvent;
   "updater:status": {
     state: "checking" | "available" | "not-available" | "downloading" | "downloaded" | "error";
     version?: string;

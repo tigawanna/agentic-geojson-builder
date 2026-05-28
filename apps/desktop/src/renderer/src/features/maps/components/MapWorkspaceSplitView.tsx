@@ -19,6 +19,7 @@ import {
 import type { ControlPointRecord } from "@shared/control-points.types";
 import type { MapHandle } from "@renderer/features/maps/lib/map-handle";
 import { captureWorkspaceView } from "@renderer/features/maps/lib/rendered-map-view/capture-workspace-view";
+import { registerViewportCommand } from "@renderer/features/maps/lib/viewport-command-registry";
 import { registerWorkspaceCapture } from "@renderer/features/maps/lib/workspace-capture-registry";
 import { useWorkspacePersistence } from "@renderer/features/maps/hooks/useWorkspacePersistence";
 import {
@@ -167,6 +168,27 @@ export function MapWorkspaceSplitView() {
       });
     });
   }, [captureOverlays, controlPoints, pendingMapPoint, selectedControlPointId, workspace]);
+
+  useEffect(() => {
+    if (!workspace || !mapHandle) {
+      return;
+    }
+
+    return registerViewportCommand(workspace.id, (command) => {
+      if (command.fitBounds) {
+        return mapHandle.fitBounds(command.fitBounds);
+      }
+
+      const current = mapHandle.getViewport();
+      const viewport = {
+        latitude: command.latitude ?? current.latitude,
+        longitude: command.longitude ?? current.longitude,
+        zoom: command.zoom ?? current.zoom,
+      };
+      mapHandle.setViewport(viewport);
+      return viewport;
+    });
+  }, [mapHandle, workspace]);
 
   useEffect(() => {
     if (!workspace) {

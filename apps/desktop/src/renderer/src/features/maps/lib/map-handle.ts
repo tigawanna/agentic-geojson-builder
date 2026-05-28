@@ -12,9 +12,18 @@ export type MapViewport = {
   zoom: number;
 };
 
+export type MapBounds = {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+};
+
 export type MapHandle = {
   panToQuery: (query: string) => Promise<{ error?: string }>;
   setViewport: (viewport: MapViewport) => void;
+  fitBounds: (bounds: MapBounds, padding?: number) => MapViewport;
+  getViewport: () => MapViewport;
   captureView: (
     overlays: MapCaptureOverlayInput,
     options?: { fitControlPoints?: boolean },
@@ -199,6 +208,24 @@ export function createMapHandle(
       map.setView([viewport.latitude, viewport.longitude], viewport.zoom);
       options.emitViewportChange();
       options.setSuppressViewportSync(false);
+    },
+    fitBounds(bounds, padding = 48) {
+      options.setSuppressViewportSync(true);
+      map.fitBounds(
+        [
+          [bounds.south, bounds.west],
+          [bounds.north, bounds.east],
+        ],
+        { padding: [padding, padding], maxZoom: 18, animate: false },
+      );
+      options.emitViewportChange();
+      options.setSuppressViewportSync(false);
+      const center = map.getCenter();
+      return { latitude: center.lat, longitude: center.lng, zoom: map.getZoom() };
+    },
+    getViewport() {
+      const center = map.getCenter();
+      return { latitude: center.lat, longitude: center.lng, zoom: map.getZoom() };
     },
     captureView: async (overlays, captureOptions) => {
       const previous = {
