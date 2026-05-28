@@ -29,7 +29,9 @@ Usage:
 Options:
   --stash <path>                 JSON stash file
                                  (default: apps/web/scripts/data/karura-pglite-stash.json)
-  --map-id <n>                   Target map id (default: sourceMapId from stash, usually 1)
+  --target-map-id <n>            Desktop map row to update (alias: --map-id)
+  --map-id <n>                   Same as --target-map-id
+                                 (default: stash sourceMapId, usually 1 — pass your desktop map id)
   --data-dir <path>              Desktop PGlite directory
                                  (default: ~/.config/desktop/pglite)
   --replace-control-points       Delete existing control points for the map before import
@@ -55,9 +57,16 @@ function parseArgs(argv) {
       case "--stash":
         options.stashPath = resolve(argv[++index] ?? "");
         break;
-      case "--map-id":
-        options.mapId = Number(argv[++index]);
+      case "--target-map-id":
+      case "--map-id": {
+        const raw = argv[++index];
+        const value = Number(raw);
+        if (!Number.isInteger(value) || value < 1) {
+          throw new Error(`Invalid target map id: ${raw ?? "(missing)"}`);
+        }
+        options.mapId = value;
         break;
+      }
       case "--data-dir":
         options.dataDir = resolve(argv[++index] ?? "");
         break;
@@ -94,8 +103,18 @@ function loadStash(stashPath) {
   return stash;
 }
 
+async function formatAvailableMapsHint(pg) {
+  const maps = await pg.query(`SELECT id, name FROM map ORDER BY id`);
+  if (maps.rows.length === 0) {
+    return "No maps in desktop PGlite. Create/open a map in the app first.";
+  }
+  const lines = maps.rows.map((row) => `  id ${row.id}: ${row.name}`);
+  return `Maps in desktop PGlite:\n${lines.join("\n")}\nUse --target-map-id <id> to import stash data into that row.`;
+}
+
 async function importStash(options, stash) {
-  const targetMapId = options.mapId ?? stash.sourceMapId ?? 1;
+  const stashSourceMapId = stash.sourceMapId ?? 1;
+  const targetMapId = options.mapId ?? stashSourceMapId;
   const sortedPoints = [...stash.controlPoints].sort(
     (left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
   );
@@ -111,9 +130,8 @@ async function importStash(options, stash) {
       targetMapId,
     ]);
     if (existingMap.rows.length === 0) {
-      throw new Error(
-        `Map id ${targetMapId} not found in desktop PGlite. Create/open the map in the app first, or use a different --map-id.`,
-      );
+      const hint = await formatAvailableMapsHint(pg);
+      throw new Error(`Map id ${targetMapId} not found in desktop PGlite.\n${hint}`);
     }
 
     const existingCount = await pg.query(
@@ -122,6 +140,7 @@ async function importStash(options, stash) {
     );
 
     console.log(`Data dir: ${options.dataDir}`);
+    console.log(`Stash sourceMapId: ${stashSourceMapId} → desktop map id: ${targetMapId}`);
     console.log(`Target map: ${existingMap.rows[0].id} — ${existingMap.rows[0].name}`);
     console.log(`Existing control points: ${existingCount.rows[0].count}`);
     console.log(`Importing control points: ${sortedPoints.length}`);
