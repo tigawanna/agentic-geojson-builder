@@ -49,6 +49,33 @@ import type {
   SetMapReferenceGeoJsonVisibilityInput,
 } from "./reference-geojson.types.js";
 import type { MapReferenceGeoJsonLayer } from "./reference-geojson.types.js";
+import type {
+  CreateDataBackupInput,
+  DataBackupInfo,
+  DataBackupListResult,
+  DataBackupVerifyResult,
+  DbBackupChangedEvent,
+  DeleteDataBackupInput,
+  GetDataBackupInput,
+  PruneDataBackupsInput,
+  PruneDataBackupsResult,
+  RestoreDataBackupInput,
+  VerifyDataBackupInput,
+  DataBackupStoragePaths,
+} from "./data-backup.types.js";
+import type {
+  ApplyFeaturePatchInput,
+  CreateGeoSegmentInput,
+  DeleteGeoSegmentInput,
+  ExportGeoJsonInput,
+  ExportGeoJsonResult,
+  FindFeatureGapsInput,
+  GeoSegmentRecord,
+  GeoSegmentsChangedEvent,
+  MergeFeatureSegmentsInput,
+  UpdateGeoSegmentInput,
+  UpdateGeoSegmentStatusInput,
+} from "./geo-segments.types.js";
 
 /**
  * Single source of truth for every IPC channel in the app.
@@ -81,6 +108,25 @@ export interface IpcContract {
   "db:all": { req: { sql: string; params?: unknown[] }; res: unknown[] };
   "db:get": { req: { sql: string; params?: unknown[] }; res: unknown };
   "db:ping": { req: void; res: { ok: boolean } };
+
+  // --- Data backups (PGlite + map assets under userData/data-backups) --------
+  "dbBackup:list": { req: void; res: DataBackupListResult };
+  "dbBackup:get": { req: GetDataBackupInput; res: DataBackupInfo };
+  "dbBackup:verify": { req: VerifyDataBackupInput; res: DataBackupVerifyResult };
+  "dbBackup:create": { req: CreateDataBackupInput; res: DataBackupInfo };
+  "dbBackup:restore": { req: RestoreDataBackupInput; res: { ok: true } };
+  "dbBackup:delete": { req: DeleteDataBackupInput; res: { ok: true } };
+  "dbBackup:prune": { req: PruneDataBackupsInput; res: PruneDataBackupsResult };
+  "dbBackup:getStoragePaths": { req: void; res: DataBackupStoragePaths };
+  "dbBackup:openStorageFolder": {
+    req: {
+      target: keyof Pick<
+        DataBackupStoragePaths,
+        "userDataDir" | "backupsDir" | "pgliteDir" | "mapsDir"
+      >;
+    };
+    res: { ok: true };
+  };
 
   // --- Maps (PGlite domain) --------------------------------------------------
   "maps:list": { req: void; res: MapListItem[] };
@@ -145,6 +191,65 @@ export interface IpcContract {
     res: { layer: MapReferenceGeoJsonLayer };
   };
 
+  // --- Geo segments (traced trails / paths) ----------------------------------
+  "geoSegments:list": { req: { mapId: number }; res: { segments: GeoSegmentRecord[] } };
+  "geoSegments:create": { req: CreateGeoSegmentInput; res: { segment: GeoSegmentRecord } };
+  "geoSegments:update": { req: UpdateGeoSegmentInput; res: { segment: GeoSegmentRecord } };
+  "geoSegments:delete": { req: DeleteGeoSegmentInput; res: { ok: true } };
+  "geoSegments:updateStatus": {
+    req: UpdateGeoSegmentStatusInput;
+    res: { segment: GeoSegmentRecord };
+  };
+  "geoSegments:export": { req: ExportGeoJsonInput; res: ExportGeoJsonResult };
+  "geoSegments:exportToFile": {
+    req: ExportGeoJsonInput;
+    res: { canceled: true } | { canceled: false; savedPath: string; featureCount: number };
+  };
+  "geoSegments:findGaps": {
+    req: FindFeatureGapsInput;
+    res: {
+      mapId: number;
+      snapToleranceMeters: number;
+      gapCount: number;
+      gaps: Array<{
+        segmentGroupId: string;
+        afterSegmentIndex: number;
+        beforeSegmentIndex: number;
+        afterSegmentId: number;
+        beforeSegmentId: number;
+        gapMeters: number;
+        endCoord: [number, number];
+        startCoord: [number, number];
+      }>;
+      groups: Array<{
+        segmentGroupId: string;
+        segmentCount: number;
+        gapCount: number;
+      }>;
+    };
+  };
+  "geoSegments:mergePreview": {
+    req: MergeFeatureSegmentsInput;
+    res: {
+      mapId: number;
+      snapToleranceMeters: number;
+      mergedCount: number;
+      merged: Array<{
+        segmentGroupId: string;
+        name: string | null;
+        pathKind: GeoSegmentRecord["pathKind"];
+        status: GeoSegmentRecord["status"];
+        sourceSegmentIds: number[];
+        vertexCount: number;
+        geometry: GeoSegmentRecord["geometry"];
+      }>;
+    };
+  };
+  "geoSegments:applyPatch": {
+    req: ApplyFeaturePatchInput;
+    res: { deleted: true; segmentId: number } | { segment: GeoSegmentRecord };
+  };
+
   // --- Local MCP server ------------------------------------------------------
   "mcp:getStatus": { req: void; res: McpStatus };
   "mcp:setEnabled": { req: { enabled: boolean }; res: McpStatus };
@@ -169,6 +274,7 @@ export interface IpcEventMap {
   "workspace:captureRequest": WorkspaceCaptureRequestEvent;
   "controlPoints:changed": ControlPointsChangedEvent;
   "referenceGeoJson:changed": ReferenceGeoJsonChangedEvent;
+  "geoSegments:changed": GeoSegmentsChangedEvent;
   "workspace:setMapViewport": SetMapViewportEvent;
   "updater:status": {
     state: "checking" | "available" | "not-available" | "downloading" | "downloaded" | "error";
@@ -176,6 +282,7 @@ export interface IpcEventMap {
     progress?: { percent: number; bytesPerSecond: number; transferred: number; total: number };
     error?: string;
   };
+  "dbBackup:changed": DbBackupChangedEvent;
 }
 
 export type IpcEventName = keyof IpcEventMap;

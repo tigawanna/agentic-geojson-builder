@@ -1,10 +1,9 @@
-import { Home, Info, Map, Newspaper, Settings } from "lucide-react";
+import { Home, Info, Map, Settings } from "lucide-react";
 import type { SidebarItem } from "@renderer/components/sidebar/types";
 
 export const primaryRoutes = [
   { title: "Home", href: "/", labelKey: "nav.home", icon: Home },
   { title: "Maps", href: "/maps", labelKey: "nav.maps", icon: Map },
-  { title: "Posts", href: "/posts", labelKey: "nav.posts", icon: Newspaper },
 ] satisfies SidebarItem[];
 
 export const accountRoutes = [

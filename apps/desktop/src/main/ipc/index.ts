@@ -6,10 +6,12 @@ import { storageHandlers } from "@main/ipc/storage.js";
 import { mapsHandlers } from "@main/ipc/maps.js";
 import { tileCacheHandlers } from "@main/ipc/tile-cache.js";
 import { controlPointsHandlers } from "@main/ipc/control-points.js";
+import { geoSegmentsHandlers } from "@main/ipc/geo-segments.js";
 import { referenceGeoJsonHandlers } from "@main/ipc/reference-geojson.js";
 import { mcpSettingsHandlers } from "@main/ipc/mcp-settings.js";
 import { workspaceSnapshotHandlers } from "@main/ipc/workspace-snapshot.js";
 import { pgliteHandlers } from "@main/ipc/pglite.js";
+import { dataBackupHandlers } from "@main/ipc/data-backup.js";
 import { updaterHandlers } from "@main/ipc/updater.js";
 
 /**
@@ -75,10 +77,12 @@ export function registerIpcHandlers(): void {
     "app:getPlatform": () => process.platform,
     ...storageHandlers,
     ...pgliteHandlers,
+    ...dataBackupHandlers,
     ...mapsHandlers,
     ...tileCacheHandlers,
     ...workspaceSnapshotHandlers,
     ...controlPointsHandlers,
+    ...geoSegmentsHandlers,
     ...referenceGeoJsonHandlers,
     ...mcpSettingsHandlers,
     ...updaterHandlers,

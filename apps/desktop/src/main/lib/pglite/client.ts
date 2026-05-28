@@ -93,3 +93,8 @@ export async function shutdownPgliteDb(): Promise<void> {
 
   await client.close();
 }
+
+export async function reinitPgliteDb(): Promise<void> {
+  await shutdownPgliteDb();
+  await initPgliteDb();
+}

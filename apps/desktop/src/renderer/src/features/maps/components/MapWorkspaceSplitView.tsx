@@ -9,6 +9,7 @@ import {
 } from "@renderer/components/common/Resizable";
 import { useIpcMutation } from "@renderer/hooks/useIpc";
 import { useControlPointsQuery } from "@renderer/features/maps/hooks/useControlPointsQuery";
+import { useGeoSegmentsQuery } from "@renderer/features/maps/hooks/useGeoSegmentsQuery";
 import { useReferenceGeoJsonQuery } from "@renderer/features/maps/hooks/useReferenceGeoJsonQuery";
 import { useTileCacheStatusQuery } from "@renderer/features/maps/hooks/useTileCacheStatusQuery";
 import { resolveLocalTileUrl } from "@renderer/features/maps/hooks/tile-cache-api";
@@ -31,6 +32,7 @@ import {
 } from "@renderer/features/maps/store/MapWorkspaceProvider";
 import { LeafletMapPane } from "@renderer/features/maps/components/LeafletMapPane";
 import { MapTileCacheBoundsModal } from "@renderer/features/maps/components/MapTileCacheBoundsModal";
+import { MapTraceTrailBar } from "@renderer/features/maps/components/MapTraceTrailBar";
 import { MapWorkspaceControlsModal } from "@renderer/features/maps/components/MapWorkspaceControlsModal";
 import { MapWorkspaceHeader } from "@renderer/features/maps/components/MapWorkspaceHeader";
 import { SourceDocumentPane } from "@renderer/features/maps/components/SourceDocumentPane";
@@ -47,18 +49,30 @@ export function MapWorkspaceSplitView() {
     setStatusMessage,
     setPendingMapPoint,
     setSelectedControlPointId,
+    setPendingTracePoints,
+    stopTraceMode,
   } = useMapWorkspaceUiActions();
   const homeViewport = useMapWorkspaceUiState((state) => state.homeViewport);
   const referenceMode = useMapWorkspaceUiState((state) => state.referenceMode);
+  const traceMode = useMapWorkspaceUiState((state) => state.traceMode);
+  const pendingTracePoints = useMapWorkspaceUiState((state) => state.pendingTracePoints);
+  const editingSegmentId = useMapWorkspaceUiState((state) => state.editingSegmentId);
+  const segmentGroupId = useMapWorkspaceUiState((state) => state.segmentGroupId);
+  const segmentName = useMapWorkspaceUiState((state) => state.segmentName);
+  const segmentPathKind = useMapWorkspaceUiState((state) => state.segmentPathKind);
   const showReferenceOverlay = useMapWorkspaceUiState((state) => state.showReferenceOverlay);
   const setShowReferenceOverlay = useMapWorkspaceUiActions().setShowReferenceOverlay;
   const pendingMapPoint = useMapWorkspaceUiState((state) => state.pendingMapPoint);
   const selectedControlPointId = useMapWorkspaceUiState((state) => state.selectedControlPointId);
   const { queueSave } = useWorkspacePersistence();
   const controlPointsQuery = useControlPointsQuery(workspace?.id ?? null);
+  const geoSegmentsQuery = useGeoSegmentsQuery(workspace?.id ?? null);
   const referenceGeoJsonQuery = useReferenceGeoJsonQuery(workspace?.id ?? null);
   const createControlPoint = useIpcMutation("controlPoints:create");
   const updateControlPoint = useIpcMutation("controlPoints:update");
+  const createGeoSegment = useIpcMutation("geoSegments:create");
+  const updateGeoSegment = useIpcMutation("geoSegments:update");
+  const exportGeoJson = useIpcMutation("geoSegments:exportToFile");
   const [mapHandle, setMapHandle] = useState<MapHandle | null>(null);
   const mapHandleRef = useRef<MapHandle | null>(null);
   const controlPointsRef = useRef(controlPointsQuery.data?.controlPoints ?? []);
@@ -74,6 +88,7 @@ export function MapWorkspaceSplitView() {
     : null;
 
   const controlPoints = controlPointsQuery.data?.controlPoints ?? [];
+  const geoSegments = geoSegmentsQuery.data?.segments ?? [];
   controlPointsRef.current = controlPoints;
 
   const referenceOverlay = useMemo(() => {
@@ -95,12 +110,12 @@ export function MapWorkspaceSplitView() {
         latitude: point.latitude,
         longitude: point.longitude,
       })),
-      geoSegments: [],
+      geoSegments: geoSegments.map((segment) => ({ geometry: segment.geometry })),
       pendingMapPoint: pendingMapPoint,
-      pendingTracePoints: [],
+      pendingTracePoints,
       baseMapStyle: workspace?.baseMapStyle ?? ("standard" as const),
     }),
-    [controlPoints, pendingMapPoint, workspace?.baseMapStyle],
+    [controlPoints, geoSegments, pendingMapPoint, pendingTracePoints, workspace?.baseMapStyle],
   );
 
   useEffect(() => {
@@ -313,6 +328,106 @@ export function MapWorkspaceSplitView() {
     ],
   );
 
+  const handleTracePointAdd = useCallback(
+    (latitude: number, longitude: number) => {
+      setPendingTracePoints((current) => [...current, { latitude, longitude }]);
+    },
+    [setPendingTracePoints],
+  );
+
+  const handlePendingTracePointMove = useCallback(
+    (index: number, latitude: number, longitude: number) => {
+      setPendingTracePoints((current) =>
+        current.map((point, pointIndex) =>
+          pointIndex === index ? { latitude, longitude } : point,
+        ),
+      );
+    },
+    [setPendingTracePoints],
+  );
+
+  const handleUndoTracePoint = useCallback(() => {
+    setPendingTracePoints((current) => current.slice(0, -1));
+  }, [setPendingTracePoints]);
+
+  const handleFinishTrace = useCallback(() => {
+    if (!workspace || pendingTracePoints.length < 2) {
+      return;
+    }
+
+    const groupId = segmentGroupId.trim() || `trail-${Date.now()}`;
+    const geometry = {
+      type: "LineString" as const,
+      coordinates: pendingTracePoints.map(
+        (point) => [point.longitude, point.latitude] as [number, number],
+      ),
+    };
+
+    if (editingSegmentId !== null) {
+      void updateGeoSegment
+        .mutateAsync({
+          mapId: workspace.id,
+          segmentId: editingSegmentId,
+          segmentGroupId: groupId,
+          name: segmentName.trim() || undefined,
+          pathKind: segmentPathKind,
+          geometry,
+        })
+        .then(() => {
+          stopTraceMode();
+          setStatusMessage(t("maps.workspace.traceSaved"));
+        });
+      return;
+    }
+
+    void createGeoSegment
+      .mutateAsync({
+        mapId: workspace.id,
+        segmentGroupId: groupId,
+        name: segmentName.trim() || undefined,
+        pathKind: segmentPathKind,
+        geometry,
+      })
+      .then(() => {
+        setPendingTracePoints([]);
+        setStatusMessage(t("maps.workspace.traceSegmentSaved"));
+      });
+  }, [
+    createGeoSegment,
+    editingSegmentId,
+    pendingTracePoints,
+    segmentGroupId,
+    segmentName,
+    segmentPathKind,
+    setPendingTracePoints,
+    setStatusMessage,
+    stopTraceMode,
+    t,
+    updateGeoSegment,
+    workspace,
+  ]);
+
+  const handleExportGeoJson = useCallback(() => {
+    if (!workspace) {
+      return;
+    }
+
+    void exportGeoJson
+      .mutateAsync({ mapId: workspace.id, mergeGroups: true })
+      .then((result) => {
+        if (result.canceled) {
+          return;
+        }
+
+        setStatusMessage(
+          t("maps.workspace.exportSuccess", { count: result.featureCount, path: result.savedPath }),
+        );
+      })
+      .catch((error) => {
+        setStatusMessage(error instanceof Error ? error.message : t("maps.workspace.exportError"));
+      });
+  }, [exportGeoJson, setStatusMessage, t, workspace]);
+
   const handleControlPointMapMove = useCallback(
     (controlPointId: number, latitude: number, longitude: number) => {
       if (!workspace) {
@@ -365,7 +480,23 @@ export function MapWorkspaceSplitView() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <MapWorkspaceHeader onOpenControls={openControls} hasSourceFile={Boolean(sourceFile)} />
+      <MapWorkspaceHeader
+        onOpenControls={openControls}
+        hasSourceFile={Boolean(sourceFile)}
+        segmentCount={geoSegments.length}
+        exportDisabled={exportGeoJson.isPending}
+        exportPending={exportGeoJson.isPending}
+        onExportGeoJson={handleExportGeoJson}
+      />
+
+      {traceMode ? (
+        <MapTraceTrailBar
+          onFinish={handleFinishTrace}
+          onUndo={handleUndoTracePoint}
+          finishDisabled={pendingTracePoints.length < 2}
+          finishPending={createGeoSegment.isPending || updateGeoSegment.isPending}
+        />
+      ) : null}
 
       <div className="min-h-0 flex-1">
         <ResizablePanelGroup direction="horizontal">
@@ -422,8 +553,12 @@ export function MapWorkspaceSplitView() {
                 referenceOverlay={referenceOverlay}
                 showReferenceOverlay={showReferenceOverlay}
                 controlPoints={controlPoints}
+                geoSegments={geoSegments}
                 pendingMapPoint={pendingMapPoint}
+                pendingTracePoints={pendingTracePoints}
                 canPickMapPoint={referenceMode && pendingMapPoint === null}
+                canPickTracePoint={traceMode}
+                editingSegmentId={editingSegmentId}
                 selectedControlPointId={selectedControlPointId}
                 onReady={setMapHandle}
                 onInitialViewportReady={setHomeViewport}
@@ -433,6 +568,8 @@ export function MapWorkspaceSplitView() {
                   void handleCoordinateSelect(coordinates);
                 }}
                 onMapLocationPick={handleMapLocationPick}
+                onTracePointAdd={handleTracePointAdd}
+                onPendingTracePointMove={handlePendingTracePointMove}
                 onControlPointMapMove={handleControlPointMapMove}
               />
             </section>
@@ -444,6 +581,7 @@ export function MapWorkspaceSplitView() {
         mapId={workspace.id}
         mapHandle={mapHandle}
         controlPoints={controlPoints}
+        geoSegments={geoSegments}
         selectedControlPointId={selectedControlPointId}
         showReferenceOverlay={showReferenceOverlay}
         onShowReferenceOverlayChange={setShowReferenceOverlay}

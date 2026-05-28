@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, RotateCw, Settings2 } from "lucide-react";
+import { ArrowLeft, Download, Pencil, RotateCw, Settings2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatMapCoordinates } from "@renderer/features/maps/lib/copy-map-coordinates";
 import {
@@ -11,22 +11,40 @@ import {
 type MapWorkspaceHeaderProps = {
   onOpenControls: () => void;
   hasSourceFile: boolean;
+  segmentCount: number;
+  exportDisabled: boolean;
+  exportPending: boolean;
+  onExportGeoJson: () => void;
 };
 
 async function hardReloadView() {
   await window.api.invoke("app:hardReload", undefined);
 }
 
-export function MapWorkspaceHeader({ onOpenControls, hasSourceFile }: MapWorkspaceHeaderProps) {
+export function MapWorkspaceHeader({
+  onOpenControls,
+  hasSourceFile,
+  segmentCount,
+  exportDisabled,
+  exportPending,
+  onExportGeoJson,
+}: MapWorkspaceHeaderProps) {
   const { t } = useTranslation();
   const workspace = useMapWorkspaceState((state) => state.workspace);
   const cursorCoordinates = useMapWorkspaceUiState((state) => state.cursorCoordinates);
   const selectedCoordinates = useMapWorkspaceUiState((state) => state.selectedCoordinates);
   const statusMessage = useMapWorkspaceUiState((state) => state.statusMessage);
   const referenceMode = useMapWorkspaceUiState((state) => state.referenceMode);
+  const traceMode = useMapWorkspaceUiState((state) => state.traceMode);
   const pendingMapPoint = useMapWorkspaceUiState((state) => state.pendingMapPoint);
-  const { setReferenceMode, stopReferenceMode, setPendingMapPoint, setStatusMessage } =
-    useMapWorkspaceUiActions();
+  const {
+    setReferenceMode,
+    stopReferenceMode,
+    setTraceMode,
+    stopTraceMode,
+    setPendingMapPoint,
+    setStatusMessage,
+  } = useMapWorkspaceUiActions();
 
   if (!workspace) {
     return null;
@@ -87,7 +105,7 @@ export function MapWorkspaceHeader({ onOpenControls, hasSourceFile }: MapWorkspa
               ? "bg-primary text-primary-content"
               : "text-base-content/75 hover:bg-base-content/10 hover:text-base-content"
           }`}
-          disabled={!hasSourceFile}
+          disabled={!hasSourceFile || traceMode}
           onClick={() => {
             if (referenceMode) {
               stopReferenceMode();
@@ -95,11 +113,45 @@ export function MapWorkspaceHeader({ onOpenControls, hasSourceFile }: MapWorkspa
               return;
             }
 
+            stopTraceMode();
             setReferenceMode(true);
             setPendingMapPoint(null);
           }}
         >
           {t("maps.workspace.addReference")}
+        </button>
+        <button
+          type="button"
+          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40 ${
+            traceMode
+              ? "bg-secondary text-secondary-content"
+              : "text-base-content/75 hover:bg-base-content/10 hover:text-base-content"
+          }`}
+          disabled={referenceMode}
+          onClick={() => {
+            if (traceMode) {
+              stopTraceMode();
+              setStatusMessage(null);
+              return;
+            }
+
+            stopReferenceMode();
+            setTraceMode(true);
+          }}
+          data-test="trace-mode-toggle"
+        >
+          <Pencil className="size-4" />
+          {t("maps.workspace.traceTrail")}
+        </button>
+        <button
+          type="button"
+          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-base-content/75 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
+          disabled={exportDisabled || exportPending || segmentCount === 0}
+          onClick={onExportGeoJson}
+          data-test="export-geojson"
+        >
+          <Download className="size-4" />
+          {t("maps.workspace.exportGeoJson")}
         </button>
         <button
           type="button"

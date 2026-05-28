@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
-import { Route as PostsIndexRouteImport } from './routes/posts/index'
 import { Route as MapsIndexRouteImport } from './routes/maps/index'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as MapsNewIndexRouteImport } from './routes/maps/new/index'
@@ -25,11 +24,6 @@ const IndexRoute = IndexRouteImport.update({
 const SettingsIndexRoute = SettingsIndexRouteImport.update({
   id: '/settings/',
   path: '/settings/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PostsIndexRoute = PostsIndexRouteImport.update({
-  id: '/posts/',
-  path: '/posts/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MapsIndexRoute = MapsIndexRouteImport.update({
@@ -57,7 +51,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about/': typeof AboutIndexRoute
   '/maps/': typeof MapsIndexRoute
-  '/posts/': typeof PostsIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/maps/$mapId/': typeof MapsMapIdIndexRoute
   '/maps/new/': typeof MapsNewIndexRoute
@@ -66,7 +59,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutIndexRoute
   '/maps': typeof MapsIndexRoute
-  '/posts': typeof PostsIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/maps/$mapId': typeof MapsMapIdIndexRoute
   '/maps/new': typeof MapsNewIndexRoute
@@ -76,7 +68,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about/': typeof AboutIndexRoute
   '/maps/': typeof MapsIndexRoute
-  '/posts/': typeof PostsIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/maps/$mapId/': typeof MapsMapIdIndexRoute
   '/maps/new/': typeof MapsNewIndexRoute
@@ -87,25 +78,16 @@ export interface FileRouteTypes {
     | '/'
     | '/about/'
     | '/maps/'
-    | '/posts/'
     | '/settings/'
     | '/maps/$mapId/'
     | '/maps/new/'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/about'
-    | '/maps'
-    | '/posts'
-    | '/settings'
-    | '/maps/$mapId'
-    | '/maps/new'
+  to: '/' | '/about' | '/maps' | '/settings' | '/maps/$mapId' | '/maps/new'
   id:
     | '__root__'
     | '/'
     | '/about/'
     | '/maps/'
-    | '/posts/'
     | '/settings/'
     | '/maps/$mapId/'
     | '/maps/new/'
@@ -115,7 +97,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutIndexRoute: typeof AboutIndexRoute
   MapsIndexRoute: typeof MapsIndexRoute
-  PostsIndexRoute: typeof PostsIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
   MapsMapIdIndexRoute: typeof MapsMapIdIndexRoute
   MapsNewIndexRoute: typeof MapsNewIndexRoute
@@ -135,13 +116,6 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings/'
       preLoaderRoute: typeof SettingsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/posts/': {
-      id: '/posts/'
-      path: '/posts'
-      fullPath: '/posts/'
-      preLoaderRoute: typeof PostsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/maps/': {
@@ -179,7 +153,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutIndexRoute: AboutIndexRoute,
   MapsIndexRoute: MapsIndexRoute,
-  PostsIndexRoute: PostsIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
   MapsMapIdIndexRoute: MapsMapIdIndexRoute,
   MapsNewIndexRoute: MapsNewIndexRoute,

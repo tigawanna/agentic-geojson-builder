@@ -53,13 +53,6 @@ function buildAppMenu(): Menu {
         sendAppMenuAction({ type: "navigate", path: "/maps" });
       },
     },
-    {
-      label: "Posts",
-      accelerator: "CmdOrCtrl+3",
-      click: () => {
-        sendAppMenuAction({ type: "navigate", path: "/posts" });
-      },
-    },
     { type: "separator" as const },
     {
       label: "Settings",

@@ -1,4 +1,4 @@
-export type AppMenuNavigatePath = "/" | "/maps" | "/posts" | "/settings" | "/about";
+export type AppMenuNavigatePath = "/" | "/maps" | "/settings" | "/about";
 
 export type AppMenuAction =
   | { type: "navigate"; path: AppMenuNavigatePath }

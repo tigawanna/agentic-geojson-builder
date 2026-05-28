@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import type { ControlPointRecord } from "@shared/control-points.types";
+import type { GeoSegmentRecord } from "@shared/geo-segments.types";
 import type { MapBaseMapStyle } from "@shared/maps.types";
 import { useIpcMutation } from "@renderer/hooks/useIpc";
 import { useReplaceMapSourceMutation } from "@renderer/features/maps/hooks/useReplaceMapSourceMutation";
@@ -15,6 +16,7 @@ import {
 } from "@renderer/features/maps/store/MapWorkspaceProvider";
 import type { MapHandle } from "@renderer/features/maps/lib/map-handle";
 import { BaseMapStylePicker } from "@renderer/features/maps/components/BaseMapStylePicker";
+import { MapGeoSegmentsSection } from "@renderer/features/maps/components/MapGeoSegmentsSection";
 import { MapReferenceGeoJsonSection } from "@renderer/features/maps/components/MapReferenceGeoJsonSection";
 
 const acceptedTypes = "application/pdf,image/png,image/jpeg,image/webp";
@@ -23,6 +25,7 @@ type MapWorkspaceControlsModalProps = {
   mapId: number;
   mapHandle: MapHandle | null;
   controlPoints: ControlPointRecord[];
+  geoSegments: GeoSegmentRecord[];
   selectedControlPointId: number | null;
   showReferenceOverlay: boolean;
   onShowReferenceOverlayChange: (visible: boolean) => void;
@@ -64,6 +67,7 @@ export function MapWorkspaceControlsModal({
   mapId,
   mapHandle,
   controlPoints,
+  geoSegments,
   selectedControlPointId,
   showReferenceOverlay,
   onShowReferenceOverlayChange,
@@ -409,6 +413,8 @@ export function MapWorkspaceControlsModal({
               </ul>
             )}
           </ControlsSection>
+
+          <MapGeoSegmentsSection mapId={mapId} segments={geoSegments} />
 
           <MapReferenceGeoJsonSection
             mapId={mapId}

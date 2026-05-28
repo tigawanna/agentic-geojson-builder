@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageShell } from "@renderer/components/common/PageShell";
+import { DataBackupSection } from "@renderer/features/settings/DataBackupSection";
 import { McpSettingsSection } from "@renderer/features/settings/McpSettingsSection";
 import { useIpcMutation, useIpcQuery } from "@renderer/hooks/useIpc";
 import { useTheme, type Theme } from "@renderer/features/theme/ThemeProvider";
@@ -43,6 +44,8 @@ export function SettingsPage() {
         </article>
 
         <McpSettingsSection />
+
+        <DataBackupSection />
 
         <article className="glass-card p-5">
           <h3 className="text-base font-semibold">{t("settings.storageHeading")}</h3>
