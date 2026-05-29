@@ -19,9 +19,9 @@ export function MapPlayground() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const playground = useMapPlayground();
-  const detailPanelWidth = playground.activeFeature ? "max-w-md" : "";
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const checkedOnboardingRef = useRef(false);
+  const detailOpen = playground.activeFeature !== null;
 
   useEffect(() => {
     if (checkedOnboardingRef.current) {
@@ -49,12 +49,14 @@ export function MapPlayground() {
   return (
     <div
       data-test="map-playground"
-      className="relative h-full min-h-0 w-full overflow-hidden bg-base-300"
+      className={`grid h-full min-h-0 w-full overflow-hidden bg-base-300 ${
+        detailOpen ? "md:grid-cols-[minmax(0,1fr)_28rem]" : "grid-cols-1"
+      }`}
       onDragOver={playground.handleDragOver}
       onDragLeave={playground.handleDragLeave}
       onDrop={playground.handleDrop}
     >
-      <div className={`absolute inset-0 ${playground.activeFeature ? "right-96" : "right-0"}`}>
+      <div className="relative min-h-0 min-w-0 overflow-hidden">
         <PlaygroundMapPane
           layers={playground.layers}
           selectedFeature={playground.selectedFeature}
@@ -64,41 +66,42 @@ export function MapPlayground() {
           elevationRange={playground.elevationRange}
           onFeatureSelect={playground.selectFeature}
         />
+
         {playground.elevationMode && playground.elevationRange ? (
           <PlaygroundElevationLegend range={playground.elevationRange} />
         ) : null}
+
+        <PlaygroundToolbar
+          layers={playground.layers}
+          selectedFeature={playground.selectedFeature}
+          baseMapStyle={playground.baseMapStyle}
+          onBaseMapStyleChange={playground.setBaseMapStyle}
+          elevationMode={playground.elevationMode}
+          hasElevationData={playground.hasElevationData}
+          onToggleElevationMode={playground.toggleElevationMode}
+          onOpenFilePicker={playground.openFilePicker}
+          onCreateGeoJson={handleCreateGeoJson}
+          onOpenGuide={() => setOnboardingOpen(true)}
+          onSelectFeature={playground.selectFeature}
+          onSetFeatureVisible={playground.setFeatureVisible}
+          onRemoveLayer={playground.removeLayer}
+        />
+
+        <PlaygroundDropHint visible={playground.isDragOver} />
+        <PlaygroundNotice message={playground.notice} error={playground.errorNotice} />
+
+        {playground.layers.length === 0 ? (
+          <div className="pointer-events-none absolute inset-x-0 bottom-16 z-10 flex justify-center px-4">
+            <div className="glass-card max-w-lg px-5 py-4 text-center">
+              <p className="text-sm font-medium">{t("home.playground.emptyTitle")}</p>
+              <p className="mt-1 text-xs text-base-content/60">{t("home.playground.emptyBody")}</p>
+            </div>
+          </div>
+        ) : null}
       </div>
 
-      <PlaygroundToolbar
-        layers={playground.layers}
-        selectedFeature={playground.selectedFeature}
-        baseMapStyle={playground.baseMapStyle}
-        onBaseMapStyleChange={playground.setBaseMapStyle}
-        elevationMode={playground.elevationMode}
-        hasElevationData={playground.hasElevationData}
-        onToggleElevationMode={playground.toggleElevationMode}
-        onOpenFilePicker={playground.openFilePicker}
-        onCreateGeoJson={handleCreateGeoJson}
-        onOpenGuide={() => setOnboardingOpen(true)}
-        onSelectFeature={playground.selectFeature}
-        onSetFeatureVisible={playground.setFeatureVisible}
-        onRemoveLayer={playground.removeLayer}
-      />
-
-      <PlaygroundDropHint visible={playground.isDragOver} />
-      <PlaygroundNotice message={playground.notice} error={playground.errorNotice} />
-
-      {playground.layers.length === 0 ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-16 z-10 flex justify-center px-4">
-          <div className="glass-card max-w-lg px-5 py-4 text-center">
-            <p className="text-sm font-medium">{t("home.playground.emptyTitle")}</p>
-            <p className="mt-1 text-xs text-base-content/60">{t("home.playground.emptyBody")}</p>
-          </div>
-        </div>
-      ) : null}
-
       {playground.activeFeature ? (
-        <div className={`absolute inset-y-0 right-0 z-10 w-full ${detailPanelWidth}`}>
+        <div className="absolute inset-0 z-10 flex min-h-0 min-w-0 flex-col overflow-hidden bg-base-100 md:static md:z-auto">
           <TrailDetailPanel
             feature={playground.activeFeature}
             onClose={playground.clearSelection}

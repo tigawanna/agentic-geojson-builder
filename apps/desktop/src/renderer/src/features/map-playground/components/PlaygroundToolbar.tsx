@@ -6,7 +6,8 @@ import type {
   PlaygroundSelectedFeature,
 } from "@renderer/types/map-playground.types";
 import type { MapBaseMapStyle } from "@shared/maps.types";
-import { HelpCircle, Map, Mountain, PanelLeft, Upload } from "lucide-react";
+import { ipcInvoke } from "@renderer/hooks/useIpc";
+import { HelpCircle, Map, Mountain, PanelLeft, RotateCw, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 type PlaygroundToolbarProps = {
@@ -46,12 +47,12 @@ export function PlaygroundToolbar({
   return (
     <div
       data-test="playground-toolbar"
-      className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between p-3"
+      className="pointer-events-none absolute inset-x-0 top-0 z-20 flex min-w-0 flex-wrap items-start gap-2 p-3"
     >
-      <div className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-base-300 bg-base-100/95 px-3 py-2 shadow-lg backdrop-blur-sm">
+      <div className="pointer-events-auto flex max-w-full min-w-0 flex-wrap items-center gap-1.5 rounded-2xl border border-base-300 bg-base-100/95 px-2 py-2 shadow-lg backdrop-blur-sm sm:gap-2 sm:px-3">
         <button
           type="button"
-          className="btn btn-square btn-ghost btn-sm"
+          className="btn btn-square shrink-0 btn-ghost btn-sm"
           onClick={toggleSidebar}
           aria-label={
             isCollapsed ? t("home.playground.expandSidebar") : t("home.playground.collapseSidebar")
@@ -60,33 +61,52 @@ export function PlaygroundToolbar({
           <PanelLeft className="size-4" />
         </button>
 
-        <button type="button" className="btn btn-sm btn-primary" onClick={onOpenFilePicker}>
+        <button
+          type="button"
+          className="btn shrink-0 btn-sm btn-primary"
+          onClick={onOpenFilePicker}
+        >
           <Upload className="size-4" />
-          {t("home.playground.dropGeoJson")}
-        </button>
-
-        <button type="button" className="btn btn-sm btn-secondary" onClick={onCreateGeoJson}>
-          <Map className="size-4" />
-          {t("home.playground.createGeoJson")}
+          <span className="hidden sm:inline">{t("home.playground.dropGeoJson")}</span>
         </button>
 
         <button
           type="button"
-          className="btn btn-square btn-ghost btn-sm"
+          className="btn shrink-0 btn-sm btn-secondary"
+          onClick={onCreateGeoJson}
+        >
+          <Map className="size-4" />
+          <span className="hidden lg:inline">{t("home.playground.createGeoJson")}</span>
+        </button>
+
+        <button
+          type="button"
+          className="btn btn-square shrink-0 btn-ghost btn-sm"
           onClick={onOpenGuide}
           aria-label={t("home.playground.showGuide")}
           title={t("home.playground.showGuide")}
         >
           <HelpCircle className="size-4" />
         </button>
+
+        <button
+          type="button"
+          className="btn btn-square shrink-0 btn-ghost btn-sm"
+          onClick={() => void ipcInvoke("app:hardReload", undefined)}
+          aria-label={t("home.playground.reload")}
+          title={t("home.playground.reloadHint")}
+          data-test="playground-reload"
+        >
+          <RotateCw className="size-4" />
+        </button>
       </div>
 
-      <div className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-base-300 bg-base-100/95 px-3 py-2 shadow-lg backdrop-blur-sm">
+      <div className="pointer-events-auto ml-auto flex max-w-full min-w-0 flex-wrap items-center justify-end gap-1.5 rounded-2xl border border-base-300 bg-base-100/95 px-2 py-2 shadow-lg backdrop-blur-sm sm:gap-2 sm:px-3">
         <BaseMapStylePicker value={baseMapStyle} onChange={onBaseMapStyleChange} />
 
         <button
           type="button"
-          className={`btn btn-sm ${elevationMode ? "btn-primary" : "btn-outline"}`}
+          className={`btn shrink-0 btn-sm ${elevationMode ? "btn-primary" : "btn-outline"}`}
           onClick={onToggleElevationMode}
           disabled={!hasElevationData}
           aria-pressed={elevationMode}

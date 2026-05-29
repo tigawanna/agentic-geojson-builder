@@ -1,7 +1,6 @@
 import {
-  analyzeTrailFeature,
   buildTrailHoverTooltipContent,
-  formatDistance,
+  buildTrailTooltipContent,
 } from "@renderer/features/map-playground/lib/analyze-trail-feature";
 import {
   coordinatesToLatLngs,
@@ -50,7 +49,7 @@ function attachTrailInteractions(
   featureKey: string,
   onFeatureSelectRef: RefObject<(layerId: string, featureKey: string) => void>,
 ) {
-  const defaultTooltip = buildTooltipContent(feature);
+  const defaultTooltip = buildTrailTooltipContent(feature);
 
   polyline
     .bindTooltip(defaultTooltip, {
@@ -121,18 +120,6 @@ function addTrailToLayer(
   });
   attachTrailInteractions(L, polyline, feature, layerId, featureKey, onFeatureSelectRef);
   polyline.addTo(trailsLayer);
-}
-
-function buildTooltipContent(feature: PlaygroundFeature) {
-  const stats = analyzeTrailFeature(feature);
-  const parts = [stats.name];
-  if (stats.difficulty) {
-    parts.push(stats.difficulty);
-  }
-  if (stats.lengthMeters !== null) {
-    parts.push(formatDistance(stats.lengthMeters));
-  }
-  return parts.join(" · ");
 }
 
 function isFeatureVisible(layer: PlaygroundLayer, featureKey: string) {

@@ -2,6 +2,12 @@ import { BrowserWindow, dialog, type OpenDialogOptions } from "electron";
 import { readFile, stat } from "node:fs/promises";
 import { basename, dirname } from "node:path";
 import type { IpcChannel, IpcRequest, IpcResponse } from "@shared/ipc-contract.js";
+import {
+  deletePlaygroundLayerFile,
+  listPlaygroundLayerFiles,
+  savePlaygroundLayerFile,
+  updatePlaygroundLayerFile,
+} from "@main/lib/playground/playground-layers.service.js";
 import { storage } from "@main/storage/index.js";
 
 type Handler<K extends IpcChannel> = (
@@ -83,5 +89,25 @@ export const playgroundHandlers: { [K in IpcChannel]?: Handler<K> } = {
       files,
       failed,
     };
+  },
+
+  "playground:listLayers": async () => {
+    const layers = await listPlaygroundLayerFiles();
+    return { layers };
+  },
+
+  "playground:saveLayer": async (req) => {
+    const layer = await savePlaygroundLayerFile(req);
+    return { layer };
+  },
+
+  "playground:updateLayer": async (req) => {
+    const layer = await updatePlaygroundLayerFile(req);
+    return { layer };
+  },
+
+  "playground:deleteLayer": async (req) => {
+    const ok = await deletePlaygroundLayerFile(req.id);
+    return { ok };
   },
 };

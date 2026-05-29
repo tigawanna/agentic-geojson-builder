@@ -2,7 +2,6 @@ import { ipcInvoke } from "@renderer/hooks/useIpc";
 import {
   parsePlaygroundGeoJsonCollection,
   parsePlaygroundGeoJsonText,
-  readPlaygroundGeoJsonFile,
 } from "@renderer/features/map-playground/lib/parse-playground-geojson";
 import type {
   PlaygroundBaseMapStyle,
@@ -13,11 +12,10 @@ import type {
 import { computeVisibleElevationRange } from "@renderer/features/map-playground/lib/elevation-colors";
 import { useEffect, useRef, useState } from "react";
 
-const DEMO_GEOJSON_URL = "/demo/karura-trailfork-trails.geojson";
 const DEFAULT_VIEWPORT = {
-  latitude: -1.2402853,
-  longitude: 36.82703,
-  zoom: 15,
+  latitude: 0,
+  longitude: 20,
+  zoom: 2,
 };
 
 function createLayerId(name: string) {
@@ -58,7 +56,7 @@ export function useMapPlayground() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
-  const demoAttemptedRef = useRef(false);
+  const [layersLoaded, setLayersLoaded] = useState(false);
   const noticeTimerRef = useRef<number | undefined>(undefined);
 
   function showNotice(message: string) {
@@ -77,7 +75,25 @@ export function useMapPlayground() {
     window.setTimeout(() => setErrorNotice(null), 4200);
   }
 
-  function addLayer(name: string, features: PlaygroundFeature[]) {
+  async function persistLayer(layer: PlaygroundLayer, sourceText: string) {
+    await ipcInvoke("playground:saveLayer", {
+      id: layer.id,
+      name: layer.name,
+      text: sourceText,
+      visible: layer.visible,
+      hiddenFeatureKeys: layer.hiddenFeatureKeys,
+    });
+  }
+
+  async function persistLayerState(layer: PlaygroundLayer) {
+    await ipcInvoke("playground:updateLayer", {
+      id: layer.id,
+      visible: layer.visible,
+      hiddenFeatureKeys: layer.hiddenFeatureKeys,
+    });
+  }
+
+  function addLayer(name: string, features: PlaygroundFeature[], sourceText: string) {
     const layer: PlaygroundLayer = {
       id: createLayerId(name),
       name,
@@ -86,28 +102,31 @@ export function useMapPlayground() {
       hiddenFeatureKeys: [],
     };
     setLayers((current) => [...current, layer]);
+    void persistLayer(layer, sourceText).catch((error: unknown) => {
+      showError(error instanceof Error ? error.message : "Failed to save layer.");
+    });
     return layer;
   }
 
   function importCollection(
     name: string,
     collection: ReturnType<typeof parsePlaygroundGeoJsonCollection>,
+    sourceText: string,
   ) {
-    addLayer(name, collection.features);
+    addLayer(name, collection.features, sourceText);
     return collection.features.length;
   }
 
   async function importNamedText(name: string, text: string) {
     const collection = parsePlaygroundGeoJsonText(text, text.length, name);
-    return importCollection(name, collection);
+    return importCollection(name, collection, text);
   }
 
   async function importFile(file: File) {
-    const collection = await readPlaygroundGeoJsonFile(file);
-    return importCollection(
-      file.name.replace(/\.(geojson|json)$/i, "") || "Imported layer",
-      collection,
-    );
+    const text = await file.text();
+    const layerName = file.name.replace(/\.(geojson|json)$/i, "") || "Imported layer";
+    const collection = parsePlaygroundGeoJsonText(text, file.size, layerName);
+    return importCollection(layerName, collection, text);
   }
 
   async function importManyFiles(files: File[]) {
@@ -209,8 +228,8 @@ export function useMapPlayground() {
   }
 
   function setFeatureVisible(layerId: string, featureKey: string, visible: boolean) {
-    setLayers((current) =>
-      current.map((layer) => {
+    setLayers((current) => {
+      const next = current.map((layer) => {
         if (layer.id !== layerId) {
           return layer;
         }
@@ -226,8 +245,17 @@ export function useMapPlayground() {
           ...layer,
           hiddenFeatureKeys: [...hiddenFeatureKeys],
         };
-      }),
-    );
+      });
+
+      const updatedLayer = next.find((layer) => layer.id === layerId);
+      if (updatedLayer) {
+        void persistLayerState(updatedLayer).catch((error: unknown) => {
+          showError(error instanceof Error ? error.message : "Failed to update layer.");
+        });
+      }
+
+      return next;
+    });
 
     if (
       !visible &&
@@ -241,6 +269,9 @@ export function useMapPlayground() {
   function removeLayer(layerId: string) {
     setLayers((current) => current.filter((layer) => layer.id !== layerId));
     setSelectedFeature((current) => (current?.layerId === layerId ? null : current));
+    void ipcInvoke("playground:deleteLayer", { id: layerId }).catch((error: unknown) => {
+      showError(error instanceof Error ? error.message : "Failed to delete layer.");
+    });
   }
 
   function selectFeature(layerId: string, featureKey: string) {
@@ -266,31 +297,51 @@ export function useMapPlayground() {
   }, [elevationMode, layers]);
 
   useEffect(() => {
-    if (demoAttemptedRef.current) {
-      return;
-    }
-    demoAttemptedRef.current = true;
-
     let cancelled = false;
 
-    async function loadDemo() {
+    async function loadPersistedLayers() {
       try {
-        const response = await fetch(DEMO_GEOJSON_URL);
-        if (!response.ok) {
-          return;
-        }
-        const text = await response.text();
+        const result = await ipcInvoke("playground:listLayers", undefined);
         if (cancelled) {
           return;
         }
-        const trailCount = await importNamedText("Karura Trailfork trails", text);
-        showNotice(`Loaded ${trailCount} demo trail(s)`);
-      } catch {
-        return;
+
+        const loadedLayers: PlaygroundLayer[] = [];
+        for (const entry of result.layers) {
+          try {
+            const collection = parsePlaygroundGeoJsonText(
+              entry.text,
+              entry.text.length,
+              entry.name,
+            );
+            loadedLayers.push({
+              id: entry.id,
+              name: entry.name,
+              features: collection.features,
+              visible: entry.visible,
+              hiddenFeatureKeys: entry.hiddenFeatureKeys,
+            });
+          } catch {
+            continue;
+          }
+        }
+
+        setLayers(loadedLayers);
+        if (loadedLayers.length > 0) {
+          showNotice(`Restored ${loadedLayers.length} saved layer(s)`);
+        }
+      } catch (error: unknown) {
+        if (!cancelled) {
+          showError(error instanceof Error ? error.message : "Failed to load saved layers.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLayersLoaded(true);
+        }
       }
     }
 
-    void loadDemo();
+    void loadPersistedLayers();
 
     return () => {
       cancelled = true;
@@ -306,6 +357,7 @@ export function useMapPlayground() {
 
   return {
     layers,
+    layersLoaded,
     activeFeature,
     selectedFeature,
     baseMapStyle,

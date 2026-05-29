@@ -1,5 +1,9 @@
 import { MapPlayground } from "@renderer/features/map-playground/components/MapPlayground";
 
 export function HomePage() {
-  return <MapPlayground />;
+  return (
+    <div className="h-full min-h-0">
+      <MapPlayground />
+    </div>
+  );
 }

@@ -63,6 +63,8 @@
       "elevationLegendHint": "Green is lower, red is higher across visible trails",
       "createGeoJson": "Create GeoJSON",
       "showGuide": "Guide",
+      "reload": "Reload page",
+      "reloadHint": "Reload the playground if the map or layers fail to load",
       "onboarding": {
         "close": "Close",
         "title": "Welcome to the Map Playground",

@@ -21,8 +21,8 @@ type StatRowProps = {
 function StatRow({ label, value }: StatRowProps) {
   return (
     <div className="flex items-start justify-between gap-3 text-sm">
-      <span className="text-base-content/60">{label}</span>
-      <span className="text-right font-medium">{value}</span>
+      <span className="shrink-0 text-base-content/60">{label}</span>
+      <span className="min-w-0 text-right font-medium break-words">{value}</span>
     </div>
   );
 }
@@ -51,9 +51,9 @@ export function TrailDetailPanel({ feature, onClose }: TrailDetailPanelProps) {
   return (
     <aside
       data-test="trail-detail-panel"
-      className="flex h-full w-full flex-col border-l border-base-300 bg-base-100/95 backdrop-blur-sm"
+      className="flex h-full max-h-full min-h-0 w-full flex-col overflow-hidden border-l border-base-300 bg-base-100/95 backdrop-blur-sm"
     >
-      <div className="flex items-start justify-between gap-3 border-b border-base-300 p-4">
+      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-base-300 p-4">
         <div className="min-w-0 space-y-1">
           <h2 className="truncate text-lg font-semibold">{stats.name}</h2>
           {stats.slug ? (
@@ -70,8 +70,8 @@ export function TrailDetailPanel({ feature, onClose }: TrailDetailPanelProps) {
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        <div className="space-y-5 p-4">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div className="space-y-5 p-4 pb-6">
           <div className="flex flex-wrap gap-2">
             {stats.source ? <span className="badge badge-outline">{stats.source}</span> : null}
             {stats.difficulty ? (
@@ -203,7 +203,7 @@ export function TrailDetailPanel({ feature, onClose }: TrailDetailPanelProps) {
       </div>
 
       {stats.trailforkUrl ? (
-        <div className="border-t border-base-300 p-4">
+        <div className="shrink-0 border-t border-base-300 p-4">
           <a
             href={stats.trailforkUrl}
             target="_blank"

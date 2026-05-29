@@ -295,6 +295,77 @@ export function getElevationAtLatLng(
   return closestElevation;
 }
 
+function escapeTooltipHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+export function getTrailDisplayTags(stats: ReturnType<typeof analyzeTrailFeature>) {
+  const tags: string[] = [];
+  if (stats.source) {
+    tags.push(stats.source);
+  }
+  if (stats.difficulty) {
+    tags.push(stats.difficulty);
+  }
+  if (stats.activityType) {
+    tags.push(stats.activityType);
+  }
+  if (stats.trailType) {
+    tags.push(stats.trailType);
+  }
+  if (stats.usage) {
+    tags.push(stats.usage);
+  }
+  if (stats.direction) {
+    tags.push(stats.direction);
+  }
+  return tags;
+}
+
+function buildTrailTooltipHtml(
+  stats: ReturnType<typeof analyzeTrailFeature>,
+  elevation: number | null,
+) {
+  const title = escapeTooltipHtml(stats.name);
+  const tags = getTrailDisplayTags(stats);
+  const tagMarkup =
+    tags.length > 0
+      ? `<div class="playground-trail-tooltip-tags">${tags
+          .map(
+            (tag) => `<span class="playground-trail-tooltip-tag">${escapeTooltipHtml(tag)}</span>`,
+          )
+          .join("")}</div>`
+      : "";
+
+  const metaParts: string[] = [];
+  if (stats.lengthMeters !== null) {
+    metaParts.push(formatDistance(stats.lengthMeters));
+  }
+  if (stats.vertexCount > 0) {
+    metaParts.push(`${stats.vertexCount} pts`);
+  }
+  const metaMarkup =
+    metaParts.length > 0
+      ? `<div class="playground-trail-tooltip-meta">${escapeTooltipHtml(metaParts.join(" · "))}</div>`
+      : "";
+
+  const elevationMarkup =
+    elevation !== null
+      ? `<div class="playground-trail-tooltip-elevation">${escapeTooltipHtml(formatElevation(elevation))}</div>`
+      : "";
+
+  return `<div class="playground-trail-tooltip-title">${title}</div>${tagMarkup}${metaMarkup}${elevationMarkup}`;
+}
+
+export function buildTrailTooltipContent(feature: PlaygroundFeature) {
+  const stats = analyzeTrailFeature(feature);
+  return buildTrailTooltipHtml(stats, null);
+}
+
 export function buildTrailHoverTooltipContent(
   feature: PlaygroundFeature,
   latitude: number,
@@ -302,16 +373,5 @@ export function buildTrailHoverTooltipContent(
 ) {
   const stats = analyzeTrailFeature(feature);
   const elevation = getElevationAtLatLng(feature.geometry.coordinates, latitude, longitude);
-  const headerParts = [stats.name];
-  if (stats.difficulty) {
-    headerParts.push(stats.difficulty);
-  }
-  if (stats.lengthMeters !== null) {
-    headerParts.push(formatDistance(stats.lengthMeters));
-  }
-  const header = headerParts.join(" · ");
-  if (elevation === null) {
-    return header;
-  }
-  return `${header}<br/><span class="playground-trail-tooltip-elevation">${formatElevation(elevation)}</span>`;
+  return buildTrailTooltipHtml(stats, elevation);
 }

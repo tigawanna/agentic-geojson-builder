@@ -49,7 +49,9 @@ function DashboardShell() {
           className={`no-drag min-h-0 flex-1 ${isFullWidth ? "overflow-hidden" : "overflow-y-auto"}`}
         >
           <div
-            className={isFullWidth ? "h-full" : "mx-auto w-full max-w-5xl px-6 py-8 pb-12 lg:px-10"}
+            className={
+              isFullWidth ? "h-full min-h-0" : "mx-auto w-full max-w-5xl px-6 py-8 pb-12 lg:px-10"
+            }
           >
             <Outlet />
           </div>

@@ -63,7 +63,16 @@ import type {
   VerifyDataBackupInput,
   DataBackupStoragePaths,
 } from "./data-backup.types.js";
-import type { PickPlaygroundGeoJsonFilesResult } from "./playground.types.js";
+import type {
+  PickPlaygroundGeoJsonFilesResult,
+  PlaygroundDeleteLayerInput,
+  PlaygroundDeleteLayerResult,
+  PlaygroundListLayersResult,
+  PlaygroundSaveLayerInput,
+  PlaygroundSaveLayerResult,
+  PlaygroundUpdateLayerInput,
+  PlaygroundUpdateLayerResult,
+} from "./playground.types.js";
 import type {
   ApplyFeaturePatchInput,
   CreateGeoSegmentInput,
@@ -194,6 +203,10 @@ export interface IpcContract {
 
   // --- Map playground (home GeoJSON preview) ---------------------------------
   "playground:pickGeoJsonFiles": { req: void; res: PickPlaygroundGeoJsonFilesResult };
+  "playground:listLayers": { req: void; res: PlaygroundListLayersResult };
+  "playground:saveLayer": { req: PlaygroundSaveLayerInput; res: PlaygroundSaveLayerResult };
+  "playground:updateLayer": { req: PlaygroundUpdateLayerInput; res: PlaygroundUpdateLayerResult };
+  "playground:deleteLayer": { req: PlaygroundDeleteLayerInput; res: PlaygroundDeleteLayerResult };
 
   // --- Geo segments (traced trails / paths) ----------------------------------
   "geoSegments:list": { req: { mapId: number }; res: { segments: GeoSegmentRecord[] } };
