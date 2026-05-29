@@ -219,3 +219,40 @@ textarea,
 .no-drag {
   -webkit-app-region: no-drag;
 }
+
+.playground-map-pane .playground-trail-tooltip {
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  padding: 0.45rem 0.65rem;
+  border-radius: 0.65rem;
+  border: 1px solid color-mix(in oklab, var(--color-base-content) 12%, transparent);
+  background: color-mix(in oklab, var(--color-base-100) 94%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 24px color-mix(in oklab, var(--color-neutral) 18%, transparent);
+}
+
+.playground-map-pane .playground-trail-tooltip .playground-trail-tooltip-elevation {
+  display: inline-block;
+  margin-top: 0.15rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.playground-map-pane .playground-trail-highlight {
+  stroke-dasharray: 14 10;
+  animation: playground-trail-dash 0.9s linear infinite;
+}
+
+.playground-map-pane .playground-trail-highlight-glow {
+  filter: drop-shadow(0 0 4px rgba(22, 163, 74, 0.65));
+}
+
+@keyframes playground-trail-dash {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -48;
+  }
+}

@@ -63,6 +63,7 @@ import type {
   VerifyDataBackupInput,
   DataBackupStoragePaths,
 } from "./data-backup.types.js";
+import type { PickPlaygroundGeoJsonFilesResult } from "./playground.types.js";
 import type {
   ApplyFeaturePatchInput,
   CreateGeoSegmentInput,
@@ -190,6 +191,9 @@ export interface IpcContract {
     req: SetMapReferenceGeoJsonVisibilityInput;
     res: { layer: MapReferenceGeoJsonLayer };
   };
+
+  // --- Map playground (home GeoJSON preview) ---------------------------------
+  "playground:pickGeoJsonFiles": { req: void; res: PickPlaygroundGeoJsonFilesResult };
 
   // --- Geo segments (traced trails / paths) ----------------------------------
   "geoSegments:list": { req: { mapId: number }; res: { segments: GeoSegmentRecord[] } };

@@ -12,6 +12,7 @@ import { mcpSettingsHandlers } from "@main/ipc/mcp-settings.js";
 import { workspaceSnapshotHandlers } from "@main/ipc/workspace-snapshot.js";
 import { pgliteHandlers } from "@main/ipc/pglite.js";
 import { dataBackupHandlers } from "@main/ipc/data-backup.js";
+import { playgroundHandlers } from "@main/ipc/playground.js";
 import { updaterHandlers } from "@main/ipc/updater.js";
 
 /**
@@ -95,7 +96,10 @@ export function registerIpcHandlers(): void {
     if (handler) register(channel, handler);
   }
 
-  for (const [channel, handler] of Object.entries(appMenuHandlers) as [
+  for (const [channel, handler] of Object.entries({
+    ...appMenuHandlers,
+    ...playgroundHandlers,
+  }) as [
     IpcChannel,
     (req: IpcRequest<IpcChannel>, window: BrowserWindow | null) => IpcResponse<IpcChannel>,
   ][]) {
@@ -105,6 +109,9 @@ export function registerIpcHandlers(): void {
   log.info({
     action: "ipc",
     message: "registered channels",
-    count: Object.keys(handlers).length + Object.keys(appMenuHandlers).length,
+    count:
+      Object.keys(handlers).length +
+      Object.keys(appMenuHandlers).length +
+      Object.keys(playgroundHandlers).length,
   });
 }
