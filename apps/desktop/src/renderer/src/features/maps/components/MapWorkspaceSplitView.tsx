@@ -37,6 +37,7 @@ import { MapTileCacheBoundsModal } from "@renderer/features/maps/components/MapT
 import { MapTraceTrailBar } from "@renderer/features/maps/components/MapTraceTrailBar";
 import { MapWorkspaceControlsModal } from "@renderer/features/maps/components/MapWorkspaceControlsModal";
 import { MapWorkspaceHeader } from "@renderer/features/maps/components/MapWorkspaceHeader";
+import { MapAuditLogModal } from "@renderer/features/maps/components/MapAuditLogModal";
 import { SourceDocumentPane } from "@renderer/features/maps/components/SourceDocumentPane";
 
 export function MapWorkspaceSplitView() {
@@ -86,6 +87,7 @@ export function MapWorkspaceSplitView() {
     void updateControlPoint.mutateAsync(entry);
   });
   const [selectedSegmentId, setSelectedSegmentId] = useState<number | null>(null);
+  const [auditLogOpen, setAuditLogOpen] = useState(false);
   const [mapHandle, setMapHandle] = useState<MapHandle | null>(null);
   const mapHandleRef = useRef<MapHandle | null>(null);
   const controlPointsRef = useRef(controlPointsQuery.data?.controlPoints ?? []);
@@ -598,6 +600,7 @@ export function MapWorkspaceSplitView() {
     <div className="flex h-full min-h-0 flex-col">
       <MapWorkspaceHeader
         onOpenControls={openControls}
+        onOpenAuditLog={() => setAuditLogOpen(true)}
         hasSourceFile={Boolean(sourceFile)}
         segmentCount={geoSegments.length}
         exportDisabled={exportGeoJson.isPending}
@@ -734,6 +737,11 @@ export function MapWorkspaceSplitView() {
         onFocusControlPoint={handleFocusControlPoint}
       />
       <MapTileCacheBoundsModal />
+      <MapAuditLogModal
+        mapId={workspace.id}
+        open={auditLogOpen}
+        onClose={() => setAuditLogOpen(false)}
+      />
     </div>
   );
 }

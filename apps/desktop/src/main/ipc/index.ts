@@ -15,6 +15,7 @@ import { dataBackupHandlers } from "@main/ipc/data-backup.js";
 import { playgroundHandlers } from "@main/ipc/playground.js";
 import { updaterHandlers } from "@main/ipc/updater.js";
 import { referenceSnapHandlers } from "@main/ipc/reference-snap.js";
+import { listAuditLog } from "@main/lib/pglite/audit-log.service.js";
 
 /**
  * Strongly-typed IPC handler definition.
@@ -111,6 +112,30 @@ export function registerIpcHandlers(): void {
     ...mcpSettingsHandlers,
     ...referenceSnapHandlers,
     ...updaterHandlers,
+    "auditLog:list": async (req) => {
+      const result = await listAuditLog(req.mapId, {
+        entityType: req.entityType as "control_point" | "geo_segment" | "map" | undefined,
+        entityId: req.entityId,
+        limit: req.limit,
+        offset: req.offset,
+      });
+      return {
+        entries: result.entries.map((e) => ({
+          id: e.id,
+          mapId: e.mapId,
+          entityType: e.entityType,
+          entityId: e.entityId,
+          action: e.action,
+          oldValue: e.oldValue,
+          newValue: e.newValue,
+          source: e.source,
+          createdAt: e.createdAt.toISOString(),
+        })),
+        total: result.total,
+        limit: result.limit,
+        offset: result.offset,
+      };
+    },
   };
 
   for (const [channel, handler] of Object.entries(handlers) as [

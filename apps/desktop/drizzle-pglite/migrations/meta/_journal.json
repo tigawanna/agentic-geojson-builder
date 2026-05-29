@@ -29,6 +29,13 @@
       "when": 1779902100000,
       "tag": "0003_karura_trail",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1779902200000,
+      "tag": "0004_audit_log",
+      "breakpoints": true
     }
   ]
 }

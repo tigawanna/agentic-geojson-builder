@@ -1,3 +1,4 @@
+export * from "./audit-log.schema";
 export * from "./control-point.schema";
 export * from "./geo-segment.schema";
 export * from "./karura-trail.schema";

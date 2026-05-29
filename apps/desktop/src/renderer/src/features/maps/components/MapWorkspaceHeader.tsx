@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Download, Pencil, RotateCw, Settings2 } from "lucide-react";
+import { ArrowLeft, Download, History, Pencil, RotateCw, Settings2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatMapCoordinates } from "@renderer/features/maps/lib/copy-map-coordinates";
 import {
@@ -10,6 +10,7 @@ import {
 
 type MapWorkspaceHeaderProps = {
   onOpenControls: () => void;
+  onOpenAuditLog: () => void;
   hasSourceFile: boolean;
   segmentCount: number;
   exportDisabled: boolean;
@@ -23,6 +24,7 @@ async function hardReloadView() {
 
 export function MapWorkspaceHeader({
   onOpenControls,
+  onOpenAuditLog,
   hasSourceFile,
   segmentCount,
   exportDisabled,
@@ -157,6 +159,15 @@ export function MapWorkspaceHeader({
               {segmentCount}
             </span>
           ) : null}
+        </button>
+        <button
+          type="button"
+          className="inline-flex size-8 items-center justify-center rounded-lg text-base-content/55 transition-colors hover:bg-base-content/10 hover:text-base-content"
+          onClick={onOpenAuditLog}
+          aria-label="Audit log"
+          title="View change history"
+        >
+          <History className="size-4" />
         </button>
         <button
           type="button"

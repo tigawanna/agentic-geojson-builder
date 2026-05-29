@@ -5,6 +5,7 @@ import type {
   DeleteControlPointInput,
   UpdateControlPointInput,
 } from "@shared/control-points.types.js";
+import { writeAuditEntry } from "@main/lib/pglite/audit-log.service.js";
 import { getPgliteDb } from "@main/lib/pglite/client.js";
 import { controlPointTable } from "@main/lib/pglite/schema/control-point.schema.js";
 
@@ -53,13 +54,29 @@ export async function createControlPoint(
     throw new Error("Failed to create control point.");
   }
 
-  return toControlPointRecord(row);
+  const record = toControlPointRecord(row);
+  void writeAuditEntry({
+    mapId: input.mapId,
+    entityType: "control_point",
+    entityId: record.id,
+    action: "create",
+    newValue: record,
+  });
+  return record;
 }
 
 export async function updateControlPoint(
   input: UpdateControlPointInput,
 ): Promise<ControlPointRecord> {
   const db = getPgliteDb();
+
+  const [existing] = await db
+    .select()
+    .from(controlPointTable)
+    .where(
+      and(eq(controlPointTable.id, input.controlPointId), eq(controlPointTable.mapId, input.mapId)),
+    );
+
   const patch: Partial<typeof controlPointTable.$inferInsert> = {
     imageX: input.imageX,
     imageY: input.imageY,
@@ -81,16 +98,42 @@ export async function updateControlPoint(
     throw new Error("Reference point not found.");
   }
 
-  return toControlPointRecord(row);
+  const record = toControlPointRecord(row);
+  void writeAuditEntry({
+    mapId: input.mapId,
+    entityType: "control_point",
+    entityId: record.id,
+    action: "update",
+    oldValue: existing ? toControlPointRecord(existing) : null,
+    newValue: record,
+  });
+  return record;
 }
 
 export async function deleteControlPoint(input: DeleteControlPointInput): Promise<{ ok: true }> {
   const db = getPgliteDb();
+  const [existing] = await db
+    .select()
+    .from(controlPointTable)
+    .where(
+      and(eq(controlPointTable.id, input.controlPointId), eq(controlPointTable.mapId, input.mapId)),
+    );
+
   await db
     .delete(controlPointTable)
     .where(
       and(eq(controlPointTable.id, input.controlPointId), eq(controlPointTable.mapId, input.mapId)),
     );
+
+  if (existing) {
+    void writeAuditEntry({
+      mapId: input.mapId,
+      entityType: "control_point",
+      entityId: input.controlPointId,
+      action: "delete",
+      oldValue: toControlPointRecord(existing),
+    });
+  }
 
   return { ok: true };
 }

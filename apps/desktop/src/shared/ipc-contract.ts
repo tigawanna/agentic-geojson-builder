@@ -283,6 +283,27 @@ export interface IpcContract {
   "referenceSnap:snapPoint": { req: SnapPointInput; res: SnapPointResult };
   "referenceSnap:snapTrace": { req: SnapTraceInput; res: SnapTraceResult };
 
+  // --- Audit log ---------------------------------------------------------------
+  "auditLog:list": {
+    req: { mapId: number; entityType?: string; entityId?: number; limit?: number; offset?: number };
+    res: {
+      entries: Array<{
+        id: number;
+        mapId: number;
+        entityType: string;
+        entityId: number;
+        action: string;
+        oldValue: unknown;
+        newValue: unknown;
+        source: string;
+        createdAt: string;
+      }>;
+      total: number;
+      limit: number;
+      offset: number;
+    };
+  };
+
   // --- Local MCP server ------------------------------------------------------
   "mcp:getStatus": { req: void; res: McpStatus };
   "mcp:setEnabled": { req: { enabled: boolean }; res: McpStatus };

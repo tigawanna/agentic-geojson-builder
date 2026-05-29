@@ -22,6 +22,7 @@ import { findFeatureGaps } from "@main/lib/geojson/segment-gaps.js";
 import { mergeFeatureSegmentGroups } from "@main/lib/geojson/merge-segments.js";
 import { pdfPixelToLonLatForMap } from "@main/lib/georeference/georeference.service.js";
 import { log } from "@main/lib/logger.js";
+import { writeAuditEntry } from "@main/lib/pglite/audit-log.service.js";
 import { getPgliteDb } from "@main/lib/pglite/client.js";
 import {
   geoSegmentTable,
@@ -168,6 +169,13 @@ export async function createGeoSegment(input: CreateGeoSegmentInput): Promise<Ge
     firstCoord: segment.geometry.coordinates[0],
     lastCoord: segment.geometry.coordinates.at(-1),
   });
+  void writeAuditEntry({
+    mapId: input.mapId,
+    entityType: "geo_segment",
+    entityId: segment.id,
+    action: "create",
+    newValue: segment,
+  });
   return segment;
 }
 
@@ -184,6 +192,7 @@ export async function updateGeoSegment(input: UpdateGeoSegmentInput): Promise<Ge
     throw new Error("Segment not found.");
   }
 
+  const oldRecord = toRecord(existing);
   const [row] = await db
     .update(geoSegmentTable)
     .set({
@@ -201,14 +210,38 @@ export async function updateGeoSegment(input: UpdateGeoSegmentInput): Promise<Ge
     throw new Error("Segment not found.");
   }
 
-  return toRecord(row);
+  const updated = toRecord(row);
+  void writeAuditEntry({
+    mapId: input.mapId,
+    entityType: "geo_segment",
+    entityId: updated.id,
+    action: "update",
+    oldValue: oldRecord,
+    newValue: updated,
+  });
+  return updated;
 }
 
 export async function deleteGeoSegment(mapId: number, segmentId: number): Promise<{ ok: true }> {
   const db = getPgliteDb();
+  const [existing] = await db
+    .select()
+    .from(geoSegmentTable)
+    .where(and(eq(geoSegmentTable.id, segmentId), eq(geoSegmentTable.mapId, mapId)));
+
   await db
     .delete(geoSegmentTable)
     .where(and(eq(geoSegmentTable.id, segmentId), eq(geoSegmentTable.mapId, mapId)));
+
+  if (existing) {
+    void writeAuditEntry({
+      mapId,
+      entityType: "geo_segment",
+      entityId: segmentId,
+      action: "delete",
+      oldValue: toRecord(existing),
+    });
+  }
 
   return { ok: true };
 }
@@ -325,6 +358,11 @@ export async function applyFeaturePatch(input: ApplyFeaturePatchInput) {
 
   if (input.segmentId !== undefined) {
     const db = getPgliteDb();
+    const [existing] = await db
+      .select()
+      .from(geoSegmentTable)
+      .where(and(eq(geoSegmentTable.id, input.segmentId), eq(geoSegmentTable.mapId, input.mapId)));
+
     const [row] = await db
       .update(geoSegmentTable)
       .set({
@@ -352,6 +390,15 @@ export async function applyFeaturePatch(input: ApplyFeaturePatchInput) {
       mapId: input.mapId,
       segmentId: updated.id,
       vertexCount: updated.geometry.coordinates.length,
+    });
+    void writeAuditEntry({
+      mapId: input.mapId,
+      entityType: "geo_segment",
+      entityId: updated.id,
+      action: "update",
+      oldValue: existing ? toRecord(existing) : null,
+      newValue: updated,
+      source: "mcp",
     });
     return { segment: updated };
   }
