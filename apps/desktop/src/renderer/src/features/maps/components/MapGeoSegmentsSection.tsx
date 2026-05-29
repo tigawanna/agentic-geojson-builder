@@ -1,7 +1,11 @@
 import { useTranslation } from "react-i18next";
 import type { GeoSegmentRecord } from "@shared/geo-segments.types";
 import { useIpcMutation } from "@renderer/hooks/useIpc";
-import { segmentGroupColor } from "@renderer/features/maps/lib/segment-utils";
+import {
+  lineStringToMapBounds,
+  segmentGroupColor,
+} from "@renderer/features/maps/lib/segment-utils";
+import { getViewportCommand } from "@renderer/features/maps/lib/viewport-command-registry";
 import {
   useMapWorkspaceUiActions,
   useMapWorkspaceUiState,
@@ -17,6 +21,7 @@ export function MapGeoSegmentsSection({ mapId, segments }: MapGeoSegmentsSection
   const deleteSegment = useIpcMutation("geoSegments:delete");
   const editingSegmentId = useMapWorkspaceUiState((state) => state.editingSegmentId);
   const {
+    closeControls,
     setTraceMode,
     stopReferenceMode,
     setEditingSegmentId,
@@ -24,6 +29,7 @@ export function MapGeoSegmentsSection({ mapId, segments }: MapGeoSegmentsSection
     setSegmentName,
     setSegmentPathKind,
     setPendingTracePoints,
+    setStatusMessage,
   } = useMapWorkspaceUiActions();
 
   function startEditingSegment(segment: GeoSegmentRecord) {
@@ -39,6 +45,12 @@ export function MapGeoSegmentsSection({ mapId, segments }: MapGeoSegmentsSection
       })),
     );
     setTraceMode(true);
+    const bounds = lineStringToMapBounds(segment.geometry.coordinates);
+    if (bounds) {
+      getViewportCommand(mapId)?.({ fitBounds: bounds });
+    }
+    closeControls();
+    setStatusMessage(null);
   }
 
   return (

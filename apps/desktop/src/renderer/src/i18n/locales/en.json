@@ -171,6 +171,8 @@
     "workspace": {
       "back": "Back to maps",
       "controls": "Controls",
+      "controlsShortcut": "Ctrl+,",
+      "openControlsShortcut": "Open project controls (Ctrl+, or Esc to close)",
       "hardReload": "Hard reload",
       "hardReloadHint": "Reload the entire view if the map or document fails to load",
       "openControls": "Open project controls",

@@ -23,9 +23,11 @@ import type { ControlPointRecord } from "@shared/control-points.types";
 import type { UpdateControlPointInput } from "@shared/control-points.types";
 import type { MapHandle } from "@renderer/features/maps/lib/map-handle";
 import { captureWorkspaceView } from "@renderer/features/maps/lib/rendered-map-view/capture-workspace-view";
+import { lineStringToMapBounds } from "@renderer/features/maps/lib/segment-utils";
 import { registerViewportCommand } from "@renderer/features/maps/lib/viewport-command-registry";
 import { registerWorkspaceCapture } from "@renderer/features/maps/lib/workspace-capture-registry";
 import { useWorkspacePersistence } from "@renderer/features/maps/hooks/useWorkspacePersistence";
+import { useMapWorkspaceControlsShortcut } from "@renderer/features/maps/hooks/useMapWorkspaceControlsShortcut";
 import { useUndoHistory } from "@renderer/features/maps/hooks/useUndoHistory";
 import {
   useMapWorkspaceState,
@@ -37,6 +39,7 @@ import { MapTileCacheBoundsModal } from "@renderer/features/maps/components/MapT
 import { MapTraceTrailBar } from "@renderer/features/maps/components/MapTraceTrailBar";
 import { MapWorkspaceControlsModal } from "@renderer/features/maps/components/MapWorkspaceControlsModal";
 import { MapWorkspaceHeader } from "@renderer/features/maps/components/MapWorkspaceHeader";
+import { GeoJsonPreviewModal } from "@renderer/features/maps/components/GeoJsonPreviewModal";
 import { MapAuditLogModal } from "@renderer/features/maps/components/MapAuditLogModal";
 import { SourceDocumentPane } from "@renderer/features/maps/components/SourceDocumentPane";
 
@@ -44,7 +47,8 @@ export function MapWorkspaceSplitView() {
   const { t } = useTranslation();
   const workspace = useMapWorkspaceState((state) => state.workspace);
   const sourceFile = useMapWorkspaceState((state) => state.sourceFile);
-  const { openControls } = useMapWorkspaceUiActions();
+  const controlsOpen = useMapWorkspaceUiState((state) => state.controlsOpen);
+  const { openControls, closeControls } = useMapWorkspaceUiActions();
   const { setHomeViewport } = useMapWorkspaceUiActions();
   const {
     setCursorCoordinates,
@@ -88,6 +92,7 @@ export function MapWorkspaceSplitView() {
   });
   const [selectedSegmentId, setSelectedSegmentId] = useState<number | null>(null);
   const [auditLogOpen, setAuditLogOpen] = useState(false);
+  const [geoJsonPreviewOpen, setGeoJsonPreviewOpen] = useState(false);
   const [mapHandle, setMapHandle] = useState<MapHandle | null>(null);
   const mapHandleRef = useRef<MapHandle | null>(null);
   const controlPointsRef = useRef(controlPointsQuery.data?.controlPoints ?? []);
@@ -105,6 +110,16 @@ export function MapWorkspaceSplitView() {
   const controlPoints = controlPointsQuery.data?.controlPoints ?? [];
   const geoSegments = geoSegmentsQuery.data?.segments ?? [];
   controlPointsRef.current = controlPoints;
+
+  useMapWorkspaceControlsShortcut(workspace != null);
+
+  const handleToggleControls = useCallback(() => {
+    if (controlsOpen) {
+      closeControls();
+    } else {
+      openControls();
+    }
+  }, [closeControls, controlsOpen, openControls]);
 
   const referenceOverlay = useMemo(() => {
     const layers = referenceGeoJsonQuery.data?.layers ?? [];
@@ -449,8 +464,19 @@ export function MapWorkspaceSplitView() {
     );
     setTraceMode(true);
     setSelectedSegmentId(null);
+
+    const bounds = lineStringToMapBounds(segment.geometry.coordinates);
+    if (bounds && mapHandleRef.current) {
+      const viewport = mapHandleRef.current.fitBounds(bounds);
+      queueSave({
+        mapCenterLat: viewport.latitude,
+        mapCenterLng: viewport.longitude,
+        mapZoom: viewport.zoom,
+      });
+    }
   }, [
     geoSegments,
+    queueSave,
     selectedSegmentId,
     setEditingSegmentId,
     setSegmentGroupId,
@@ -485,13 +511,13 @@ export function MapWorkspaceSplitView() {
         event.preventDefault();
         handleDeleteSelectedSegment();
       }
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !controlsOpen) {
         setSelectedSegmentId(null);
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleDeleteSelectedSegment, selectedSegmentId]);
+  }, [controlsOpen, handleDeleteSelectedSegment, selectedSegmentId]);
 
   const handleExportGeoJson = useCallback(() => {
     if (!workspace) {
@@ -599,8 +625,9 @@ export function MapWorkspaceSplitView() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <MapWorkspaceHeader
-        onOpenControls={openControls}
+        onOpenControls={handleToggleControls}
         onOpenAuditLog={() => setAuditLogOpen(true)}
+        onPreviewGeoJson={() => setGeoJsonPreviewOpen(true)}
         hasSourceFile={Boolean(sourceFile)}
         segmentCount={geoSegments.length}
         exportDisabled={exportGeoJson.isPending}
@@ -741,6 +768,11 @@ export function MapWorkspaceSplitView() {
         mapId={workspace.id}
         open={auditLogOpen}
         onClose={() => setAuditLogOpen(false)}
+      />
+      <GeoJsonPreviewModal
+        mapId={workspace.id}
+        open={geoJsonPreviewOpen}
+        onClose={() => setGeoJsonPreviewOpen(false)}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Download, History, Pencil, RotateCw, Settings2 } from "lucide-react";
+import { ArrowLeft, Download, Eye, History, Pencil, RotateCw, Settings2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatMapCoordinates } from "@renderer/features/maps/lib/copy-map-coordinates";
 import {
@@ -11,6 +11,7 @@ import {
 type MapWorkspaceHeaderProps = {
   onOpenControls: () => void;
   onOpenAuditLog: () => void;
+  onPreviewGeoJson: () => void;
   hasSourceFile: boolean;
   segmentCount: number;
   exportDisabled: boolean;
@@ -25,6 +26,7 @@ async function hardReloadView() {
 export function MapWorkspaceHeader({
   onOpenControls,
   onOpenAuditLog,
+  onPreviewGeoJson,
   hasSourceFile,
   segmentCount,
   exportDisabled,
@@ -53,59 +55,43 @@ export function MapWorkspaceHeader({
   }
 
   const coordinateLine = selectedCoordinates
-    ? t("maps.workspace.selectedCoordinates", {
-        value: formatMapCoordinates(selectedCoordinates.latitude, selectedCoordinates.longitude),
-      })
+    ? formatMapCoordinates(selectedCoordinates.latitude, selectedCoordinates.longitude)
     : cursorCoordinates
-      ? t("maps.workspace.cursorCoordinates", {
-          value: formatMapCoordinates(cursorCoordinates.latitude, cursorCoordinates.longitude),
-        })
-      : t("maps.workspace.coordinatesIdle");
+      ? formatMapCoordinates(cursorCoordinates.latitude, cursorCoordinates.longitude)
+      : null;
 
   return (
-    <header className="relative z-20 flex items-start justify-between gap-4 border-b border-base-content/10 px-4 py-3">
-      <div className="flex min-w-0 flex-1 items-start gap-3">
-        <Link
-          to="/maps"
-          className="mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-base-content/70 transition-colors hover:bg-base-content/10 hover:text-base-content"
-          aria-label={t("maps.workspace.back")}
-        >
-          <ArrowLeft className="size-4" />
-        </Link>
+    <header className="relative z-20 flex items-center gap-3 border-b border-base-content/10 px-3 py-2">
+      <Link
+        to="/maps"
+        className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content"
+        aria-label={t("maps.workspace.back")}
+      >
+        <ArrowLeft className="size-4" />
+      </Link>
 
-        <div className="min-w-0 flex-1">
-          <h1 className="truncate text-lg font-semibold">{workspace.name}</h1>
-          <div className="mt-1 min-h-5">
-            {workspace.description ? (
-              <p className="truncate text-sm text-base-content/60">{workspace.description}</p>
-            ) : (
-              <p className="text-sm opacity-0" aria-hidden>
-                —
-              </p>
-            )}
-          </div>
-          <div className="mt-2 min-h-10 space-y-1">
-            <p className="truncate font-mono text-xs text-base-content/50">{coordinateLine}</p>
-            <p
-              className={`truncate text-xs ${statusMessage || (referenceMode && !pendingMapPoint) ? "text-success" : "text-transparent"}`}
-              aria-live="polite"
-            >
-              {statusMessage ??
-                (referenceMode && !pendingMapPoint
-                  ? t("maps.workspace.referenceHint")
-                  : t("maps.workspace.statusIdle"))}
-            </p>
-          </div>
-        </div>
+      <div className="flex min-w-0 flex-1 items-center gap-3">
+        <h1 className="min-w-0 truncate text-sm font-semibold">{workspace.name}</h1>
+        {coordinateLine ? (
+          <span className="hidden shrink-0 font-mono text-xs text-base-content/40 lg:inline">
+            {coordinateLine}
+          </span>
+        ) : null}
+        {statusMessage || (referenceMode && !pendingMapPoint) ? (
+          <span className="shrink-0 text-xs text-success">
+            {statusMessage ??
+              (referenceMode && !pendingMapPoint ? t("maps.workspace.referenceHint") : "")}
+          </span>
+        ) : null}
       </div>
 
-      <div className="flex shrink-0 items-center gap-1">
+      <div className="flex shrink-0 items-center gap-0.5">
         <button
           type="button"
-          className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40 ${
+          className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-40 ${
             referenceMode
               ? "bg-primary text-primary-content"
-              : "text-base-content/75 hover:bg-base-content/10 hover:text-base-content"
+              : "text-base-content/65 hover:bg-base-content/8 hover:text-base-content"
           }`}
           disabled={!hasSourceFile || traceMode}
           onClick={() => {
@@ -114,7 +100,6 @@ export function MapWorkspaceHeader({
               setStatusMessage(null);
               return;
             }
-
             stopTraceMode();
             setReferenceMode(true);
             setPendingMapPoint(null);
@@ -122,12 +107,13 @@ export function MapWorkspaceHeader({
         >
           {t("maps.workspace.addReference")}
         </button>
+
         <button
           type="button"
-          className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-40 ${
+          className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-40 ${
             traceMode
               ? "bg-secondary text-secondary-content"
-              : "text-base-content/75 hover:bg-base-content/10 hover:text-base-content"
+              : "text-base-content/65 hover:bg-base-content/8 hover:text-base-content"
           }`}
           disabled={referenceMode}
           onClick={() => {
@@ -136,57 +122,77 @@ export function MapWorkspaceHeader({
               setStatusMessage(null);
               return;
             }
-
             stopReferenceMode();
             setTraceMode(true);
           }}
           data-test="trace-mode-toggle"
         >
-          <Pencil className="size-4" />
+          <Pencil className="size-3" />
           {t("maps.workspace.traceTrail")}
         </button>
+
+        <div className="mx-1 h-4 w-px bg-base-content/10" />
+
         <button
           type="button"
-          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-base-content/75 transition-colors hover:bg-base-content/10 hover:text-base-content disabled:opacity-40"
+          className="inline-flex size-7 items-center justify-center rounded-md text-base-content/50 transition-colors hover:bg-base-content/8 hover:text-base-content disabled:opacity-40"
+          disabled={segmentCount === 0}
+          onClick={onPreviewGeoJson}
+          title="Preview GeoJSON"
+        >
+          <Eye className="size-3.5" />
+        </button>
+
+        <button
+          type="button"
+          className="inline-flex size-7 items-center justify-center rounded-md text-base-content/50 transition-colors hover:bg-base-content/8 hover:text-base-content disabled:opacity-40"
           disabled={exportDisabled || exportPending || segmentCount === 0}
           onClick={onExportGeoJson}
+          title={`Export GeoJSON (${segmentCount})`}
           data-test="export-geojson"
         >
-          <Download className="size-4" />
-          {t("maps.workspace.exportGeoJson")}
-          {segmentCount > 0 ? (
-            <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-xs font-semibold text-primary">
-              {segmentCount}
-            </span>
-          ) : null}
+          <Download className="size-3.5" />
         </button>
+
+        {segmentCount > 0 ? (
+          <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+            {segmentCount}
+          </span>
+        ) : null}
+
+        <div className="mx-1 h-4 w-px bg-base-content/10" />
+
         <button
           type="button"
-          className="inline-flex size-8 items-center justify-center rounded-lg text-base-content/55 transition-colors hover:bg-base-content/10 hover:text-base-content"
-          onClick={onOpenAuditLog}
-          aria-label="Audit log"
-          title="View change history"
+          className="btn gap-1.5 btn-sm btn-primary"
+          onClick={onOpenControls}
+          title={t("maps.workspace.openControlsShortcut")}
+          data-test="open-controls"
         >
-          <History className="size-4" />
+          <Settings2 className="size-3.5" />
+          {t("maps.workspace.controls")}
+          <kbd className="kbd border-primary-content/25 bg-primary-content/15 kbd-xs text-primary-content">
+            {t("maps.workspace.controlsShortcut")}
+          </kbd>
         </button>
+
         <button
           type="button"
-          className="inline-flex size-8 items-center justify-center rounded-lg text-base-content/55 transition-colors hover:bg-base-content/10 hover:text-base-content"
+          className="inline-flex size-7 items-center justify-center rounded-md text-base-content/50 transition-colors hover:bg-base-content/8 hover:text-base-content"
+          onClick={onOpenAuditLog}
+          title="Change history"
+        >
+          <History className="size-3.5" />
+        </button>
+
+        <button
+          type="button"
+          className="inline-flex size-7 items-center justify-center rounded-md text-base-content/50 transition-colors hover:bg-base-content/8 hover:text-base-content"
           onClick={() => void hardReloadView()}
-          aria-label={t("maps.workspace.hardReload")}
           title={t("maps.workspace.hardReloadHint")}
           data-test="map-hard-reload"
         >
-          <RotateCw className="size-4" />
-        </button>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-base-content/75 transition-colors hover:bg-base-content/10 hover:text-base-content"
-          onClick={onOpenControls}
-          aria-label={t("maps.workspace.openControls")}
-        >
-          <Settings2 className="size-4" />
-          {t("maps.workspace.controls")}
+          <RotateCw className="size-3.5" />
         </button>
       </div>
     </header>
