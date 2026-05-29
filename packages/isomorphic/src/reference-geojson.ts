@@ -16,23 +16,38 @@ export type ReferenceGeoJsonCollection = {
 
 const MAX_REFERENCE_GEOJSON_BYTES = 12 * 1024 * 1024;
 
-function isCoordinatePair(value: unknown): value is [number, number] {
-  return (
-    Array.isArray(value) &&
-    value.length === 2 &&
-    typeof value[0] === "number" &&
-    Number.isFinite(value[0]) &&
-    typeof value[1] === "number" &&
-    Number.isFinite(value[1])
-  );
+function normalizeCoordinatePair(value: unknown): [number, number] | null {
+  if (!Array.isArray(value) || value.length < 2) {
+    return null;
+  }
+
+  const longitude = value[0];
+  const latitude = value[1];
+  if (typeof longitude !== "number" || !Number.isFinite(longitude)) {
+    return null;
+  }
+  if (typeof latitude !== "number" || !Number.isFinite(latitude)) {
+    return null;
+  }
+
+  return [longitude, latitude];
 }
 
-function isLineStringCoordinates(value: unknown): value is [number, number][] {
-  return (
-    Array.isArray(value) &&
-    value.length >= 2 &&
-    value.every((coordinate) => isCoordinatePair(coordinate))
-  );
+function normalizeLineStringCoordinates(value: unknown): [number, number][] | null {
+  if (!Array.isArray(value) || value.length < 2) {
+    return null;
+  }
+
+  const coordinates: [number, number][] = [];
+  for (const coordinate of value) {
+    const normalized = normalizeCoordinatePair(coordinate);
+    if (!normalized) {
+      return null;
+    }
+    coordinates.push(normalized);
+  }
+
+  return coordinates;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -50,11 +65,12 @@ function featureLabel(properties: Record<string, unknown>, fallback: string) {
 }
 
 function lineStringFeature(
-  coordinates: [number, number][],
+  coordinates: unknown,
   properties: Record<string, unknown>,
   fallbackLabel: string,
 ): ReferenceGeoJsonFeature | null {
-  if (!isLineStringCoordinates(coordinates)) {
+  const normalizedCoordinates = normalizeLineStringCoordinates(coordinates);
+  if (!normalizedCoordinates) {
     return null;
   }
 
@@ -67,7 +83,7 @@ function lineStringFeature(
     },
     geometry: {
       type: "LineString",
-      coordinates,
+      coordinates: normalizedCoordinates,
     },
   };
 }
@@ -78,18 +94,14 @@ function expandGeometryToFeatures(
   fallbackLabel: string,
 ): ReferenceGeoJsonFeature[] {
   if (geometry.type === "LineString") {
-    const feature = lineStringFeature(
-      geometry.coordinates as [number, number][],
-      properties,
-      fallbackLabel,
-    );
+    const feature = lineStringFeature(geometry.coordinates, properties, fallbackLabel);
     return feature ? [feature] : [];
   }
 
   if (geometry.type === "MultiLineString" && Array.isArray(geometry.coordinates)) {
     return geometry.coordinates.flatMap((lineCoordinates, lineIndex) => {
       const feature = lineStringFeature(
-        lineCoordinates as [number, number][],
+        lineCoordinates,
         {
           ...properties,
           multiLineIndex: lineIndex,

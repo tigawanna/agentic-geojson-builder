@@ -3,7 +3,8 @@ import {
   parseReferenceGeoJsonText,
   type ReferenceGeoJsonCollection,
 } from "@repo/isomorphic/reference-geojson";
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { basename } from "node:path";
+import { mkdir, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ensureMapDirs, getMapReferenceGeoJsonDir } from "@main/lib/pglite/map-files.service.js";
 import type {
@@ -150,6 +151,26 @@ export async function importMapReferenceGeoJsonLayer(
   await writeManifest(input.mapId, manifest);
 
   return toLayer(input.mapId, entry, taggedCollection);
+}
+
+export async function importMapReferenceGeoJsonLayerFromPath(
+  mapId: number,
+  filePath: string,
+): Promise<MapReferenceGeoJsonLayer> {
+  const fileStat = await stat(filePath);
+  if (!fileStat.isFile()) {
+    throw new Error("Not a regular file.");
+  }
+  if (fileStat.size > 12 * 1024 * 1024) {
+    throw new Error("GeoJSON file must be 12 MB or smaller.");
+  }
+
+  const buffer = await readFile(filePath);
+  return importMapReferenceGeoJsonLayer({
+    mapId,
+    fileName: basename(filePath),
+    fileBase64: buffer.toString("base64"),
+  });
 }
 
 export async function deleteMapReferenceGeoJsonLayer(

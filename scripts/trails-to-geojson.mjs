@@ -1,30 +1,159 @@
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, extname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(scriptDir, "..");
-const defaultInputDir = join(projectRoot, "map-data", "trailfork");
+const defaultTrailforkDir = join(projectRoot, "map-data", "trailfork");
+const defaultAlltrailsDir = join(projectRoot, "map-data", "alltrails");
 const defaultOutputDir = join(projectRoot, "map-data", "geojson");
-const defaultPartsDirName = "parts";
+const defaultTrailforkOutName = "trailfork";
+const defaultAlltrailsOutName = "alltrails";
 const defaultCombinedName = "trails.geojson";
 const defaultStashName = "pglite-stash.json";
 
+function relativeToProject(absolutePath) {
+  const relative = absolutePath.startsWith(`${projectRoot}/`)
+    ? absolutePath.slice(projectRoot.length + 1)
+    : absolutePath;
+  return relative;
+}
+
+function formatGroupSources(group) {
+  const parts = [];
+  if (group.gpxPath) {
+    parts.push("gpx");
+  }
+  if (group.kmlPath) {
+    parts.push("kml");
+  }
+  if (group.osmPath) {
+    parts.push("osm");
+  }
+  return parts.join("+") || "none";
+}
+
+function countInputFormats(groups) {
+  let gpx = 0;
+  let kml = 0;
+  let osm = 0;
+
+  for (const group of groups) {
+    if (group.gpxPath) {
+      gpx += 1;
+    }
+    if (group.kmlPath) {
+      kml += 1;
+    }
+    if (group.osmPath) {
+      osm += 1;
+    }
+  }
+
+  return { gpx, kml, osm };
+}
+
+function printRunConfig(options, trailforkGroups, alltrailsFiles) {
+  const counts = countInputFormats(trailforkGroups);
+
+  console.log("");
+  console.log("Configuration");
+  console.log(`  Output:  ${relativeToProject(options.outputDir)}`);
+  console.log(`  Combine: ${options.combine ? options.combinedName : "off"}`);
+  console.log(`  Stash:   ${options.pgliteStash ? options.stashName : "off"}`);
+
+  if (options.trailfork) {
+    console.log("");
+    console.log(`Trailfork input: ${relativeToProject(options.trailforkDir)}`);
+    console.log(`  → ${relativeToProject(options.trailforkOutDir)}/`);
+    console.log(
+      `  ${trailforkGroups.length} trail group(s) (${counts.gpx} gpx, ${counts.kml} kml, ${counts.osm} osm)`,
+    );
+
+    for (const group of trailforkGroups) {
+      console.log(`    ${group.slug} [${formatGroupSources(group)}]`);
+    }
+  }
+
+  if (options.alltrails) {
+    console.log("");
+    console.log(`AllTrails input: ${relativeToProject(options.alltrailsDir)}`);
+    console.log(`  → ${relativeToProject(options.alltrailsOutDir)}/`);
+    console.log(`  ${alltrailsFiles.length} GeoJSON file(s)`);
+
+    for (const entry of alltrailsFiles) {
+      console.log(`    ${basename(entry.filePath)}`);
+    }
+  }
+}
+
+function printSummary(options, converted, skipped, convertedByProvider) {
+  console.log("");
+  console.log(
+    `Converted ${converted.length} trail(s) (${convertedByProvider.trailfork} trailfork, ${convertedByProvider.alltrails} alltrails)`,
+  );
+
+  for (const entry of converted) {
+    console.log(
+      `  [${entry.provider}] ${entry.slug} (${entry.name}): ${entry.vertexCount} vertices, geometry=${entry.geometrySource}, sources=[${entry.sources}]`,
+    );
+    console.log(`    → ${relativeToProject(entry.outputPath)}`);
+  }
+
+  console.log("");
+  console.log(`Output directory: ${relativeToProject(options.outputDir)}`);
+
+  if (options.trailfork && convertedByProvider.trailfork > 0) {
+    console.log(
+      `  ${relativeToProject(options.trailforkOutDir)}/ (${convertedByProvider.trailfork} file(s))`,
+    );
+  }
+
+  if (options.alltrails && convertedByProvider.alltrails > 0) {
+    console.log(
+      `  ${relativeToProject(options.alltrailsOutDir)}/ (${convertedByProvider.alltrails} file(s))`,
+    );
+  }
+
+  if (options.combine) {
+    const combinedPath = join(options.outputDir, options.combinedName);
+    console.log(`  ${relativeToProject(combinedPath)} (${converted.length} feature(s))`);
+  }
+
+  if (options.pgliteStash) {
+    const stashPath = join(options.outputDir, options.stashName);
+    console.log(`  ${relativeToProject(stashPath)} (${converted.length} trail row(s))`);
+  }
+
+  if (skipped.length > 0) {
+    console.warn("");
+    console.warn(`Skipped ${skipped.length} input(s) with no usable geometry:`);
+
+    for (const entry of skipped) {
+      console.warn(`  [${entry.provider}] ${entry.slug} [${entry.sources}]: ${entry.reason}`);
+    }
+  }
+}
+
 function printUsage() {
-  console.log(`Convert GPX/KML/OSM trail files into unified GeoJSON.
+  console.log(`Convert Trailfork GPX/KML/OSM and AllTrails GeoJSON into unified per-trail GeoJSON.
 
 Usage:
   node scripts/trails-to-geojson.mjs [options]
 
 Output layout (default):
-  map-data/geojson/trails.geojson          combined FeatureCollection
-  map-data/geojson/pglite-stash.json       import-ready stash for desktop app
-  map-data/geojson/parts/<slug>.geojson    one file per trail
+  map-data/geojson/trailfork/<slug>.geojson   Trailfork per-trail FeatureCollection
+  map-data/geojson/alltrails/<slug>.geojson   AllTrails per-trail FeatureCollection
+  map-data/geojson/trails.geojson             combined FeatureCollection
+  map-data/geojson/pglite-stash.json          import-ready stash for desktop app
 
 Options:
-  --input <path>         Input directory with GPX/KML/OSM files (default: map-data/trailfork)
+  --trailfork <path>     Trailfork GPX/KML/OSM directory (default: map-data/trailfork)
+  --alltrails <path>     AllTrails GeoJSON directory (default: map-data/alltrails)
+  --input <path>         Alias for --trailfork
+  --no-trailfork         Skip Trailfork input
+  --no-alltrails         Skip AllTrails input
   --output <path>        Output root directory (default: map-data/geojson)
-  --parts <path>         Per-trail output directory (default: <output>/parts)
   --combine              Write merged FeatureCollection (default: on)
   --no-combine           Skip merged FeatureCollection
   --combined-name <n>    Merged file name (default: trails.geojson)
@@ -37,9 +166,13 @@ Options:
 
 function parseArgs(argv) {
   const options = {
-    inputPath: defaultInputDir,
+    trailfork: true,
+    alltrails: true,
+    trailforkDir: defaultTrailforkDir,
+    alltrailsDir: defaultAlltrailsDir,
     outputDir: defaultOutputDir,
-    partsDir: join(defaultOutputDir, defaultPartsDirName),
+    trailforkOutDir: join(defaultOutputDir, defaultTrailforkOutName),
+    alltrailsOutDir: join(defaultOutputDir, defaultAlltrailsOutName),
     combine: true,
     combinedName: defaultCombinedName,
     pgliteStash: true,
@@ -49,15 +182,25 @@ function parseArgs(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     switch (arg) {
+      case "--trailfork":
       case "--input":
-        options.inputPath = resolve(argv[++index] ?? "");
+        options.trailforkDir = resolve(argv[++index] ?? "");
+        options.trailfork = true;
+        break;
+      case "--alltrails":
+        options.alltrailsDir = resolve(argv[++index] ?? "");
+        options.alltrails = true;
+        break;
+      case "--no-trailfork":
+        options.trailfork = false;
+        break;
+      case "--no-alltrails":
+        options.alltrails = false;
         break;
       case "--output":
         options.outputDir = resolve(argv[++index] ?? "");
-        options.partsDir = join(options.outputDir, defaultPartsDirName);
-        break;
-      case "--parts":
-        options.partsDir = resolve(argv[++index] ?? "");
+        options.trailforkOutDir = join(options.outputDir, defaultTrailforkOutName);
+        options.alltrailsOutDir = join(options.outputDir, defaultAlltrailsOutName);
         break;
       case "--combine":
         options.combine = true;
@@ -310,6 +453,144 @@ function discoverTrailGroups(inputPath) {
   return [...groups.values()].sort((left, right) => left.slug.localeCompare(right.slug));
 }
 
+function slugFromFilename(filePath) {
+  const stem = basename(filePath, extname(filePath));
+  return stem
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function readString(value) {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function normalizeLineGeometry(geometry) {
+  if (!geometry || typeof geometry !== "object") {
+    return null;
+  }
+
+  if (geometry.type === "LineString" && Array.isArray(geometry.coordinates)) {
+    return geometry.coordinates.length >= 2 ? geometry : null;
+  }
+
+  if (geometry.type === "MultiLineString" && Array.isArray(geometry.coordinates)) {
+    const coordinates = geometry.coordinates.flat();
+    if (coordinates.length < 2) {
+      return null;
+    }
+    return { type: "LineString", coordinates };
+  }
+
+  return null;
+}
+
+function pickLineGeometryFromFeatures(features) {
+  let best = null;
+
+  for (const [featureIndex, feature] of features.entries()) {
+    const geometry = normalizeLineGeometry(feature.geometry);
+    if (!geometry) {
+      continue;
+    }
+
+    const vertexCount = geometry.coordinates.length;
+    if (!best || vertexCount > best.vertexCount) {
+      best = {
+        featureIndex,
+        geometry,
+        vertexCount,
+        properties: feature.properties ?? {},
+      };
+    }
+  }
+
+  return best;
+}
+
+function discoverAlltrailsFiles(inputPath) {
+  if (!existsSync(inputPath)) {
+    return [];
+  }
+
+  return readdirSync(inputPath)
+    .filter((entry) => extname(entry).toLowerCase() === ".geojson")
+    .sort((left, right) => left.localeCompare(right))
+    .map((entry) => ({
+      filePath: join(inputPath, entry),
+    }));
+}
+
+function loadAlltrailsFeatures(filePath) {
+  const parsed = JSON.parse(readFileSync(filePath, "utf8"));
+
+  if (parsed?.type !== "FeatureCollection" || !Array.isArray(parsed.features)) {
+    throw new Error(`${filePath} must be a FeatureCollection`);
+  }
+
+  for (const [featureIndex, feature] of parsed.features.entries()) {
+    if (feature?.type !== "Feature") {
+      throw new Error(`${filePath} feature ${featureIndex} is not a Feature`);
+    }
+  }
+
+  return parsed.features;
+}
+
+function buildAlltrailsTrail(filePath, features) {
+  const picked = pickLineGeometryFromFeatures(features);
+  const baseSlug = slugFromFilename(filePath);
+  const slug = `alltrails-${baseSlug}`;
+
+  if (!picked) {
+    return {
+      slug,
+      skipped: true,
+      reason: "No usable LineString geometry in file",
+    };
+  }
+
+  const properties = picked.properties;
+  const geometry = picked.geometry;
+  const name =
+    readString(properties.name) ??
+    baseSlug.replace(/-/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+
+  const normalizedProperties = {
+    slug,
+    name,
+    source: "alltrails",
+    geometrySource: "alltrails",
+    vertexCount: geometry.coordinates.length,
+    alltrails: {
+      desc: readString(properties.desc),
+      sourceFile: basename(filePath),
+    },
+  };
+
+  const normalizedFeature = {
+    type: "Feature",
+    id: slug,
+    properties: normalizedProperties,
+    geometry,
+  };
+
+  return {
+    slug,
+    skipped: false,
+    feature: normalizedFeature,
+    pgliteRow: {
+      slug,
+      trailforkId: null,
+      name,
+      source: "alltrails",
+      geometrySource: "alltrails",
+      properties: normalizedProperties,
+      geometry,
+    },
+  };
+}
+
 function pickPrimaryGeometry(sources) {
   if (sources.gpx?.coordinates?.length >= 2) {
     return { from: "gpx", coordinates: sources.gpx.coordinates };
@@ -362,6 +643,7 @@ function buildUnifiedTrail(group) {
     properties: {
       slug: group.slug,
       name,
+      source: "trailfork",
       geometrySource: geometry.from,
       vertexCount: geometry.coordinates.length,
     },
@@ -374,7 +656,9 @@ function buildUnifiedTrail(group) {
     feature,
     pgliteRow: {
       slug: group.slug,
+      trailforkId: null,
       name,
+      source: "trailfork",
       geometrySource: geometry.from,
       properties: feature.properties,
       geometry: geometryJson,
@@ -388,29 +672,56 @@ function writeJson(path, value) {
 
 function main() {
   const options = parseArgs(process.argv.slice(2));
-  const groups = discoverTrailGroups(options.inputPath);
+  const trailforkGroups = options.trailfork ? discoverTrailGroups(options.trailforkDir) : [];
+  const alltrailsFiles = options.alltrails ? discoverAlltrailsFiles(options.alltrailsDir) : [];
 
-  if (groups.length === 0) {
-    throw new Error(`No GPX/KML/OSM files found at ${options.inputPath}`);
+  if (trailforkGroups.length === 0 && alltrailsFiles.length === 0) {
+    throw new Error("No Trailfork GPX/KML/OSM groups or AllTrails GeoJSON files found");
   }
 
   mkdirSync(options.outputDir, { recursive: true });
-  mkdirSync(options.partsDir, { recursive: true });
+
+  if (options.trailfork) {
+    mkdirSync(options.trailforkOutDir, { recursive: true });
+  }
+
+  if (options.alltrails) {
+    mkdirSync(options.alltrailsOutDir, { recursive: true });
+  }
+
+  printRunConfig(options, trailforkGroups, alltrailsFiles);
 
   const combinedFeatures = [];
   const pgliteRows = [];
+  const converted = [];
   const skipped = [];
+  const convertedByProvider = { trailfork: 0, alltrails: 0 };
+  const slugOwners = new Map();
 
-  for (const group of groups) {
+  function registerSlug(slug, owner) {
+    const existing = slugOwners.get(slug);
+    if (existing) {
+      throw new Error(`Duplicate slug "${slug}" from ${existing} and ${owner}`);
+    }
+    slugOwners.set(slug, owner);
+  }
+
+  for (const group of trailforkGroups) {
+    const sources = formatGroupSources(group);
     const result = buildUnifiedTrail(group);
 
     if (result.skipped) {
-      skipped.push({ slug: result.slug, reason: result.reason });
-      console.warn(`Skipped ${result.slug}: ${result.reason}`);
+      skipped.push({
+        provider: "trailfork",
+        slug: result.slug,
+        sources,
+        reason: result.reason,
+      });
       continue;
     }
 
-    const outputPath = join(options.partsDir, `${result.slug}.geojson`);
+    registerSlug(result.slug, `trailfork:${group.slug}`);
+    const outputPath = join(options.trailforkOutDir, `${result.slug}.geojson`);
     writeJson(outputPath, {
       type: "FeatureCollection",
       features: [result.feature],
@@ -418,10 +729,52 @@ function main() {
 
     combinedFeatures.push(result.feature);
     pgliteRows.push(result.pgliteRow);
+    convertedByProvider.trailfork += 1;
+    converted.push({
+      provider: "trailfork",
+      slug: result.slug,
+      name: result.feature.properties.name,
+      sources,
+      geometrySource: result.feature.properties.geometrySource,
+      vertexCount: result.feature.geometry.coordinates.length,
+      outputPath,
+    });
+  }
 
-    console.log(
-      `Wrote ${outputPath} (${result.feature.geometry.coordinates.length} vertices, geometry=${result.feature.properties.geometrySource})`,
-    );
+  for (const entry of alltrailsFiles) {
+    const features = loadAlltrailsFeatures(entry.filePath);
+    const result = buildAlltrailsTrail(entry.filePath, features);
+    const sources = "geojson";
+
+    if (result.skipped) {
+      skipped.push({
+        provider: "alltrails",
+        slug: result.slug,
+        sources,
+        reason: result.reason,
+      });
+      continue;
+    }
+
+    registerSlug(result.slug, entry.filePath);
+    const outputPath = join(options.alltrailsOutDir, `${result.slug}.geojson`);
+    writeJson(outputPath, {
+      type: "FeatureCollection",
+      features: [result.feature],
+    });
+
+    combinedFeatures.push(result.feature);
+    pgliteRows.push(result.pgliteRow);
+    convertedByProvider.alltrails += 1;
+    converted.push({
+      provider: "alltrails",
+      slug: result.slug,
+      name: result.feature.properties.name,
+      sources,
+      geometrySource: result.feature.properties.geometrySource,
+      vertexCount: result.feature.geometry.coordinates.length,
+      outputPath,
+    });
   }
 
   if (options.combine) {
@@ -430,7 +783,6 @@ function main() {
       type: "FeatureCollection",
       features: combinedFeatures,
     });
-    console.log(`Wrote ${combinedPath} (${combinedFeatures.length} feature(s))`);
   }
 
   if (options.pgliteStash) {
@@ -438,14 +790,13 @@ function main() {
     writeJson(stashPath, {
       generatedAt: new Date().toISOString(),
       trailCount: pgliteRows.length,
+      trailforkCount: convertedByProvider.trailfork,
+      alltrailsCount: convertedByProvider.alltrails,
       trails: pgliteRows,
     });
-    console.log(`Wrote ${stashPath} (${pgliteRows.length} trail row(s))`);
   }
 
-  if (skipped.length > 0) {
-    console.warn(`Skipped ${skipped.length} trail group(s) with no geometry.`);
-  }
+  printSummary(options, converted, skipped, convertedByProvider);
 }
 
 try {

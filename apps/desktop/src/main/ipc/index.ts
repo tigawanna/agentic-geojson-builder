@@ -108,7 +108,6 @@ export function registerIpcHandlers(): void {
     ...workspaceSnapshotHandlers,
     ...controlPointsHandlers,
     ...geoSegmentsHandlers,
-    ...referenceGeoJsonHandlers,
     ...mcpSettingsHandlers,
     ...referenceSnapHandlers,
     ...updaterHandlers,
@@ -148,6 +147,7 @@ export function registerIpcHandlers(): void {
   for (const [channel, handler] of Object.entries({
     ...appMenuHandlers,
     ...playgroundHandlers,
+    ...referenceGeoJsonHandlers,
   }) as [
     IpcChannel,
     (req: IpcRequest<IpcChannel>, window: BrowserWindow | null) => IpcResponse<IpcChannel>,
@@ -161,6 +161,7 @@ export function registerIpcHandlers(): void {
     count:
       Object.keys(handlers).length +
       Object.keys(appMenuHandlers).length +
-      Object.keys(playgroundHandlers).length,
+      Object.keys(playgroundHandlers).length +
+      Object.keys(referenceGeoJsonHandlers).length,
   });
 }

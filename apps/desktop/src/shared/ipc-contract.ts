@@ -45,6 +45,8 @@ import type {
   ImportMapReferenceGeoJsonInput,
   ImportMapReferenceGeoJsonResult,
   ListMapReferenceGeoJsonResult,
+  PickAndImportMapReferenceGeoJsonInput,
+  PickAndImportMapReferenceGeoJsonResult,
   ReferenceGeoJsonChangedEvent,
   SetMapReferenceGeoJsonVisibilityInput,
 } from "./reference-geojson.types.js";
@@ -202,6 +204,10 @@ export interface IpcContract {
   "referenceGeoJson:import": {
     req: ImportMapReferenceGeoJsonInput;
     res: ImportMapReferenceGeoJsonResult;
+  };
+  "referenceGeoJson:pickAndImport": {
+    req: PickAndImportMapReferenceGeoJsonInput;
+    res: PickAndImportMapReferenceGeoJsonResult;
   };
   "referenceGeoJson:delete": { req: DeleteMapReferenceGeoJsonInput; res: { ok: true } };
   "referenceGeoJson:setVisibility": {

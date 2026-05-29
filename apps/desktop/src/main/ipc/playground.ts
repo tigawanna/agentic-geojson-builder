@@ -1,6 +1,5 @@
-import { BrowserWindow, dialog, type OpenDialogOptions } from "electron";
+import { BrowserWindow } from "electron";
 import { readFile, stat } from "node:fs/promises";
-import { basename, dirname } from "node:path";
 import type { IpcChannel, IpcRequest, IpcResponse } from "@shared/ipc-contract.js";
 import {
   deletePlaygroundLayerFile,
@@ -8,50 +7,22 @@ import {
   savePlaygroundLayerFile,
   updatePlaygroundLayerFile,
 } from "@main/lib/playground/playground-layers.service.js";
-import { storage } from "@main/storage/index.js";
+import {
+  layerNameFromPath,
+  MAX_GEOJSON_BYTES,
+  pickGeoJsonFilePaths,
+} from "@main/lib/geojson/pick-geojson-files.js";
 
 type Handler<K extends IpcChannel> = (
   req: IpcRequest<K>,
   window: BrowserWindow | null,
 ) => IpcResponse<K> | Promise<IpcResponse<K>>;
 
-const LAST_GEOJSON_DIRECTORY_KEY = "playground.geojsonLastDirectory";
-const MAX_GEOJSON_BYTES = 12 * 1024 * 1024;
-
-function layerNameFromPath(filePath: string) {
-  const base = basename(filePath);
-  return base.replace(/\.(geojson|json)$/i, "") || "Imported layer";
-}
-
-function readLastGeoJsonDirectory() {
-  const value = storage.get(LAST_GEOJSON_DIRECTORY_KEY);
-  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
-}
-
-function rememberGeoJsonDirectory(filePath: string) {
-  storage.set(LAST_GEOJSON_DIRECTORY_KEY, dirname(filePath));
-}
-
 export const playgroundHandlers: { [K in IpcChannel]?: Handler<K> } = {
   "playground:pickGeoJsonFiles": async (_req, window) => {
-    const parentWindow = window ?? BrowserWindow.getFocusedWindow() ?? undefined;
-    const dialogOptions: OpenDialogOptions = {
-      title: "Import GeoJSON",
-      defaultPath: readLastGeoJsonDirectory(),
-      properties: ["openFile", "multiSelections"],
-      filters: [{ name: "GeoJSON", extensions: ["geojson", "json"] }],
-    };
-    const { canceled, filePaths } = parentWindow
-      ? await dialog.showOpenDialog(parentWindow, dialogOptions)
-      : await dialog.showOpenDialog(dialogOptions);
-
-    if (canceled || filePaths.length === 0) {
+    const filePaths = await pickGeoJsonFilePaths(window);
+    if (!filePaths) {
       return { canceled: true as const };
-    }
-
-    const firstPath = filePaths[0];
-    if (firstPath) {
-      rememberGeoJsonDirectory(firstPath);
     }
 
     const files: Array<{ name: string; text: string }> = [];

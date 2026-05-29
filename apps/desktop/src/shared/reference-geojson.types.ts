@@ -25,6 +25,18 @@ export type ImportMapReferenceGeoJsonResult = {
   layer: MapReferenceGeoJsonLayer;
 };
 
+export type PickAndImportMapReferenceGeoJsonInput = {
+  mapId: number;
+};
+
+export type PickAndImportMapReferenceGeoJsonResult =
+  | { canceled: true }
+  | {
+      canceled: false;
+      layers: MapReferenceGeoJsonLayer[];
+      failed: Array<{ name: string; error: string }>;
+    };
+
 export type DeleteMapReferenceGeoJsonInput = {
   mapId: number;
   layerId: string;

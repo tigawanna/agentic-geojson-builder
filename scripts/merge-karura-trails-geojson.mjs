@@ -9,6 +9,8 @@ const defaultAlltrailsDir = join(projectRoot, "map-data", "geojson", "alltrails"
 const defaultOutputDir = join(projectRoot, "map-data", "karura-trails", "geojson");
 const defaultCombinedName = "karura-trails.geojson";
 const defaultStashName = "karura-trails-pglite-stash.json";
+const defaultClipToleranceMeters = 25;
+const EARTH_RADIUS_METERS = 6_371_000;
 
 function printUsage() {
   console.log(`Merge Trailfork and AllTrails GeoJSON into one Karura trails bundle.
@@ -29,6 +31,11 @@ Options:
   --combined-name <n>    Merged FeatureCollection file name
   --stash-name <n>       PGlite stash file name
   --no-stash             Skip pglite stash output
+  --clip-overlap         Trim only overlapping segments, keep unique parts (default: on)
+  --no-clip-overlap      Do not trim shared segments
+  --clip-tolerance <m>   Distance to treat as same path in meters (default: ${defaultClipToleranceMeters})
+  --drop-duplicate-trails
+                         Drop entire trails that mostly overlap another (off by default)
   -h, --help             Show this help
 `);
 }
@@ -41,6 +48,9 @@ function parseArgs(argv) {
     combinedName: defaultCombinedName,
     stashName: defaultStashName,
     writeStash: true,
+    clipOverlap: true,
+    clipToleranceMeters: defaultClipToleranceMeters,
+    dropDuplicateTrails: false,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -63,6 +73,18 @@ function parseArgs(argv) {
         break;
       case "--no-stash":
         options.writeStash = false;
+        break;
+      case "--clip-overlap":
+        options.clipOverlap = true;
+        break;
+      case "--no-clip-overlap":
+        options.clipOverlap = false;
+        break;
+      case "--clip-tolerance":
+        options.clipToleranceMeters = Number(argv[++index] ?? defaultClipToleranceMeters);
+        break;
+      case "--drop-duplicate-trails":
+        options.dropDuplicateTrails = true;
         break;
       case "--help":
       case "-h":
@@ -98,6 +120,323 @@ function slugFromFilename(filePath) {
 
 function readString(value) {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : null;
+}
+
+function haversineDistanceMeters(latitudeA, longitudeA, latitudeB, longitudeB) {
+  const latitudeDelta = ((latitudeB - latitudeA) * Math.PI) / 180;
+  const longitudeDelta = ((longitudeB - longitudeA) * Math.PI) / 180;
+  const latitudeARadians = (latitudeA * Math.PI) / 180;
+  const latitudeBRadians = (latitudeB * Math.PI) / 180;
+  const haversine =
+    Math.sin(latitudeDelta / 2) ** 2 +
+    Math.cos(latitudeARadians) * Math.cos(latitudeBRadians) * Math.sin(longitudeDelta / 2) ** 2;
+  return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(haversine));
+}
+
+function projectPointOntoSegment(pointLat, pointLng, startLat, startLng, endLat, endLng) {
+  const deltaLat = endLat - startLat;
+  const deltaLng = endLng - startLng;
+  const lengthSquared = deltaLat * deltaLat + deltaLng * deltaLng;
+  if (lengthSquared < 1e-18) {
+    return { latitude: startLat, longitude: startLng };
+  }
+  const t = Math.max(
+    0,
+    Math.min(
+      1,
+      ((pointLat - startLat) * deltaLat + (pointLng - startLng) * deltaLng) / lengthSquared,
+    ),
+  );
+  return {
+    latitude: startLat + t * deltaLat,
+    longitude: startLng + t * deltaLng,
+  };
+}
+
+function minDistanceToLineMeters(latitude, longitude, coordinates) {
+  let best = Infinity;
+  for (const coordinate of coordinates) {
+    if (!coordinate) {
+      continue;
+    }
+    const distance = haversineDistanceMeters(latitude, longitude, coordinate[1], coordinate[0]);
+    best = Math.min(best, distance);
+  }
+  for (let index = 0; index < coordinates.length - 1; index += 1) {
+    const start = coordinates[index];
+    const end = coordinates[index + 1];
+    if (!start || !end) {
+      continue;
+    }
+    const projected = projectPointOntoSegment(
+      latitude,
+      longitude,
+      start[1],
+      start[0],
+      end[1],
+      end[0],
+    );
+    const distance = haversineDistanceMeters(
+      latitude,
+      longitude,
+      projected.latitude,
+      projected.longitude,
+    );
+    best = Math.min(best, distance);
+  }
+  return best;
+}
+
+function sampleCoordinates(coordinates, maxSamples = 100) {
+  if (coordinates.length <= maxSamples) {
+    return coordinates;
+  }
+  const sampled = [];
+  for (let index = 0; index < maxSamples; index += 1) {
+    const coordinate = coordinates[Math.floor((index * coordinates.length) / maxSamples)];
+    if (coordinate) {
+      sampled.push(coordinate);
+    }
+  }
+  return sampled;
+}
+
+function isPointCoveredByReferences(latitude, longitude, referenceLines, toleranceMeters) {
+  for (const referenceLine of referenceLines) {
+    if (minDistanceToLineMeters(latitude, longitude, referenceLine) <= toleranceMeters) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function splitUncoveredSegments(coordinates, referenceLines, toleranceMeters) {
+  const segments = [];
+  let current = [];
+
+  for (const coordinate of coordinates) {
+    if (!coordinate) {
+      continue;
+    }
+
+    const covered = isPointCoveredByReferences(
+      coordinate[1],
+      coordinate[0],
+      referenceLines,
+      toleranceMeters,
+    );
+
+    if (covered) {
+      if (current.length >= 2) {
+        segments.push(current);
+      }
+      current = [];
+      continue;
+    }
+
+    current.push(coordinate);
+  }
+
+  if (current.length >= 2) {
+    segments.push(current);
+  }
+
+  return segments;
+}
+
+function lineCoverageOnReference(lineCoordinates, referenceCoordinates, toleranceMeters) {
+  const samples = sampleCoordinates(lineCoordinates);
+  if (samples.length === 0) {
+    return 0;
+  }
+  let matched = 0;
+  for (const coordinate of samples) {
+    const distance = minDistanceToLineMeters(coordinate[1], coordinate[0], referenceCoordinates);
+    if (distance <= toleranceMeters) {
+      matched += 1;
+    }
+  }
+  return matched / samples.length;
+}
+
+function symmetricOverlapRatio(lineA, lineB, toleranceMeters) {
+  const aOnB = lineCoverageOnReference(lineA, lineB, toleranceMeters);
+  const bOnA = lineCoverageOnReference(lineB, lineA, toleranceMeters);
+  return (aOnB + bOnA) / 2;
+}
+
+function sourcePriority(source) {
+  if (source === "trailfork") {
+    return 2;
+  }
+  if (source === "alltrails") {
+    return 1;
+  }
+  return 0;
+}
+
+function pickOverlapKeeper(left, right) {
+  const leftPriority = sourcePriority(left.feature.properties.source);
+  const rightPriority = sourcePriority(right.feature.properties.source);
+  if (leftPriority !== rightPriority) {
+    return leftPriority > rightPriority ? left : right;
+  }
+  const leftVertices = left.feature.geometry.coordinates.length;
+  const rightVertices = right.feature.geometry.coordinates.length;
+  return leftVertices >= rightVertices ? left : right;
+}
+
+function recordOverlapMerge(keeper, dropped, overlapRatio) {
+  const mergedFrom = keeper.feature.properties.overlapMergedFrom ?? [];
+  mergedFrom.push({
+    slug: dropped.feature.properties.slug,
+    name: dropped.feature.properties.name,
+    source: dropped.feature.properties.source,
+    overlapRatio: Number(overlapRatio.toFixed(3)),
+  });
+  keeper.feature.properties.overlapMergedFrom = mergedFrom;
+  keeper.pgliteRow.properties = keeper.feature.properties;
+}
+
+function dedupeOverlappingTrails(entries, toleranceMeters, overlapThreshold) {
+  const removed = new Set();
+  const merges = [];
+
+  for (let leftIndex = 0; leftIndex < entries.length; leftIndex += 1) {
+    if (removed.has(leftIndex)) {
+      continue;
+    }
+    const left = entries[leftIndex];
+    for (let rightIndex = leftIndex + 1; rightIndex < entries.length; rightIndex += 1) {
+      if (removed.has(rightIndex)) {
+        continue;
+      }
+      const right = entries[rightIndex];
+      const overlapRatio = symmetricOverlapRatio(
+        left.feature.geometry.coordinates,
+        right.feature.geometry.coordinates,
+        toleranceMeters,
+      );
+      if (overlapRatio < overlapThreshold) {
+        continue;
+      }
+      const keeper = pickOverlapKeeper(left, right);
+      const dropped = keeper === left ? right : left;
+      recordOverlapMerge(keeper, dropped, overlapRatio);
+      removed.add(dropped === left ? leftIndex : rightIndex);
+      merges.push({
+        keptSlug: keeper.feature.properties.slug,
+        droppedSlug: dropped.feature.properties.slug,
+        overlapRatio,
+      });
+    }
+  }
+
+  const kept = entries.filter((_, index) => !removed.has(index));
+  return { kept, merges };
+}
+
+function cloneEntryWithGeometry(entry, slug, segmentCoordinates, partIndex, segmentCount) {
+  const geometry = {
+    type: "LineString",
+    coordinates: segmentCoordinates,
+  };
+  const properties = {
+    ...entry.feature.properties,
+    slug,
+    overlapClipped: true,
+    overlapClipPartIndex: partIndex,
+    overlapClipPartCount: segmentCount,
+    overlapClipParentSlug:
+      segmentCount > 1
+        ? entry.feature.properties.slug
+        : entry.feature.properties.overlapClipParentSlug,
+    vertexCount: segmentCoordinates.length,
+  };
+
+  const feature = {
+    type: "Feature",
+    id: slug,
+    properties,
+    geometry,
+  };
+
+  return {
+    feature,
+    pgliteRow: {
+      ...entry.pgliteRow,
+      slug,
+      name: properties.name,
+      properties,
+      geometry,
+    },
+  };
+}
+
+function applySegmentOverlapClip(entries, toleranceMeters) {
+  const referenceLines = [];
+  const output = [];
+  const clips = [];
+
+  const sorted = [...entries].sort((left, right) => {
+    const priorityDelta =
+      sourcePriority(right.feature.properties.source) -
+      sourcePriority(left.feature.properties.source);
+    if (priorityDelta !== 0) {
+      return priorityDelta;
+    }
+    return String(left.feature.properties.slug).localeCompare(
+      String(right.feature.properties.slug),
+    );
+  });
+
+  for (const entry of sorted) {
+    const coordinates = entry.feature.geometry.coordinates;
+    const slug = entry.feature.properties.slug;
+    const isCanonical = entry.feature.properties.source === "trailfork";
+
+    if (isCanonical || referenceLines.length === 0) {
+      output.push(entry);
+      referenceLines.push(coordinates);
+      continue;
+    }
+
+    const segments = splitUncoveredSegments(coordinates, referenceLines, toleranceMeters);
+    const keptVertices = segments.reduce((sum, segment) => sum + segment.length, 0);
+    const removedVertices = coordinates.length - keptVertices;
+
+    if (segments.length === 0) {
+      clips.push({
+        slug,
+        removedVertices: coordinates.length,
+        keptVertices: 0,
+        segmentsKept: 0,
+      });
+      continue;
+    }
+
+    if (segments.length === 1 && segments[0].length === coordinates.length) {
+      output.push(entry);
+      referenceLines.push(segments[0]);
+      continue;
+    }
+
+    for (let partIndex = 0; partIndex < segments.length; partIndex += 1) {
+      const segment = segments[partIndex];
+      const partSlug = segments.length === 1 ? slug : `${slug}-part-${partIndex + 1}`;
+      output.push(cloneEntryWithGeometry(entry, partSlug, segment, partIndex + 1, segments.length));
+      referenceLines.push(segment);
+    }
+
+    clips.push({
+      slug,
+      removedVertices,
+      keptVertices,
+      segmentsKept: segments.length,
+    });
+  }
+
+  return { output, clips };
 }
 
 function normalizeLineGeometry(geometry) {
@@ -331,16 +670,58 @@ function main() {
     throw new Error("No features to merge");
   }
 
+  let outputEntries = combinedFeatures.map((feature, index) => ({
+    feature,
+    pgliteRow: pgliteRows[index],
+  }));
+  let dedupeMerges = [];
+  let segmentClips = [];
+
+  if (options.clipOverlap && outputEntries.length > 0) {
+    const clipped = applySegmentOverlapClip(outputEntries, options.clipToleranceMeters);
+    outputEntries = clipped.output;
+    segmentClips = clipped.clips;
+  }
+
+  if (options.dropDuplicateTrails && outputEntries.length > 1) {
+    const deduped = dedupeOverlappingTrails(outputEntries, options.clipToleranceMeters, 0.85);
+    outputEntries = deduped.kept;
+    dedupeMerges = deduped.merges;
+  }
+
+  const outputFeatures = outputEntries.map((entry) => entry.feature);
+  const outputRows = outputEntries.map((entry) => entry.pgliteRow);
+
   const combinedPath = join(options.outputDir, options.combinedName);
   writeJson(combinedPath, {
     type: "FeatureCollection",
-    features: combinedFeatures,
+    features: outputFeatures,
   });
 
   console.log("");
   console.log(
-    `Merged ${combinedFeatures.length} trail(s) (${mergedBySource.trailfork} trailfork, ${mergedBySource.alltrails} alltrails)`,
+    `Merged ${outputFeatures.length} trail(s) from ${combinedFeatures.length} input (${mergedBySource.trailfork} trailfork, ${mergedBySource.alltrails} alltrails)`,
   );
+  if (options.clipOverlap && segmentClips.length > 0) {
+    console.log(
+      `Overlap clip: trimmed shared segments on ${segmentClips.length} trail(s) (tolerance ${options.clipToleranceMeters}m, trailfork kept full)`,
+    );
+    for (const clip of segmentClips) {
+      if (clip.segmentsKept === 0) {
+        console.log(`  ${clip.slug}: fully covered, omitted`);
+        continue;
+      }
+      console.log(
+        `  ${clip.slug}: removed ${clip.removedVertices} vertex/vertices, kept ${clip.keptVertices} in ${clip.segmentsKept} segment(s)`,
+      );
+    }
+  }
+  if (options.dropDuplicateTrails && dedupeMerges.length > 0) {
+    console.log(`Dropped ${dedupeMerges.length} mostly-duplicate trail(s):`);
+    for (const merge of dedupeMerges) {
+      console.log(`  kept ${merge.keptSlug}, dropped ${merge.droppedSlug}`);
+    }
+  }
   console.log(`Output directory: ${relativeToProject(options.outputDir)}`);
   console.log(`  ${relativeToProject(combinedPath)}`);
 
@@ -349,12 +730,14 @@ function main() {
     writeJson(stashPath, {
       source: "karura-trails",
       generatedAt: new Date().toISOString(),
-      trailCount: pgliteRows.length,
+      trailCount: outputRows.length,
       trailforkCount: mergedBySource.trailfork,
       alltrailsCount: mergedBySource.alltrails,
-      trails: pgliteRows,
+      overlapClipCount: segmentClips.length,
+      duplicateTrailsDroppedCount: dedupeMerges.length,
+      trails: outputRows,
     });
-    console.log(`  ${relativeToProject(stashPath)}`);
+    console.log(`  ${relativeToProject(stashPath)} (${outputRows.length} trail row(s))`);
   }
 
   if (skipped.length > 0) {
