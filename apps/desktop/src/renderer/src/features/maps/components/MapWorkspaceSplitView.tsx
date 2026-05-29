@@ -20,11 +20,13 @@ import {
   computePdfPanToCenterOnImagePoint,
 } from "@renderer/features/maps/lib/pdf-view-transform";
 import type { ControlPointRecord } from "@shared/control-points.types";
+import type { UpdateControlPointInput } from "@shared/control-points.types";
 import type { MapHandle } from "@renderer/features/maps/lib/map-handle";
 import { captureWorkspaceView } from "@renderer/features/maps/lib/rendered-map-view/capture-workspace-view";
 import { registerViewportCommand } from "@renderer/features/maps/lib/viewport-command-registry";
 import { registerWorkspaceCapture } from "@renderer/features/maps/lib/workspace-capture-registry";
 import { useWorkspacePersistence } from "@renderer/features/maps/hooks/useWorkspacePersistence";
+import { useUndoHistory } from "@renderer/features/maps/hooks/useUndoHistory";
 import {
   useMapWorkspaceState,
   useMapWorkspaceUiActions,
@@ -50,6 +52,11 @@ export function MapWorkspaceSplitView() {
     setPendingMapPoint,
     setSelectedControlPointId,
     setPendingTracePoints,
+    setEditingSegmentId,
+    setSegmentGroupId,
+    setSegmentName,
+    setSegmentPathKind,
+    setTraceMode,
     stopTraceMode,
   } = useMapWorkspaceUiActions();
   const homeViewport = useMapWorkspaceUiState((state) => state.homeViewport);
@@ -70,9 +77,15 @@ export function MapWorkspaceSplitView() {
   const referenceGeoJsonQuery = useReferenceGeoJsonQuery(workspace?.id ?? null);
   const createControlPoint = useIpcMutation("controlPoints:create");
   const updateControlPoint = useIpcMutation("controlPoints:update");
+  const deleteGeoSegment = useIpcMutation("geoSegments:delete");
   const createGeoSegment = useIpcMutation("geoSegments:create");
   const updateGeoSegment = useIpcMutation("geoSegments:update");
   const exportGeoJson = useIpcMutation("geoSegments:exportToFile");
+
+  const undoHistory = useUndoHistory<UpdateControlPointInput>((entry) => {
+    void updateControlPoint.mutateAsync(entry);
+  });
+  const [selectedSegmentId, setSelectedSegmentId] = useState<number | null>(null);
   const [mapHandle, setMapHandle] = useState<MapHandle | null>(null);
   const mapHandleRef = useRef<MapHandle | null>(null);
   const controlPointsRef = useRef(controlPointsQuery.data?.controlPoints ?? []);
@@ -407,6 +420,77 @@ export function MapWorkspaceSplitView() {
     workspace,
   ]);
 
+  const handleSegmentClick = useCallback(
+    (segmentId: number) => {
+      if (traceMode) {
+        return;
+      }
+      setSelectedSegmentId((current) => (current === segmentId ? null : segmentId));
+    },
+    [traceMode],
+  );
+
+  const handleEditSelectedSegment = useCallback(() => {
+    if (!selectedSegmentId) {
+      return;
+    }
+    const segment = geoSegments.find((s) => s.id === selectedSegmentId);
+    if (!segment) {
+      return;
+    }
+    setEditingSegmentId(segment.id);
+    setSegmentGroupId(segment.segmentGroupId);
+    setSegmentName(segment.name ?? "");
+    setSegmentPathKind(segment.pathKind);
+    setPendingTracePoints(
+      segment.geometry.coordinates.map(([lng, lat]) => ({ latitude: lat, longitude: lng })),
+    );
+    setTraceMode(true);
+    setSelectedSegmentId(null);
+  }, [
+    geoSegments,
+    selectedSegmentId,
+    setEditingSegmentId,
+    setSegmentGroupId,
+    setSegmentName,
+    setSegmentPathKind,
+    setPendingTracePoints,
+    setTraceMode,
+  ]);
+
+  const handleDeleteSelectedSegment = useCallback(() => {
+    if (!workspace || !selectedSegmentId) {
+      return;
+    }
+    void deleteGeoSegment
+      .mutateAsync({ mapId: workspace.id, segmentId: selectedSegmentId })
+      .then(() => {
+        setSelectedSegmentId(null);
+        setStatusMessage("Segment deleted.");
+      });
+  }, [deleteGeoSegment, selectedSegmentId, setStatusMessage, workspace]);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (!selectedSegmentId) {
+        return;
+      }
+      if (event.key === "Delete" || event.key === "Backspace") {
+        const target = event.target as HTMLElement;
+        if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+          return;
+        }
+        event.preventDefault();
+        handleDeleteSelectedSegment();
+      }
+      if (event.key === "Escape") {
+        setSelectedSegmentId(null);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleDeleteSelectedSegment, selectedSegmentId]);
+
   const handleExportGeoJson = useCallback(() => {
     if (!workspace) {
       return;
@@ -439,16 +523,32 @@ export function MapWorkspaceSplitView() {
         return;
       }
 
-      void updateControlPoint.mutateAsync({
+      const redoPayload: UpdateControlPointInput = {
         mapId: workspace.id,
         controlPointId,
         imageX: point.imageX,
         imageY: point.imageY,
         latitude,
         longitude,
+      };
+
+      const undoPayload: UpdateControlPointInput = {
+        mapId: workspace.id,
+        controlPointId,
+        imageX: point.imageX,
+        imageY: point.imageY,
+        latitude: point.latitude,
+        longitude: point.longitude,
+      };
+
+      undoHistory.push({
+        label: `Move point ${controlPointId}`,
+        undo: undoPayload,
+        redo: redoPayload,
       });
+      void updateControlPoint.mutateAsync(redoPayload);
     },
-    [controlPoints, updateControlPoint, workspace],
+    [controlPoints, undoHistory, updateControlPoint, workspace],
   );
 
   const handleControlPointPdfMove = useCallback(
@@ -462,16 +562,32 @@ export function MapWorkspaceSplitView() {
         return;
       }
 
-      void updateControlPoint.mutateAsync({
+      const redoPayload: UpdateControlPointInput = {
         mapId: workspace.id,
         controlPointId,
         imageX,
         imageY,
         latitude: point.latitude,
         longitude: point.longitude,
+      };
+
+      const undoPayload: UpdateControlPointInput = {
+        mapId: workspace.id,
+        controlPointId,
+        imageX: point.imageX,
+        imageY: point.imageY,
+        latitude: point.latitude,
+        longitude: point.longitude,
+      };
+
+      undoHistory.push({
+        label: `Move PDF point ${controlPointId}`,
+        undo: undoPayload,
+        redo: redoPayload,
       });
+      void updateControlPoint.mutateAsync(redoPayload);
     },
-    [controlPoints, updateControlPoint, workspace],
+    [controlPoints, undoHistory, updateControlPoint, workspace],
   );
 
   if (!workspace) {
@@ -571,7 +687,37 @@ export function MapWorkspaceSplitView() {
                 onTracePointAdd={handleTracePointAdd}
                 onPendingTracePointMove={handlePendingTracePointMove}
                 onControlPointMapMove={handleControlPointMapMove}
+                onSegmentClick={handleSegmentClick}
+                selectedSegmentId={selectedSegmentId}
               />
+              {selectedSegmentId && !traceMode ? (
+                <div className="absolute right-3 bottom-3 z-[1000] flex items-center gap-1 rounded-box bg-base-100/95 px-2 py-1.5 shadow-lg">
+                  <span className="mr-1 text-xs text-base-content/70">
+                    Segment #{selectedSegmentId}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-xs"
+                    onClick={handleEditSelectedSegment}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-xs btn-error"
+                    onClick={handleDeleteSelectedSegment}
+                  >
+                    Delete
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-xs"
+                    onClick={() => setSelectedSegmentId(null)}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : null}
             </section>
           </ResizablePanel>
         </ResizablePanelGroup>

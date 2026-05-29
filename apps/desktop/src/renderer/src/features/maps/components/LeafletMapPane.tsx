@@ -49,6 +49,8 @@ type LeafletMapPaneProps = {
   onTracePointAdd?: (latitude: number, longitude: number) => void;
   onPendingTracePointMove?: (index: number, latitude: number, longitude: number) => void;
   onControlPointMapMove?: (controlPointId: number, latitude: number, longitude: number) => void;
+  onSegmentClick?: (segmentId: number) => void;
+  selectedSegmentId?: number | null;
 };
 
 export function LeafletMapPane({
@@ -74,6 +76,8 @@ export function LeafletMapPane({
   onTracePointAdd,
   onPendingTracePointMove,
   onControlPointMapMove,
+  onSegmentClick,
+  selectedSegmentId = null,
 }: LeafletMapPaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
@@ -93,6 +97,7 @@ export function LeafletMapPane({
   const onTracePointAddRef = useRef(onTracePointAdd);
   const onPendingTracePointMoveRef = useRef(onPendingTracePointMove);
   const onControlPointMapMoveRef = useRef(onControlPointMapMove);
+  const onSegmentClickRef = useRef(onSegmentClick);
   const geocodedRef = useRef(false);
   const initialViewportCapturedRef = useRef(false);
   const mapClickTimerRef = useRef<number | undefined>(undefined);
@@ -108,6 +113,7 @@ export function LeafletMapPane({
   onTracePointAddRef.current = onTracePointAdd;
   onPendingTracePointMoveRef.current = onPendingTracePointMove;
   onControlPointMapMoveRef.current = onControlPointMapMove;
+  onSegmentClickRef.current = onSegmentClick;
 
   useEffect(() => {
     let disposed = false;
@@ -360,15 +366,21 @@ export function LeafletMapPane({
             return;
           }
 
+          const isSelected = segment.id === selectedSegmentId;
           const polyline = L.polyline(lineStringToLatLngs(coordinates), {
-            color: segmentGroupColor(segment.segmentGroupId),
-            weight: 7,
+            color: isSelected ? "#2563eb" : segmentGroupColor(segment.segmentGroupId),
+            weight: isSelected ? 9 : 7,
             opacity: 1,
             lineCap: "round",
             lineJoin: "round",
           })
             .bindTooltip(segment.name ?? `${segment.segmentGroupId} #${segment.segmentIndex + 1}`)
             .addTo(segmentsLayer);
+
+          polyline.on("click", (event) => {
+            L.DomEvent.stopPropagation(event);
+            onSegmentClickRef.current?.(segment.id);
+          });
 
           polyline.bringToFront();
         });
@@ -391,7 +403,7 @@ export function LeafletMapPane({
         ).addTo(segmentsLayer);
       }
     })();
-  }, [editingSegmentId, geoSegments, mapReady, pendingTracePoints]);
+  }, [editingSegmentId, geoSegments, mapReady, pendingTracePoints, selectedSegmentId]);
 
   useEffect(() => {
     if (!mapReady) {
