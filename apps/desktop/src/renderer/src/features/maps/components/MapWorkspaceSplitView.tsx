@@ -7,7 +7,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@renderer/components/common/Resizable";
-import { useIpcMutation } from "@renderer/hooks/useIpc";
+import { ipcInvoke, useIpcMutation } from "@renderer/hooks/useIpc";
 import { useControlPointsQuery } from "@renderer/features/maps/hooks/useControlPointsQuery";
 import { useGeoSegmentsQuery } from "@renderer/features/maps/hooks/useGeoSegmentsQuery";
 import { useReferenceGeoJsonQuery } from "@renderer/features/maps/hooks/useReferenceGeoJsonQuery";
@@ -27,6 +27,7 @@ import { lineStringToMapBounds } from "@renderer/features/maps/lib/segment-utils
 import { registerViewportCommand } from "@renderer/features/maps/lib/viewport-command-registry";
 import { registerWorkspaceCapture } from "@renderer/features/maps/lib/workspace-capture-registry";
 import { useWorkspacePersistence } from "@renderer/features/maps/hooks/useWorkspacePersistence";
+import { useMapWorkspaceAuditLogShortcut } from "@renderer/features/maps/hooks/useMapWorkspaceAuditLogShortcut";
 import { useMapWorkspaceControlsShortcut } from "@renderer/features/maps/hooks/useMapWorkspaceControlsShortcut";
 import { useUndoHistory } from "@renderer/features/maps/hooks/useUndoHistory";
 import {
@@ -41,7 +42,10 @@ import { MapWorkspaceControlsModal } from "@renderer/features/maps/components/Ma
 import { MapWorkspaceHeader } from "@renderer/features/maps/components/MapWorkspaceHeader";
 import { GeoJsonPreviewModal } from "@renderer/features/maps/components/GeoJsonPreviewModal";
 import { MapAuditLogModal } from "@renderer/features/maps/components/MapAuditLogModal";
+import { MapWorkspaceOnboardingModal } from "@renderer/features/maps/components/MapWorkspaceOnboardingModal";
 import { SourceDocumentPane } from "@renderer/features/maps/components/SourceDocumentPane";
+
+const WORKSPACE_ONBOARDING_STORE_KEY = "maps.workspace.onboardingSeen";
 
 export function MapWorkspaceSplitView() {
   const { t } = useTranslation();
@@ -61,7 +65,9 @@ export function MapWorkspaceSplitView() {
     setSegmentGroupId,
     setSegmentName,
     setSegmentPathKind,
+    setReferenceMode,
     setTraceMode,
+    stopReferenceMode,
     stopTraceMode,
   } = useMapWorkspaceUiActions();
   const homeViewport = useMapWorkspaceUiState((state) => state.homeViewport);
@@ -93,6 +99,8 @@ export function MapWorkspaceSplitView() {
   const [selectedSegmentId, setSelectedSegmentId] = useState<number | null>(null);
   const [auditLogOpen, setAuditLogOpen] = useState(false);
   const [geoJsonPreviewOpen, setGeoJsonPreviewOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const checkedOnboardingRef = useRef(false);
   const [mapHandle, setMapHandle] = useState<MapHandle | null>(null);
   const mapHandleRef = useRef<MapHandle | null>(null);
   const controlPointsRef = useRef(controlPointsQuery.data?.controlPoints ?? []);
@@ -112,6 +120,41 @@ export function MapWorkspaceSplitView() {
   controlPointsRef.current = controlPoints;
 
   useMapWorkspaceControlsShortcut(workspace != null);
+  useMapWorkspaceAuditLogShortcut(workspace != null, () => setAuditLogOpen(true));
+
+  useEffect(() => {
+    if (!workspace) {
+      return;
+    }
+    if (checkedOnboardingRef.current) {
+      return;
+    }
+    checkedOnboardingRef.current = true;
+
+    void ipcInvoke("store:get", { key: WORKSPACE_ONBOARDING_STORE_KEY }).then((value) => {
+      if (!value) {
+        setOnboardingOpen(true);
+      }
+    });
+  }, [workspace?.id]);
+
+  const dismissOnboarding = useCallback(() => {
+    setOnboardingOpen(false);
+    void ipcInvoke("store:set", { key: WORKSPACE_ONBOARDING_STORE_KEY, value: true });
+  }, []);
+
+  const handleOnboardingAddReference = useCallback(() => {
+    dismissOnboarding();
+    stopTraceMode();
+    setReferenceMode(true);
+    setPendingMapPoint(null);
+    setStatusMessage(null);
+  }, [dismissOnboarding, setPendingMapPoint, setReferenceMode, setStatusMessage, stopTraceMode]);
+
+  const handleOnboardingOpenControls = useCallback(() => {
+    dismissOnboarding();
+    openControls();
+  }, [dismissOnboarding, openControls]);
 
   const handleToggleControls = useCallback(() => {
     if (controlsOpen) {
@@ -626,6 +669,7 @@ export function MapWorkspaceSplitView() {
     <div className="flex h-full min-h-0 flex-col">
       <MapWorkspaceHeader
         onOpenControls={handleToggleControls}
+        onOpenGuide={() => setOnboardingOpen(true)}
         onOpenAuditLog={() => setAuditLogOpen(true)}
         onPreviewGeoJson={() => setGeoJsonPreviewOpen(true)}
         hasSourceFile={Boolean(sourceFile)}
@@ -762,6 +806,7 @@ export function MapWorkspaceSplitView() {
         showReferenceOverlay={showReferenceOverlay}
         onShowReferenceOverlayChange={setShowReferenceOverlay}
         onFocusControlPoint={handleFocusControlPoint}
+        onOpenAuditLog={() => setAuditLogOpen(true)}
       />
       <MapTileCacheBoundsModal />
       <MapAuditLogModal
@@ -773,6 +818,13 @@ export function MapWorkspaceSplitView() {
         mapId={workspace.id}
         open={geoJsonPreviewOpen}
         onClose={() => setGeoJsonPreviewOpen(false)}
+      />
+      <MapWorkspaceOnboardingModal
+        open={onboardingOpen}
+        onClose={dismissOnboarding}
+        onAddReference={handleOnboardingAddReference}
+        onOpenControls={handleOnboardingOpenControls}
+        hasSourceFile={Boolean(sourceFile)}
       />
     </div>
   );

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuditLogQuery } from "@renderer/features/maps/hooks/useAuditLogQuery";
 
 type MapAuditLogModalProps = {
@@ -73,6 +74,7 @@ function summarizeChange(entry: {
 }
 
 export function MapAuditLogModal({ mapId, open, onClose }: MapAuditLogModalProps) {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [entityFilter, setEntityFilter] = useState<string | undefined>(undefined);
 
@@ -89,7 +91,7 @@ export function MapAuditLogModal({ mapId, open, onClose }: MapAuditLogModalProps
     <div className="modal-open modal z-[1200]">
       <div className="modal-box max-h-[88vh] max-w-2xl overflow-y-auto px-6 py-6 shadow-2xl">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Audit Log</h3>
+          <h3 className="text-lg font-semibold">{t("maps.workspace.auditLogTitle")}</h3>
           <button type="button" className="btn btn-square btn-ghost btn-sm" onClick={onClose}>
             <X className="size-4" />
           </button>
@@ -104,13 +106,13 @@ export function MapAuditLogModal({ mapId, open, onClose }: MapAuditLogModalProps
               setPage(1);
             }}
           >
-            <option value="">All entities</option>
-            <option value="control_point">Control Points</option>
-            <option value="geo_segment">Segments</option>
-            <option value="map">Maps</option>
+            <option value="">{t("maps.workspace.auditLogAllEntities")}</option>
+            <option value="control_point">{t("maps.workspace.auditLogEntityControlPoint")}</option>
+            <option value="geo_segment">{t("maps.workspace.auditLogEntitySegment")}</option>
+            <option value="map">{t("maps.workspace.auditLogEntityMap")}</option>
           </select>
           <span className="text-xs text-base-content/60">
-            {total} {total === 1 ? "entry" : "entries"}
+            {t("maps.workspace.auditLogEntryCount", { count: total })}
           </span>
         </div>
 
@@ -120,7 +122,7 @@ export function MapAuditLogModal({ mapId, open, onClose }: MapAuditLogModalProps
           </div>
         ) : entries.length === 0 ? (
           <div className="rounded-box border border-dashed border-base-content/20 px-4 py-8 text-center text-sm text-base-content/50">
-            No audit log entries yet. Actions will appear here as you make changes.
+            {t("maps.workspace.auditLogEmpty")}
           </div>
         ) : (
           <div className="space-y-1">
@@ -153,10 +155,10 @@ export function MapAuditLogModal({ mapId, open, onClose }: MapAuditLogModalProps
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
               <ChevronLeft className="size-4" />
-              Prev
+              {t("maps.workspace.auditLogPrev")}
             </button>
             <span className="text-xs text-base-content/60">
-              Page {page} of {totalPages}
+              {t("maps.workspace.auditLogPage", { page, total: totalPages })}
             </span>
             <button
               type="button"
@@ -164,7 +166,7 @@ export function MapAuditLogModal({ mapId, open, onClose }: MapAuditLogModalProps
               disabled={page >= totalPages}
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             >
-              Next
+              {t("maps.workspace.auditLogNext")}
               <ChevronRight className="size-4" />
             </button>
           </div>

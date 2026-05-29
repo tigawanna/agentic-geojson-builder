@@ -1,5 +1,14 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Download, Eye, History, Pencil, RotateCw, Settings2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Download,
+  Eye,
+  HelpCircle,
+  History,
+  Pencil,
+  RotateCw,
+  Settings2,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatMapCoordinates } from "@renderer/features/maps/lib/copy-map-coordinates";
 import {
@@ -10,6 +19,7 @@ import {
 
 type MapWorkspaceHeaderProps = {
   onOpenControls: () => void;
+  onOpenGuide: () => void;
   onOpenAuditLog: () => void;
   onPreviewGeoJson: () => void;
   hasSourceFile: boolean;
@@ -25,6 +35,7 @@ async function hardReloadView() {
 
 export function MapWorkspaceHeader({
   onOpenControls,
+  onOpenGuide,
   onOpenAuditLog,
   onPreviewGeoJson,
   hasSourceFile,
@@ -179,10 +190,24 @@ export function MapWorkspaceHeader({
         <button
           type="button"
           className="inline-flex size-7 items-center justify-center rounded-md text-base-content/50 transition-colors hover:bg-base-content/8 hover:text-base-content"
+          onClick={onOpenGuide}
+          aria-label={t("maps.workspace.showGuide")}
+          title={t("maps.workspace.showGuide")}
+          data-test="workspace-guide"
+        >
+          <HelpCircle className="size-3.5" />
+        </button>
+
+        <button
+          type="button"
+          className="btn gap-1.5 btn-ghost btn-sm"
           onClick={onOpenAuditLog}
-          title="Change history"
+          title={t("maps.workspace.openHistoryShortcut")}
+          aria-label={t("maps.workspace.history")}
+          data-test="open-audit-log"
         >
           <History className="size-3.5" />
+          {t("maps.workspace.history")}
         </button>
 
         <button

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { History } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { ControlPointRecord } from "@shared/control-points.types";
 import type { GeoSegmentRecord } from "@shared/geo-segments.types";
@@ -30,6 +31,7 @@ type MapWorkspaceControlsModalProps = {
   showReferenceOverlay: boolean;
   onShowReferenceOverlayChange: (visible: boolean) => void;
   onFocusControlPoint: (point: ControlPointRecord) => void;
+  onOpenAuditLog: () => void;
 };
 
 type ControlsSectionProps = {
@@ -72,6 +74,7 @@ export function MapWorkspaceControlsModal({
   showReferenceOverlay,
   onShowReferenceOverlayChange,
   onFocusControlPoint,
+  onOpenAuditLog,
 }: MapWorkspaceControlsModalProps) {
   const { t } = useTranslation();
   const workspace = useMapWorkspaceState((state) => state.workspace);
@@ -438,6 +441,24 @@ export function MapWorkspaceControlsModal({
               onClick={openTileCacheBounds}
             >
               {t("maps.workspace.configureTileCache")}
+            </button>
+          </ControlsSection>
+
+          <ControlsSection
+            title={t("maps.workspace.auditLogSection")}
+            hint={t("maps.workspace.auditLogSectionHint")}
+          >
+            <button
+              type="button"
+              className={`${softActionClass} inline-flex w-full items-center justify-center gap-2 sm:w-auto`}
+              onClick={() => {
+                closeControls();
+                onOpenAuditLog();
+              }}
+              data-test="open-audit-log-from-controls"
+            >
+              <History className="size-4" />
+              {t("maps.workspace.openAuditLog")}
             </button>
           </ControlsSection>
 
