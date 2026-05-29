@@ -7,6 +7,11 @@ import {
   coordinatesToLatLngs,
   getFeatureKey,
 } from "@renderer/features/map-playground/lib/parse-playground-geojson";
+import {
+  buildElevationSegments,
+  featureHasElevationData,
+  type ElevationRange,
+} from "@renderer/features/map-playground/lib/elevation-colors";
 import { trailFeatureColor } from "@renderer/features/map-playground/lib/trail-colors";
 import { createBaseLayer } from "@renderer/features/maps/lib/map-handle";
 import type {
@@ -16,6 +21,7 @@ import type {
 } from "@renderer/types/map-playground.types";
 import type { PlaygroundFeature } from "@renderer/types/map-playground.types";
 import { useEffect, useRef, useState } from "react";
+import type { RefObject } from "react";
 import type * as Leaflet from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -23,6 +29,8 @@ type PlaygroundMapPaneProps = {
   layers: PlaygroundLayer[];
   selectedFeature: PlaygroundSelectedFeature | null;
   baseMapStyle: PlaygroundBaseMapStyle;
+  elevationMode: boolean;
+  elevationRange: ElevationRange | null;
   initialViewport: {
     latitude: number;
     longitude: number;
@@ -30,6 +38,90 @@ type PlaygroundMapPaneProps = {
   };
   onFeatureSelect: (layerId: string, featureKey: string) => void;
 };
+
+type LeafletModule = typeof import("leaflet");
+type LeafletPolyline = ReturnType<LeafletModule["polyline"]>;
+
+function attachTrailInteractions(
+  L: LeafletModule,
+  polyline: LeafletPolyline,
+  feature: PlaygroundFeature,
+  layerId: string,
+  featureKey: string,
+  onFeatureSelectRef: RefObject<(layerId: string, featureKey: string) => void>,
+) {
+  const defaultTooltip = buildTooltipContent(feature);
+
+  polyline
+    .bindTooltip(defaultTooltip, {
+      sticky: true,
+      direction: "top",
+      className: "playground-trail-tooltip",
+    })
+    .on("click", () => {
+      onFeatureSelectRef.current(layerId, featureKey);
+    })
+    .on("mousemove", (event) => {
+      polyline.setTooltipContent(
+        buildTrailHoverTooltipContent(feature, event.latlng.lat, event.latlng.lng),
+      );
+      polyline.openTooltip(event.latlng);
+    })
+    .on("mouseout", () => {
+      polyline.setTooltipContent(defaultTooltip);
+    });
+
+  return polyline;
+}
+
+function addTrailToLayer(
+  L: LeafletModule,
+  trailsLayer: Leaflet.LayerGroup,
+  feature: PlaygroundFeature,
+  layerId: string,
+  featureKey: string,
+  isSelected: boolean,
+  hasActiveSelection: boolean,
+  elevationMode: boolean,
+  elevationRange: ElevationRange | null,
+  onFeatureSelectRef: RefObject<(layerId: string, featureKey: string) => void>,
+) {
+  const latlngs = coordinatesToLatLngs(feature.geometry.coordinates);
+  const color = trailFeatureColor(featureKey);
+  const useElevationColors =
+    elevationMode &&
+    elevationRange !== null &&
+    featureHasElevationData(feature.geometry.coordinates);
+
+  const opacity = hasActiveSelection && !isSelected ? 0.45 : isSelected ? 1 : 0.88;
+  const weight = isSelected ? 6 : 4;
+
+  if (useElevationColors) {
+    const segments = buildElevationSegments(feature.geometry.coordinates, elevationRange);
+    for (const segment of segments) {
+      const segmentLine = L.polyline(segment.latlngs, {
+        color: segment.color,
+        weight,
+        opacity,
+        lineCap: "round",
+        lineJoin: "round",
+      });
+      attachTrailInteractions(L, segmentLine, feature, layerId, featureKey, onFeatureSelectRef);
+      segmentLine.addTo(trailsLayer);
+    }
+    return;
+  }
+
+  const polyline = L.polyline(latlngs, {
+    color,
+    weight,
+    opacity,
+    lineCap: "round",
+    lineJoin: "round",
+  });
+  attachTrailInteractions(L, polyline, feature, layerId, featureKey, onFeatureSelectRef);
+  polyline.addTo(trailsLayer);
+}
 
 function buildTooltipContent(feature: PlaygroundFeature) {
   const stats = analyzeTrailFeature(feature);
@@ -51,6 +143,8 @@ export function PlaygroundMapPane({
   layers,
   selectedFeature,
   baseMapStyle,
+  elevationMode,
+  elevationRange,
   initialViewport,
   onFeatureSelect,
 }: PlaygroundMapPaneProps) {
@@ -90,8 +184,8 @@ export function PlaygroundMapPane({
       });
 
       baseLayerRef.current = createBaseLayer(L, baseMapStyle).addTo(map);
-      trailsLayerRef.current = L.layerGroup().addTo(map);
       highlightLayerRef.current = L.layerGroup().addTo(map);
+      trailsLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
       hasAppliedInitialStyleRef.current = true;
 
@@ -144,8 +238,8 @@ export function PlaygroundMapPane({
     if ("bringToBack" in nextLayer && typeof nextLayer.bringToBack === "function") {
       nextLayer.bringToBack();
     }
-    trailsLayerRef.current?.addTo(map);
     highlightLayerRef.current?.addTo(map);
+    trailsLayerRef.current?.addTo(map);
   }, [baseMapStyle]);
 
   useEffect(() => {
@@ -167,6 +261,8 @@ export function PlaygroundMapPane({
     const boundsPoints: Leaflet.LatLngExpression[] = [];
     let selectedLatLngs: Array<[number, number]> | undefined;
 
+    const hasActiveSelection = selectedFeature !== null;
+
     for (const layer of layers) {
       for (const feature of layer.features) {
         const featureKey = getFeatureKey(feature);
@@ -176,7 +272,6 @@ export function PlaygroundMapPane({
 
         const isSelected =
           selectedFeature?.layerId === layer.id && selectedFeature.featureKey === featureKey;
-        const color = trailFeatureColor(featureKey);
         const latlngs = coordinatesToLatLngs(feature.geometry.coordinates);
         for (const point of latlngs) {
           boundsPoints.push([point.lat, point.lng]);
@@ -186,53 +281,19 @@ export function PlaygroundMapPane({
           selectedLatLngs = latlngs.map((point) => [point.lat, point.lng]);
         }
 
-        const defaultTooltip = buildTooltipContent(feature);
-        const polyline = L.polyline(latlngs, {
-          color,
-          weight: isSelected ? 5 : 4,
-          opacity: isSelected ? 0.35 : 0.88,
-        })
-          .bindTooltip(defaultTooltip, {
-            sticky: true,
-            direction: "top",
-            className: "playground-trail-tooltip",
-          })
-          .addTo(trailsLayer)
-          .on("click", () => {
-            onFeatureSelectRef.current(layer.id, featureKey);
-          })
-          .on("mousemove", (event) => {
-            polyline.setTooltipContent(
-              buildTrailHoverTooltipContent(feature, event.latlng.lat, event.latlng.lng),
-            );
-            polyline.openTooltip(event.latlng);
-          })
-          .on("mouseout", () => {
-            polyline.setTooltipContent(defaultTooltip);
-          });
+        addTrailToLayer(
+          L,
+          trailsLayer,
+          feature,
+          layer.id,
+          featureKey,
+          isSelected,
+          hasActiveSelection,
+          elevationMode,
+          elevationRange,
+          onFeatureSelectRef,
+        );
       }
-    }
-
-    if (selectedLatLngs && selectedLatLngs.length >= 2) {
-      L.polyline(selectedLatLngs, {
-        color: "#ffffff",
-        weight: 9,
-        opacity: 0.95,
-        className: "playground-trail-highlight-glow",
-        interactive: false,
-      }).addTo(highlightLayer);
-
-      L.polyline(selectedLatLngs, {
-        color: "#16a34a",
-        weight: 6,
-        opacity: 1,
-        className: "playground-trail-highlight",
-        interactive: false,
-      }).addTo(highlightLayer);
-    }
-
-    if (layers.length > previousLayerCountRef.current && boundsPoints.length > 0) {
-      map.fitBounds(L.latLngBounds(boundsPoints), { padding: [48, 48], maxZoom: 16 });
     }
 
     const selectionChanged =
@@ -241,11 +302,13 @@ export function PlaygroundMapPane({
 
     if (selectionChanged && selectedLatLngs && selectedLatLngs.length >= 2) {
       map.fitBounds(L.latLngBounds(selectedLatLngs), { padding: [72, 72], maxZoom: 17 });
+    } else if (layers.length > previousLayerCountRef.current && boundsPoints.length > 0) {
+      map.fitBounds(L.latLngBounds(boundsPoints), { padding: [48, 48], maxZoom: 16 });
     }
 
     previousLayerCountRef.current = layers.length;
     previousSelectionRef.current = selectedFeature;
-  }, [layers, mapReady, selectedFeature]);
+  }, [elevationMode, elevationRange, layers, mapReady, selectedFeature]);
 
   return (
     <div

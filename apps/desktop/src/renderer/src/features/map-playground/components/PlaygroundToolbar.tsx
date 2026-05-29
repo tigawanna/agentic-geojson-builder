@@ -6,15 +6,20 @@ import type {
   PlaygroundSelectedFeature,
 } from "@renderer/types/map-playground.types";
 import type { MapBaseMapStyle } from "@shared/maps.types";
-import { PanelLeft, Upload } from "lucide-react";
+import { HelpCircle, Map, Mountain, PanelLeft, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 type PlaygroundToolbarProps = {
   layers: PlaygroundLayer[];
   selectedFeature: PlaygroundSelectedFeature | null;
   baseMapStyle: MapBaseMapStyle;
+  elevationMode: boolean;
+  hasElevationData: boolean;
+  onToggleElevationMode: () => void;
   onBaseMapStyleChange: (style: MapBaseMapStyle) => void;
   onOpenFilePicker: () => void;
+  onCreateGeoJson: () => void;
+  onOpenGuide: () => void;
   onSelectFeature: (layerId: string, featureKey: string) => void;
   onSetFeatureVisible: (layerId: string, featureKey: string, visible: boolean) => void;
   onRemoveLayer: (layerId: string) => void;
@@ -24,8 +29,13 @@ export function PlaygroundToolbar({
   layers,
   selectedFeature,
   baseMapStyle,
+  elevationMode,
+  hasElevationData,
+  onToggleElevationMode,
   onBaseMapStyleChange,
   onOpenFilePicker,
+  onCreateGeoJson,
+  onOpenGuide,
   onSelectFeature,
   onSetFeatureVisible,
   onRemoveLayer,
@@ -36,9 +46,9 @@ export function PlaygroundToolbar({
   return (
     <div
       data-test="playground-toolbar"
-      className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center p-3"
+      className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between p-3"
     >
-      <div className="pointer-events-auto flex w-full max-w-4xl flex-wrap items-center gap-2 rounded-2xl border border-base-300 bg-base-100/95 px-3 py-2 shadow-lg backdrop-blur-sm">
+      <div className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-base-300 bg-base-100/95 px-3 py-2 shadow-lg backdrop-blur-sm">
         <button
           type="button"
           className="btn btn-square btn-ghost btn-sm"
@@ -55,7 +65,39 @@ export function PlaygroundToolbar({
           {t("home.playground.dropGeoJson")}
         </button>
 
+        <button type="button" className="btn btn-sm btn-secondary" onClick={onCreateGeoJson}>
+          <Map className="size-4" />
+          {t("home.playground.createGeoJson")}
+        </button>
+
+        <button
+          type="button"
+          className="btn btn-square btn-ghost btn-sm"
+          onClick={onOpenGuide}
+          aria-label={t("home.playground.showGuide")}
+          title={t("home.playground.showGuide")}
+        >
+          <HelpCircle className="size-4" />
+        </button>
+      </div>
+
+      <div className="pointer-events-auto flex items-center gap-2 rounded-2xl border border-base-300 bg-base-100/95 px-3 py-2 shadow-lg backdrop-blur-sm">
         <BaseMapStylePicker value={baseMapStyle} onChange={onBaseMapStyleChange} />
+
+        <button
+          type="button"
+          className={`btn btn-sm ${elevationMode ? "btn-primary" : "btn-outline"}`}
+          onClick={onToggleElevationMode}
+          disabled={!hasElevationData}
+          aria-pressed={elevationMode}
+          title={
+            hasElevationData
+              ? t("home.playground.elevationModeHint")
+              : t("home.playground.elevationModeUnavailable")
+          }
+        >
+          <Mountain className="size-4" />
+        </button>
 
         <PlaygroundLayersPanel
           layers={layers}

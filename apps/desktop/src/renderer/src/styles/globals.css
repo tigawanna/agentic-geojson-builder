@@ -238,21 +238,3 @@ textarea,
   font-weight: 600;
   color: var(--color-primary);
 }
-
-.playground-map-pane .playground-trail-highlight {
-  stroke-dasharray: 14 10;
-  animation: playground-trail-dash 0.9s linear infinite;
-}
-
-.playground-map-pane .playground-trail-highlight-glow {
-  filter: drop-shadow(0 0 4px rgba(22, 163, 74, 0.65));
-}
-
-@keyframes playground-trail-dash {
-  from {
-    stroke-dashoffset: 0;
-  }
-  to {
-    stroke-dashoffset: -48;
-  }
-}

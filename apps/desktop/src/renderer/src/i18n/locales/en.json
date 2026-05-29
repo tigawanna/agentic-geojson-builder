@@ -54,7 +54,28 @@
       "allProperties": "All properties",
       "viewOnTrailfork": "View on Trailfork",
       "expandSidebar": "Expand sidebar",
-      "collapseSidebar": "Collapse sidebar"
+      "collapseSidebar": "Collapse sidebar",
+      "elevationMode": "Elevation",
+      "elevationModeHint": "Color trails by elevation from green (low) to red (high)",
+      "elevationModeUnavailable": "Load trails with elevation data to use elevation mode",
+      "elevationLegend": "Elevation",
+      "elevationLegendMid": "Mid",
+      "elevationLegendHint": "Green is lower, red is higher across visible trails",
+      "createGeoJson": "Create GeoJSON",
+      "showGuide": "Guide",
+      "onboarding": {
+        "close": "Close",
+        "title": "Welcome to the Map Playground",
+        "subtitle": "Preview trail GeoJSON with elevation colors, or create your own from a PDF or image of a map.",
+        "step1Title": "Preview existing GeoJSON",
+        "step1Desc": "Drop or import GeoJSON files to visualize trails with elevation data, metadata, and route stats.",
+        "step2Title": "Create GeoJSON from a map image",
+        "step2Desc": "Upload a PDF or photo of a trail map. We will help you georeference it and trace routes into precision GeoJSON.",
+        "step3Title": "Export and use anywhere",
+        "step3Desc": "Download your GeoJSON for navigation apps, spatial analysis, or sharing with others.",
+        "ctaCreate": "Create GeoJSON from PDF / Image",
+        "ctaDismiss": "Got it, explore on my own"
+      }
     }
   },
   "maps": {

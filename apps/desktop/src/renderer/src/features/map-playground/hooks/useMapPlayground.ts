@@ -10,6 +10,7 @@ import type {
   PlaygroundLayer,
   PlaygroundSelectedFeature,
 } from "@renderer/types/map-playground.types";
+import { computeVisibleElevationRange } from "@renderer/features/map-playground/lib/elevation-colors";
 import { useEffect, useRef, useState } from "react";
 
 const DEMO_GEOJSON_URL = "/demo/karura-trailfork-trails.geojson";
@@ -53,6 +54,7 @@ export function useMapPlayground() {
   const [layers, setLayers] = useState<PlaygroundLayer[]>([]);
   const [selectedFeature, setSelectedFeature] = useState<PlaygroundSelectedFeature | null>(null);
   const [baseMapStyle, setBaseMapStyle] = useState<PlaygroundBaseMapStyle>("satellite");
+  const [elevationMode, setElevationMode] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [errorNotice, setErrorNotice] = useState<string | null>(null);
@@ -249,6 +251,20 @@ export function useMapPlayground() {
     setSelectedFeature(null);
   }
 
+  function toggleElevationMode() {
+    setElevationMode((current) => !current);
+  }
+
+  useEffect(() => {
+    if (!elevationMode) {
+      return;
+    }
+
+    if (computeVisibleElevationRange(layers) === null) {
+      setElevationMode(false);
+    }
+  }, [elevationMode, layers]);
+
   useEffect(() => {
     if (demoAttemptedRef.current) {
       return;
@@ -285,6 +301,8 @@ export function useMapPlayground() {
   }, []);
 
   const activeFeature = findFeature(layers, selectedFeature);
+  const elevationRange = computeVisibleElevationRange(layers);
+  const hasElevationData = elevationRange !== null;
 
   return {
     layers,
@@ -292,6 +310,10 @@ export function useMapPlayground() {
     selectedFeature,
     baseMapStyle,
     setBaseMapStyle,
+    elevationMode,
+    toggleElevationMode,
+    elevationRange,
+    hasElevationData,
     isDragOver,
     notice,
     errorNotice,
