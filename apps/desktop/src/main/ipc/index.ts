@@ -14,6 +14,7 @@ import { pgliteHandlers } from "@main/ipc/pglite.js";
 import { dataBackupHandlers } from "@main/ipc/data-backup.js";
 import { playgroundHandlers } from "@main/ipc/playground.js";
 import { updaterHandlers } from "@main/ipc/updater.js";
+import { referenceSnapHandlers } from "@main/ipc/reference-snap.js";
 
 /**
  * Strongly-typed IPC handler definition.
@@ -28,10 +29,32 @@ type HandlerMap = { [K in IpcChannel]?: Handler<K> };
 /**
  * Register a single handler with runtime logging and consistent error shape.
  */
+function shouldLogIpcChannel(channel: IpcChannel) {
+  return channel.startsWith("geoSegments:") || channel.startsWith("referenceSnap:");
+}
+
 function register<K extends IpcChannel>(channel: K, handler: Handler<K>): void {
   ipcMain.handle(channel, async (_event, req: IpcRequest<K>) => {
+    const startedAt = Date.now();
+    const observability = shouldLogIpcChannel(channel);
+    if (observability) {
+      log.info({
+        action: "ipc",
+        message: "handler started",
+        channel,
+        request: req,
+      });
+    }
     try {
       const result = await handler(req);
+      if (observability) {
+        log.info({
+          action: "ipc",
+          message: "handler completed",
+          channel,
+          durationMs: Date.now() - startedAt,
+        });
+      }
       return result;
     } catch (err) {
       log.error({
@@ -86,6 +109,7 @@ export function registerIpcHandlers(): void {
     ...geoSegmentsHandlers,
     ...referenceGeoJsonHandlers,
     ...mcpSettingsHandlers,
+    ...referenceSnapHandlers,
     ...updaterHandlers,
   };
 

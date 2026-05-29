@@ -4,6 +4,7 @@ import { sql } from "drizzle-orm";
 import { drizzle, type PgliteDatabase } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { log } from "@main/lib/logger.js";
+import { DrizzleEvlogLogger } from "@main/lib/pglite/drizzle-evlog-logger.js";
 import * as schema from "@main/lib/pglite/schema/index.js";
 import { getMigrationsFolder, getPgliteDataDir } from "@main/lib/pglite/paths.js";
 import { removeStalePostmasterPid } from "@main/lib/pglite/prepare-data-dir.js";
@@ -34,7 +35,7 @@ export function initPgliteDb(): Promise<void> {
         dataDir,
         extensions: { postgis },
       });
-      db = drizzle({ client: pgliteClient, schema });
+      db = drizzle({ client: pgliteClient, schema, logger: new DrizzleEvlogLogger() });
 
       await pgliteClient.waitReady;
       await migrate(db, { migrationsFolder });

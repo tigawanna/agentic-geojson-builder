@@ -13,6 +13,7 @@ import {
   updateGeoSegment,
   updateGeoSegmentStatus,
 } from "@main/lib/pglite/geo-segments.service.js";
+import { log } from "@main/lib/logger.js";
 import { broadcastToRenderers } from "@main/ipc/broadcast.js";
 
 type Handler<K extends IpcChannel> = (
@@ -33,6 +34,13 @@ function notifyGeoSegmentsChanged(
   reason: "created" | "updated" | "deleted" | "status-updated",
   segmentId?: number,
 ) {
+  log.info({
+    action: "geo_segment",
+    message: "broadcast change event",
+    mapId,
+    reason,
+    segmentId,
+  });
   broadcastToRenderers("geoSegments:changed", { mapId, reason, segmentId });
 }
 

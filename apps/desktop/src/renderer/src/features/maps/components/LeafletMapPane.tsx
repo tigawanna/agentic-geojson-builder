@@ -349,17 +349,35 @@ export function LeafletMapPane({
 
       segmentsLayer.clearLayers();
 
+      const hideSegmentId =
+        editingSegmentId !== null && pendingTracePoints.length >= 2 ? editingSegmentId : null;
+
       geoSegments
-        .filter((segment) => segment.id !== editingSegmentId)
+        .filter((segment) => segment.id !== hideSegmentId)
         .forEach((segment) => {
-          L.polyline(lineStringToLatLngs(segment.geometry.coordinates), {
+          const coordinates = segment.geometry?.coordinates;
+          if (!coordinates || coordinates.length < 2) {
+            return;
+          }
+
+          const polyline = L.polyline(lineStringToLatLngs(coordinates), {
             color: segmentGroupColor(segment.segmentGroupId),
-            weight: 5,
-            opacity: 0.9,
+            weight: 7,
+            opacity: 1,
+            lineCap: "round",
+            lineJoin: "round",
           })
             .bindTooltip(segment.name ?? `${segment.segmentGroupId} #${segment.segmentIndex + 1}`)
             .addTo(segmentsLayer);
+
+          polyline.bringToFront();
         });
+
+      const map = mapRef.current;
+      if (map?.hasLayer(segmentsLayer)) {
+        segmentsLayer.remove();
+        segmentsLayer.addTo(map);
+      }
 
       if (pendingTracePoints.length >= 2) {
         L.polyline(

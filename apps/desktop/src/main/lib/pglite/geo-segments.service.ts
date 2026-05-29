@@ -21,6 +21,7 @@ import {
 import { findFeatureGaps } from "@main/lib/geojson/segment-gaps.js";
 import { mergeFeatureSegmentGroups } from "@main/lib/geojson/merge-segments.js";
 import { pdfPixelToLonLatForMap } from "@main/lib/georeference/georeference.service.js";
+import { log } from "@main/lib/logger.js";
 import { getPgliteDb } from "@main/lib/pglite/client.js";
 import {
   geoSegmentTable,
@@ -112,7 +113,20 @@ export async function listGeoSegments(mapId: number): Promise<GeoSegmentRecord[]
     .where(eq(geoSegmentTable.mapId, mapId))
     .orderBy(asc(geoSegmentTable.segmentGroupId), asc(geoSegmentTable.segmentIndex));
 
-  return rows.map(toRecord);
+  const segments = rows.map(toRecord);
+  log.info({
+    action: "geo_segment",
+    message: "listed segments",
+    mapId,
+    segmentCount: segments.length,
+    segments: segments.map((segment) => ({
+      id: segment.id,
+      segmentGroupId: segment.segmentGroupId,
+      vertexCount: segment.geometry.coordinates.length,
+      status: segment.status,
+    })),
+  });
+  return segments;
 }
 
 export async function createGeoSegment(input: CreateGeoSegmentInput): Promise<GeoSegmentRecord> {
@@ -142,7 +156,19 @@ export async function createGeoSegment(input: CreateGeoSegmentInput): Promise<Ge
     throw new Error("Failed to create geo segment.");
   }
 
-  return toRecord(row);
+  const segment = toRecord(row);
+  log.info({
+    action: "geo_segment",
+    message: "created segment",
+    mapId: input.mapId,
+    segmentId: segment.id,
+    segmentGroupId: segment.segmentGroupId,
+    vertexCount: segment.geometry.coordinates.length,
+    coordinateSpace,
+    firstCoord: segment.geometry.coordinates[0],
+    lastCoord: segment.geometry.coordinates.at(-1),
+  });
+  return segment;
 }
 
 export async function updateGeoSegment(input: UpdateGeoSegmentInput): Promise<GeoSegmentRecord> {
@@ -265,11 +291,28 @@ export async function mergeFeatureSegmentsForMap(input: MergeFeatureSegmentsInpu
 }
 
 export async function applyFeaturePatch(input: ApplyFeaturePatchInput) {
+  log.info({
+    action: "geo_segment",
+    message: "apply feature patch",
+    mapId: input.mapId,
+    op: input.op,
+    segmentGroupId: input.segmentGroupId,
+    segmentId: input.segmentId,
+    coordinateSpace: input.coordinateSpace,
+    vertexCount: input.geometry?.coordinates.length,
+  });
+
   if (input.op === "delete_segment") {
     if (input.segmentId === undefined) {
       throw new Error("segmentId is required for delete_segment.");
     }
     await deleteGeoSegment(input.mapId, input.segmentId);
+    log.info({
+      action: "geo_segment",
+      message: "deleted segment",
+      mapId: input.mapId,
+      segmentId: input.segmentId,
+    });
     return { deleted: true as const, segmentId: input.segmentId };
   }
 
@@ -302,7 +345,15 @@ export async function applyFeaturePatch(input: ApplyFeaturePatchInput) {
       throw new Error("Segment not found.");
     }
 
-    return { segment: toRecord(row) };
+    const updated = toRecord(row);
+    log.info({
+      action: "geo_segment",
+      message: "updated segment via patch",
+      mapId: input.mapId,
+      segmentId: updated.id,
+      vertexCount: updated.geometry.coordinates.length,
+    });
+    return { segment: updated };
   }
 
   const segment = await createGeoSegment({

@@ -152,6 +152,11 @@ export function MapWorkspaceHeader({
         >
           <Download className="size-4" />
           {t("maps.workspace.exportGeoJson")}
+          {segmentCount > 0 ? (
+            <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-xs font-semibold text-primary">
+              {segmentCount}
+            </span>
+          ) : null}
         </button>
         <button
           type="button"

@@ -4,7 +4,7 @@ export function segmentGroupColor(segmentGroupId: string) {
     hash = segmentGroupId.charCodeAt(index) + ((hash << 5) - hash);
   }
   const hue = Math.abs(hash) % 360;
-  return `hsl(${hue} 72% 42%)`;
+  return `hsl(${hue}, 72%, 42%)`;
 }
 
 export function lineStringToLatLngs(coordinates: [number, number][]) {

@@ -86,6 +86,14 @@ import type {
   UpdateGeoSegmentInput,
   UpdateGeoSegmentStatusInput,
 } from "./geo-segments.types.js";
+import type {
+  ComputeIntersectionsInput,
+  ComputeIntersectionsResult,
+  SnapPointInput,
+  SnapPointResult,
+  SnapTraceInput,
+  SnapTraceResult,
+} from "./reference-snap.types.js";
 
 /**
  * Single source of truth for every IPC channel in the app.
@@ -266,6 +274,14 @@ export interface IpcContract {
     req: ApplyFeaturePatchInput;
     res: { deleted: true; segmentId: number } | { segment: GeoSegmentRecord };
   };
+
+  // --- Reference snapping & intersections ------------------------------------
+  "referenceSnap:computeIntersections": {
+    req: ComputeIntersectionsInput;
+    res: ComputeIntersectionsResult;
+  };
+  "referenceSnap:snapPoint": { req: SnapPointInput; res: SnapPointResult };
+  "referenceSnap:snapTrace": { req: SnapTraceInput; res: SnapTraceResult };
 
   // --- Local MCP server ------------------------------------------------------
   "mcp:getStatus": { req: void; res: McpStatus };

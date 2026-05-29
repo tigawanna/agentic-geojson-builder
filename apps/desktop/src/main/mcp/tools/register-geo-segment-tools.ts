@@ -8,8 +8,10 @@ import {
   mergeFeatureSegmentsForMap,
   updateGeoSegmentStatus,
 } from "@main/lib/pglite/geo-segments.service.js";
+import { log } from "@main/lib/logger.js";
 import { broadcastToRenderers } from "@main/ipc/broadcast.js";
 import { jsonToolResult } from "./mcp-result-helpers.js";
+import { runLoggedMcpTool } from "./log-mcp-tool.js";
 
 const lineStringGeometrySchema = z.object({
   type: z.literal("LineString"),
@@ -33,6 +35,13 @@ function notifyGeoSegmentsChanged(
   reason: "created" | "updated" | "deleted" | "status-updated",
   segmentId?: number,
 ) {
+  log.info({
+    action: "geo_segment",
+    message: "broadcast change event from mcp",
+    mapId,
+    reason,
+    segmentId,
+  });
   broadcastToRenderers("geoSegments:changed", { mapId, reason, segmentId });
 }
 
@@ -44,7 +53,10 @@ export function registerGeoSegmentTools(server: McpServer) {
       description: "List traced trail/path segments for a map.",
       inputSchema: { mapId: z.number().int().positive() },
     },
-    async (input) => jsonToolResult({ segments: await listGeoSegments(input.mapId) }),
+    async (input) =>
+      runLoggedMcpTool("list_feature_segments", input, async () =>
+        jsonToolResult({ segments: await listGeoSegments(input.mapId) }),
+      ),
   );
 
   server.registerTool(
@@ -52,7 +64,10 @@ export function registerGeoSegmentTools(server: McpServer) {
     {
       title: "Apply Feature Patch",
       description:
-        "Create, update, or delete a trail segment. Agents should pass geometry in pdf-pixels unless coordinates are already WGS84.",
+        "Create, update, or delete a trail segment. " +
+        "IMPORTANT: Before first use, call get_trail_segment_drawing_guide to avoid coordinate mistakes. " +
+        "When drawing between control points, ALWAYS call list_control_points first and use those exact coordinates as LineString endpoints. " +
+        "Coordinates are [longitude, latitude]. Pass coordinateSpace='wgs84' when using real WGS84 coords.",
       inputSchema: {
         mapId: z.number().int().positive(),
         op: z.enum(["upsert_segment", "delete_segment"]),
@@ -67,19 +82,20 @@ export function registerGeoSegmentTools(server: McpServer) {
         confidence: z.number().min(0).max(1).optional(),
       },
     },
-    async (input) => {
-      const result = await applyFeaturePatch(input);
-      if ("deleted" in result) {
-        notifyGeoSegmentsChanged(input.mapId, "deleted", result.segmentId);
-      } else {
-        notifyGeoSegmentsChanged(
-          input.mapId,
-          input.segmentId ? "updated" : "created",
-          result.segment.id,
-        );
-      }
-      return jsonToolResult(result);
-    },
+    async (input) =>
+      runLoggedMcpTool("apply_feature_patch", input, async () => {
+        const result = await applyFeaturePatch(input);
+        if ("deleted" in result) {
+          notifyGeoSegmentsChanged(input.mapId, "deleted", result.segmentId);
+        } else {
+          notifyGeoSegmentsChanged(
+            input.mapId,
+            input.segmentId ? "updated" : "created",
+            result.segment.id,
+          );
+        }
+        return jsonToolResult(result);
+      }),
   );
 
   server.registerTool(
