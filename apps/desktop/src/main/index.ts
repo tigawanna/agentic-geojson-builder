@@ -7,6 +7,8 @@ import { initAppLogger, log } from "@main/lib/logger.js";
 import { createApplicationMenu } from "@main/menu/create-application-menu.js";
 import { initMcpServer, shutdownMcpServer } from "@main/mcp/index.js";
 import { startTileServer, stopTileServer } from "@main/tile-server.js";
+import { getPreloadPath } from "@main/preload-path.js";
+import { closeAllSourceDocumentWindows } from "@main/workspace/source-document-window.js";
 import { initUpdater } from "@main/updater.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,7 +31,7 @@ function createWindow(): BrowserWindow {
       // electron-vite emits the preload as ESM (`.mjs`) because `package.json`
       // declares `"type": "module"`. Electron ≥28 supports ESM preload scripts
       // natively when the file extension is `.mjs`.
-      preload: join(__dirname, "../preload/index.mjs"),
+      preload: getPreloadPath(),
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
@@ -37,6 +39,7 @@ function createWindow(): BrowserWindow {
   });
 
   win.on("ready-to-show", () => win.show());
+  win.on("close", () => closeAllSourceDocumentWindows());
 
   win.webContents.setWindowOpenHandler(({ url }) => {
     void shell.openExternal(url);

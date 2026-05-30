@@ -42,6 +42,7 @@ type LeafletMapPaneProps = {
   pendingTracePoints?: PendingTracePoint[];
   canPickMapPoint?: boolean;
   canPickTracePoint?: boolean;
+  controlPointDragEnabled?: boolean;
   editingSegmentId?: number | null;
   selectedControlPointId?: number | null;
   onReady: (handle: MapHandle) => void;
@@ -71,6 +72,7 @@ export function LeafletMapPane({
   pendingTracePoints = [],
   canPickMapPoint = false,
   canPickTracePoint = false,
+  controlPointDragEnabled = false,
   editingSegmentId = null,
   selectedControlPointId = null,
   onReady,
@@ -514,19 +516,22 @@ export function LeafletMapPane({
       const selected = point.id === selectedControlPointId;
       const fillColor = selected ? "#2563eb" : "#16a34a";
       const displayLabel = point.poleNumber ?? String(index + 1);
+      const markerCursor = controlPointDragEnabled ? "grab" : "default";
       const marker = L.marker([point.latitude, point.longitude], {
-        draggable: true,
+        draggable: controlPointDragEnabled,
         icon: L.divIcon({
           className: "",
-          html: `<div style="margin-left:-12px;margin-top:-12px;width:24px;height:24px;border-radius:9999px;border:2px solid white;background:${fillColor};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;cursor:grab;">${displayLabel}</div>`,
+          html: `<div style="margin-left:-12px;margin-top:-12px;width:24px;height:24px;border-radius:9999px;border:2px solid white;background:${fillColor};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;cursor:${markerCursor};">${displayLabel}</div>`,
           iconSize: [24, 24],
         }),
       }).addTo(markersLayer);
 
-      marker.on("dragend", () => {
-        const { lat, lng } = marker.getLatLng();
-        onControlPointMapMoveRef.current?.(point.id, lat, lng);
-      });
+      if (controlPointDragEnabled) {
+        marker.on("dragend", () => {
+          const { lat, lng } = marker.getLatLng();
+          onControlPointMapMoveRef.current?.(point.id, lat, lng);
+        });
+      }
 
       marker.on("click", (event) => {
         L.DomEvent.stopPropagation(event);
@@ -559,7 +564,14 @@ export function LeafletMapPane({
         onPendingTracePointMoveRef.current?.(index, lat, lng);
       });
     });
-  }, [controlPoints, mapReady, pendingMapPoint, pendingTracePoints, selectedControlPointId]);
+  }, [
+    controlPointDragEnabled,
+    controlPoints,
+    mapReady,
+    pendingMapPoint,
+    pendingTracePoints,
+    selectedControlPointId,
+  ]);
 
   useEffect(() => {
     const map = mapRef.current;

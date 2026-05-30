@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useIpcMutation } from "@renderer/hooks/useIpc";
+import { useControlPointMove } from "@renderer/features/maps/context/control-point-move-context";
 import { useControlPointsQuery } from "@renderer/features/maps/hooks/useControlPointsQuery";
 import { useWorkspacePersistence } from "@renderer/features/maps/hooks/useWorkspacePersistence";
 import {
@@ -35,13 +36,14 @@ export function MapWorkspaceSourceDocumentPane({
   const workspace = useMapWorkspaceState((state) => state.workspace);
   const sourceFile = useMapWorkspaceState((state) => state.sourceFile);
   const referenceMode = useMapWorkspaceUiState((state) => state.referenceMode);
+  const controlPointDragEnabled = useMapWorkspaceUiState((state) => state.controlPointDragEnabled);
+  const { handleControlPointPdfMove } = useControlPointMove();
   const pendingMapPoint = useMapWorkspaceUiState((state) => state.pendingMapPoint);
   const selectedControlPointId = useMapWorkspaceUiState((state) => state.selectedControlPointId);
   const { setPendingMapPoint, setStatusMessage } = useMapWorkspaceUiActions();
   const { queueSave } = useWorkspacePersistence();
   const controlPointsQuery = useControlPointsQuery(workspace?.id ?? null);
   const createControlPoint = useIpcMutation("controlPoints:create");
-  const updateControlPoint = useIpcMutation("controlPoints:update");
   const statusTimerRef = useRef<number | undefined>(undefined);
   const localCaptureRef = useRef<{
     getPdfCanvas: () => HTMLCanvasElement | null;
@@ -144,28 +146,7 @@ export function MapWorkspaceSourceDocumentPane({
     ],
   );
 
-  const handleControlPointPdfMove = useCallback(
-    (controlPointId: number, imageX: number, imageY: number) => {
-      if (!workspace) {
-        return;
-      }
-
-      const point = controlPoints.find((entry) => entry.id === controlPointId);
-      if (!point) {
-        return;
-      }
-
-      void updateControlPoint.mutateAsync({
-        mapId: workspace.id,
-        controlPointId,
-        imageX,
-        imageY,
-        latitude: point.latitude,
-        longitude: point.longitude,
-      });
-    },
-    [controlPoints, updateControlPoint, workspace],
-  );
+  const allowControlPointDrag = controlPointDragEnabled && !referenceMode;
 
   if (!workspace || !sourceFile) {
     return (
@@ -185,6 +166,7 @@ export function MapWorkspaceSourceDocumentPane({
       canPickPdfPoint={referenceMode && pendingMapPoint !== null}
       onTransformChange={handlePdfTransformChange}
       onPdfLocationPick={handlePdfLocationPick}
+      allowControlPointDrag={allowControlPointDrag}
       onControlPointPdfMove={onControlPointPdfMoveOverride ?? handleControlPointPdfMove}
       onCaptureReady={handleCaptureReady}
     />

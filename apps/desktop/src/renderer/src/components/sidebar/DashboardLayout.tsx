@@ -1,4 +1,5 @@
 import { Outlet, useRouterState } from "@tanstack/react-router";
+import { DetachedSourceLayout } from "@renderer/components/DetachedSourceLayout";
 import { usePageTitle } from "@renderer/hooks/usePageTitle";
 import { AppConfig } from "@renderer/utils/system";
 import { AppMenuBridge } from "@renderer/components/AppMenuBridge";
@@ -71,7 +72,20 @@ function DashboardShell() {
   );
 }
 
+function isDetachedSourceLocation(pathname: string): boolean {
+  const normalized = pathname.replace(/\/$/, "");
+  return /\/maps\/[^/]+\/source$/.test(normalized);
+}
+
 export function DashboardLayout() {
+  const isDetachedSource = useRouterState({
+    select: (state) => isDetachedSourceLocation(state.location.pathname),
+  });
+
+  if (isDetachedSource) {
+    return <DetachedSourceLayout />;
+  }
+
   return (
     <SidebarProvider>
       <DashboardShell />

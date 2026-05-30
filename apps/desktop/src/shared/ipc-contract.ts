@@ -120,6 +120,10 @@ export interface IpcContract {
   "app:showMapContextMenu": { req: ShowMapContextMenuInput; res: { ok: true } | { ok: false } };
   "app:hardReload": { req: void; res: { ok: true } | { ok: false } };
 
+  "window:minimize": { req: void; res: { ok: true } };
+  "window:toggleMaximize": { req: void; res: { ok: true; maximized: boolean } };
+  "window:close": { req: void; res: { ok: true } };
+
   // --- Generic key/value storage (electron-store backend) --------------------
   // Also fulfilled by the sqlite backend via a `kv` table.
   "store:get": { req: { key: string }; res: unknown };

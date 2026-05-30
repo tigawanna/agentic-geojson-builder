@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { IpcEventName, IpcEventPayload } from "@shared/ipc-contract";
+import { getApi } from "@renderer/lib/api";
 
 export function useIpcEvent<K extends IpcEventName>(
   event: K,
@@ -8,7 +9,11 @@ export function useIpcEvent<K extends IpcEventName>(
   const [payload, setPayload] = useState<IpcEventPayload<K> | null>(null);
 
   useEffect(() => {
-    return window.api.on(event, (next) => {
+    const api = getApi();
+    if (!api) {
+      return;
+    }
+    return api.on(event, (next) => {
       setPayload(next);
       listener?.(next);
     });

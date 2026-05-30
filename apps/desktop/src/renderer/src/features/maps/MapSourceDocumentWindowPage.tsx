@@ -1,8 +1,10 @@
 import { useTranslation } from "react-i18next";
 import { MapWorkspaceSourceDocumentPane } from "@renderer/features/maps/components/MapWorkspaceSourceDocumentPane";
 import { useHydrateMapWorkspace } from "@renderer/features/maps/hooks/useHydrateMapWorkspace";
+import { usePersistedControlPointDragPreference } from "@renderer/features/maps/hooks/usePersistedControlPointDragPreference";
 import { useWorkspaceMapsChangedRefresh } from "@renderer/features/maps/hooks/useWorkspaceMapsChangedRefresh";
 import { useWorkspaceUiSyncSubscriber } from "@renderer/features/maps/hooks/useWorkspaceUiSync";
+import { DetachedSourceWindowChrome } from "@renderer/components/DetachedSourceWindowChrome";
 import {
   MapWorkspaceProvider,
   useMapWorkspacePhase,
@@ -12,6 +14,7 @@ import {
 function MapSourceDocumentWindowContent({ mapId }: { mapId: number }) {
   const { t } = useTranslation();
   useHydrateMapWorkspace(mapId);
+  usePersistedControlPointDragPreference();
   useWorkspaceMapsChangedRefresh(mapId);
   useWorkspaceUiSyncSubscriber(mapId);
 
@@ -35,12 +38,13 @@ function MapSourceDocumentWindowContent({ mapId }: { mapId: number }) {
     );
   }
 
+  const windowTitle = workspace?.name ?? t("maps.workspace.panels.sourceDocument");
+
   return (
     <div className="flex h-full min-h-0 flex-col bg-base-200">
+      <DetachedSourceWindowChrome title={windowTitle} />
       <div className="shrink-0 border-b border-base-300 px-4 py-2">
-        <p className="text-sm font-semibold">
-          {workspace?.name ?? t("maps.workspace.panels.sourceDocument")}
-        </p>
+        <p className="text-sm font-semibold">{windowTitle}</p>
         <p className="text-xs text-base-content/55">{t("maps.workspace.panels.popOutHint")}</p>
       </div>
       <div className="relative min-h-0 flex-1">

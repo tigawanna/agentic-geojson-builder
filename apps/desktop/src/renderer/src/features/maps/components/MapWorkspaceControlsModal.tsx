@@ -32,6 +32,8 @@ type MapWorkspaceControlsModalProps = {
   onShowReferenceOverlayChange: (visible: boolean) => void;
   showReferenceInspectTooltip: boolean;
   onShowReferenceInspectTooltipChange: (visible: boolean) => void;
+  controlPointDragEnabled: boolean;
+  onControlPointDragEnabledChange: (enabled: boolean) => void;
   onFocusControlPoint: (point: ControlPointRecord) => void;
   onOpenAuditLog: () => void;
 };
@@ -77,6 +79,8 @@ export function MapWorkspaceControlsModal({
   onShowReferenceOverlayChange,
   showReferenceInspectTooltip,
   onShowReferenceInspectTooltipChange,
+  controlPointDragEnabled,
+  onControlPointDragEnabledChange,
   onFocusControlPoint,
   onOpenAuditLog,
 }: MapWorkspaceControlsModalProps) {
@@ -365,6 +369,21 @@ export function MapWorkspaceControlsModal({
             title={t("maps.workspace.referencesSection")}
             hint={t("maps.workspace.referencesSectionHint")}
           >
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={`btn btn-sm ${controlPointDragEnabled ? "btn-primary" : "btn-outline"}`}
+                onClick={() => onControlPointDragEnabledChange(!controlPointDragEnabled)}
+              >
+                {controlPointDragEnabled
+                  ? t("maps.workspace.controlPointDragOn")
+                  : t("maps.workspace.controlPointDragOff")}
+              </button>
+            </div>
+            <p className="text-xs text-base-content/55">
+              {t("maps.workspace.controlPointDragHint")}
+            </p>
+
             {controlPoints.length === 0 ? (
               <p className="rounded-box border border-dashed border-base-content/15 px-4 py-6 text-center text-sm text-base-content/60">
                 {t("maps.workspace.referencesEmpty")}

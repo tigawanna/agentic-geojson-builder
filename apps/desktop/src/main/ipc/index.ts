@@ -16,6 +16,7 @@ import { playgroundHandlers } from "@main/ipc/playground.js";
 import { updaterHandlers } from "@main/ipc/updater.js";
 import { referenceSnapHandlers } from "@main/ipc/reference-snap.js";
 import { workspaceLayoutHandlers } from "@main/ipc/workspace-layout.js";
+import { windowChromeHandlers } from "@main/ipc/window-chrome.js";
 import { openSourceDocumentWindow } from "@main/workspace/source-document-window.js";
 import { listAuditLog } from "@main/lib/pglite/audit-log.service.js";
 
@@ -152,8 +153,8 @@ export function registerIpcHandlers(): void {
     if (handler) register(channel, handler);
   }
 
-  registerWithWindow("workspace:openSourceDocumentWindow", (req, window) => {
-    openSourceDocumentWindow(req.mapId, window);
+  register("workspace:openSourceDocumentWindow", (req) => {
+    openSourceDocumentWindow(req.mapId);
     return { open: true };
   });
 
@@ -161,6 +162,7 @@ export function registerIpcHandlers(): void {
     ...appMenuHandlers,
     ...playgroundHandlers,
     ...referenceGeoJsonHandlers,
+    ...windowChromeHandlers,
   }) as [
     IpcChannel,
     (req: IpcRequest<IpcChannel>, window: BrowserWindow | null) => IpcResponse<IpcChannel>,

@@ -24,8 +24,8 @@ import {
   computePdfPanToCenterOnImagePoint,
 } from "@renderer/features/maps/lib/pdf-view-transform";
 import type { ControlPointRecord } from "@shared/control-points.types";
-import type { UpdateControlPointInput } from "@shared/control-points.types";
 import type { MapHandle } from "@renderer/features/maps/lib/map-handle";
+import { useControlPointMove } from "@renderer/features/maps/context/control-point-move-context";
 import { captureWorkspaceView } from "@renderer/features/maps/lib/rendered-map-view/capture-workspace-view";
 import { lineStringToMapBounds } from "@renderer/features/maps/lib/segment-utils";
 import { registerViewportCommand } from "@renderer/features/maps/lib/viewport-command-registry";
@@ -33,7 +33,6 @@ import { registerWorkspaceCapture } from "@renderer/features/maps/lib/workspace-
 import { useWorkspacePersistence } from "@renderer/features/maps/hooks/useWorkspacePersistence";
 import { useMapWorkspaceAuditLogShortcut } from "@renderer/features/maps/hooks/useMapWorkspaceAuditLogShortcut";
 import { useMapWorkspaceControlsShortcut } from "@renderer/features/maps/hooks/useMapWorkspaceControlsShortcut";
-import { useUndoHistory } from "@renderer/features/maps/hooks/useUndoHistory";
 import {
   useMapWorkspaceState,
   useMapWorkspaceUiActions,
@@ -51,6 +50,10 @@ import { MapWorkspacePanelToolbar } from "@renderer/features/maps/components/Map
 import { MapWorkspaceSourceDocumentPane } from "@renderer/features/maps/components/MapWorkspaceSourceDocumentPane";
 import { useWorkspaceMapsChangedRefresh } from "@renderer/features/maps/hooks/useWorkspaceMapsChangedRefresh";
 import { useWorkspaceUiSyncPublisher } from "@renderer/features/maps/hooks/useWorkspaceUiSync";
+import {
+  CONTROL_POINT_DRAG_STORE_KEY,
+  usePersistedControlPointDragPreference,
+} from "@renderer/features/maps/hooks/usePersistedControlPointDragPreference";
 import { ControlPointDetailPanel } from "@renderer/features/maps/components/ControlPointDetailPanel";
 
 const WORKSPACE_ONBOARDING_STORE_KEY = "maps.workspace.onboardingSeen";
@@ -92,11 +95,13 @@ export function MapWorkspaceSplitView() {
   const showReferenceInspectTooltip = useMapWorkspaceUiState(
     (state) => state.showReferenceInspectTooltip,
   );
+  const controlPointDragEnabled = useMapWorkspaceUiState((state) => state.controlPointDragEnabled);
   const sourcePanelPresentation = useMapWorkspaceUiState((state) => state.sourcePanelPresentation);
   const mapPanelCollapsed = useMapWorkspaceUiState((state) => state.mapPanelCollapsed);
   const {
     setShowReferenceOverlay,
     setShowReferenceInspectTooltip,
+    setControlPointDragEnabled,
     setSourcePanelPresentation,
     setMapPanelCollapsed,
   } = useMapWorkspaceUiActions();
@@ -115,9 +120,8 @@ export function MapWorkspaceSplitView() {
   const updateGeoSegment = useIpcMutation("geoSegments:update");
   const exportGeoJson = useIpcMutation("geoSegments:exportToFile");
 
-  const undoHistory = useUndoHistory<UpdateControlPointInput>((entry) => {
-    void updateControlPoint.mutateAsync(entry);
-  });
+  const { handleControlPointMapMove } = useControlPointMove();
+  usePersistedControlPointDragPreference();
   const [selectedSegmentId, setSelectedSegmentId] = useState<number | null>(null);
   const [auditLogOpen, setAuditLogOpen] = useState(false);
   const [geoJsonPreviewOpen, setGeoJsonPreviewOpen] = useState(false);
@@ -163,11 +167,12 @@ export function MapWorkspaceSplitView() {
   });
 
   useEffect(() => {
-    if (sourcePanelPresentation === "docked") {
-      sourcePanelRef.current?.expand();
+    if (sourcePanelPresentation !== "docked") {
       return;
     }
-    sourcePanelRef.current?.collapse();
+    requestAnimationFrame(() => {
+      sourcePanelRef.current?.expand();
+    });
   }, [sourcePanelPresentation]);
 
   useEffect(() => {
@@ -743,83 +748,7 @@ export function MapWorkspaceSplitView() {
       });
   }, [exportGeoJson, setStatusMessage, t, workspace]);
 
-  const handleControlPointMapMove = useCallback(
-    (controlPointId: number, latitude: number, longitude: number) => {
-      if (!workspace) {
-        return;
-      }
-
-      const point = controlPoints.find((entry) => entry.id === controlPointId);
-      if (!point) {
-        return;
-      }
-
-      const redoPayload: UpdateControlPointInput = {
-        mapId: workspace.id,
-        controlPointId,
-        imageX: point.imageX,
-        imageY: point.imageY,
-        latitude,
-        longitude,
-      };
-
-      const undoPayload: UpdateControlPointInput = {
-        mapId: workspace.id,
-        controlPointId,
-        imageX: point.imageX,
-        imageY: point.imageY,
-        latitude: point.latitude,
-        longitude: point.longitude,
-      };
-
-      undoHistory.push({
-        label: `Move point ${controlPointId}`,
-        undo: undoPayload,
-        redo: redoPayload,
-      });
-      void updateControlPoint.mutateAsync(redoPayload);
-    },
-    [controlPoints, undoHistory, updateControlPoint, workspace],
-  );
-
-  const handleControlPointPdfMove = useCallback(
-    (controlPointId: number, imageX: number, imageY: number) => {
-      if (!workspace) {
-        return;
-      }
-
-      const point = controlPoints.find((entry) => entry.id === controlPointId);
-      if (!point) {
-        return;
-      }
-
-      const redoPayload: UpdateControlPointInput = {
-        mapId: workspace.id,
-        controlPointId,
-        imageX,
-        imageY,
-        latitude: point.latitude,
-        longitude: point.longitude,
-      };
-
-      const undoPayload: UpdateControlPointInput = {
-        mapId: workspace.id,
-        controlPointId,
-        imageX: point.imageX,
-        imageY: point.imageY,
-        latitude: point.latitude,
-        longitude: point.longitude,
-      };
-
-      undoHistory.push({
-        label: `Move PDF point ${controlPointId}`,
-        undo: undoPayload,
-        redo: redoPayload,
-      });
-      void updateControlPoint.mutateAsync(redoPayload);
-    },
-    [controlPoints, undoHistory, updateControlPoint, workspace],
-  );
+  const allowControlPointDrag = controlPointDragEnabled && !referenceMode && !traceMode;
 
   if (!workspace) {
     return null;
@@ -848,36 +777,36 @@ export function MapWorkspaceSplitView() {
         />
       ) : null}
 
-      <div className="relative min-h-0 flex-1">
+      <div className="relative min-h-0 flex-1 overflow-hidden">
         {!showSourceDocked ? (
-          <div className="absolute top-14 bottom-0 left-0 z-30 flex w-11 flex-col items-center gap-2 border-r border-base-300 bg-base-100/95 py-3 shadow-sm">
+          <div className="pointer-events-auto absolute inset-y-0 left-0 z-[1100] flex w-9 flex-col border-r border-base-300 bg-base-100 shadow-md">
             <button
               type="button"
-              className="btn btn-square btn-ghost btn-sm"
+              className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 px-1 transition-colors hover:bg-primary/10"
               onClick={handleExpandSourcePanel}
               title={t("maps.workspace.panels.expandSource")}
               aria-label={t("maps.workspace.panels.expandSource")}
             >
-              <span className="rotate-180 text-[10px] font-semibold [writing-mode:vertical-rl]">
+              <span className="text-[10px] font-semibold tracking-wide text-base-content/80 [writing-mode:vertical-rl]">
                 {t("maps.workspace.panels.sourceDocument")}
               </span>
             </button>
             {sourcePanelPresentation === "collapsed" ? (
               <button
                 type="button"
-                className="btn btn-square btn-ghost btn-xs"
+                className="flex h-9 shrink-0 items-center justify-center border-t border-base-300 text-base-content/70 transition-colors hover:bg-primary/10 hover:text-base-content"
                 onClick={handlePopOutSourcePanel}
                 title={t("maps.workspace.panels.popOutSource")}
                 aria-label={t("maps.workspace.panels.popOutSource")}
               >
-                ↗
+                <span className="text-xs">↗</span>
               </button>
             ) : null}
           </div>
         ) : null}
 
         {mapPanelCollapsed ? (
-          <div className="absolute top-14 right-0 bottom-0 z-30 flex w-11 flex-col items-center gap-2 border-l border-base-300 bg-base-100/95 py-3 shadow-sm">
+          <div className="pointer-events-auto absolute inset-y-0 right-0 z-[1100] flex w-9 flex-col border-l border-base-300 bg-base-100 shadow-md">
             <button
               type="button"
               className="btn btn-square btn-ghost btn-sm"
@@ -892,43 +821,45 @@ export function MapWorkspaceSplitView() {
           </div>
         ) : null}
 
-        <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel
-            ref={sourcePanelRef}
-            defaultSize={50}
-            minSize={18}
-            maxSize={82}
-            collapsible
-            collapsedSize={0}
-            order={1}
-          >
-            {showSourceDocked ? (
-              <section className="relative h-full min-h-0 bg-base-200">
-                <span className="pointer-events-none absolute top-3 left-3 z-10 rounded-box bg-base-100/90 px-2 py-1 text-xs font-medium">
-                  {t("maps.workspace.panels.sourceDocument")}
-                </span>
-                <MapWorkspacePanelToolbar
-                  side="source"
-                  sourcePresentation={sourcePanelPresentation}
-                  onCollapse={handleCollapseSourcePanel}
-                  onExpand={handleExpandSourcePanel}
-                  onPopOut={handlePopOutSourcePanel}
-                />
-                {sourceFile ? (
-                  <MapWorkspaceSourceDocumentPane
-                    onCaptureReady={handleCaptureReady}
-                    onControlPointPdfMove={handleControlPointPdfMove}
+        <ResizablePanelGroup
+          direction="horizontal"
+          className={!showSourceDocked ? "pl-9" : undefined}
+        >
+          {showSourceDocked ? (
+            <>
+              <ResizablePanel
+                ref={sourcePanelRef}
+                defaultSize={50}
+                minSize={18}
+                maxSize={82}
+                collapsible
+                collapsedSize={0}
+                order={1}
+              >
+                <section className="relative h-full min-h-0 bg-base-200">
+                  <span className="pointer-events-none absolute top-3 left-3 z-10 rounded-box bg-base-100/90 px-2 py-1 text-xs font-medium">
+                    {t("maps.workspace.panels.sourceDocument")}
+                  </span>
+                  <MapWorkspacePanelToolbar
+                    side="source"
+                    sourcePresentation={sourcePanelPresentation}
+                    onCollapse={handleCollapseSourcePanel}
+                    onExpand={handleExpandSourcePanel}
+                    onPopOut={handlePopOutSourcePanel}
                   />
-                ) : (
-                  <div className="flex h-full items-center justify-center text-sm text-base-content/50">
-                    No source file found
-                  </div>
-                )}
-              </section>
-            ) : null}
-          </ResizablePanel>
+                  {sourceFile ? (
+                    <MapWorkspaceSourceDocumentPane onCaptureReady={handleCaptureReady} />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-sm text-base-content/50">
+                      No source file found
+                    </div>
+                  )}
+                </section>
+              </ResizablePanel>
 
-          {showSourceDocked && !mapPanelCollapsed ? <ResizableHandle withHandle /> : null}
+              {!mapPanelCollapsed ? <ResizableHandle withHandle /> : null}
+            </>
+          ) : null}
 
           <ResizablePanel
             ref={mapPanelRef}
@@ -976,6 +907,7 @@ export function MapWorkspaceSplitView() {
                 pendingTracePoints={pendingTracePoints}
                 canPickMapPoint={referenceMode && pendingMapPoint === null}
                 canPickTracePoint={traceMode}
+                controlPointDragEnabled={allowControlPointDrag}
                 editingSegmentId={editingSegmentId}
                 selectedControlPointId={selectedControlPointId}
                 onReady={setMapHandle}
@@ -1050,6 +982,11 @@ export function MapWorkspaceSplitView() {
         onShowReferenceInspectTooltipChange={(visible) => {
           setShowReferenceInspectTooltip(visible);
           void ipcInvoke("store:set", { key: REFERENCE_INSPECT_TOOLTIP_STORE_KEY, value: visible });
+        }}
+        controlPointDragEnabled={controlPointDragEnabled}
+        onControlPointDragEnabledChange={(enabled) => {
+          setControlPointDragEnabled(enabled);
+          void ipcInvoke("store:set", { key: CONTROL_POINT_DRAG_STORE_KEY, value: enabled });
         }}
         onFocusControlPoint={handleFocusControlPoint}
         onOpenAuditLog={() => setAuditLogOpen(true)}

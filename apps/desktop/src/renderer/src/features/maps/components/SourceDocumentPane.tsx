@@ -24,6 +24,7 @@ type SourceDocumentPaneProps = {
   selectedControlPointId?: number | null;
   referenceMode?: boolean;
   canPickPdfPoint?: boolean;
+  allowControlPointDrag?: boolean;
   onTransformChange: (patch: Partial<PdfViewTransform>) => void;
   onPdfLocationPick?: (imageX: number, imageY: number) => void;
   onControlPointPdfMove?: (controlPointId: number, imageX: number, imageY: number) => void;
@@ -41,6 +42,7 @@ export function SourceDocumentPane({
   selectedControlPointId = null,
   referenceMode = false,
   canPickPdfPoint = false,
+  allowControlPointDrag = false,
   onTransformChange,
   onPdfLocationPick,
   onControlPointPdfMove,
@@ -257,7 +259,7 @@ export function SourceDocumentPane({
     event: React.PointerEvent<HTMLDivElement>,
     controlPointId: number,
   ) {
-    if (event.button !== 0) {
+    if (event.button !== 0 || !allowControlPointDrag) {
       return;
     }
 
@@ -365,19 +367,24 @@ export function SourceDocumentPane({
             const displayX = pdfDragPreview?.id === point.id ? pdfDragPreview.imageX : point.imageX;
             const displayY = pdfDragPreview?.id === point.id ? pdfDragPreview.imageY : point.imageY;
 
+            const markerDraggable = allowControlPointDrag;
+            const markerCursor = markerDraggable
+              ? "cursor-grab active:cursor-grabbing"
+              : "cursor-default";
+
             return (
               <div
                 key={point.id}
                 className={`pointer-events-auto absolute flex -translate-x-1/2 -translate-y-1/2 touch-none items-center justify-center rounded-full border-2 border-white text-[10px] font-bold text-white select-none ${
                   selectedControlPointId === point.id
-                    ? "z-10 size-5 cursor-grab bg-blue-600 active:cursor-grabbing"
-                    : "size-4 cursor-grab bg-primary active:cursor-grabbing"
+                    ? `z-10 size-5 bg-blue-600 ${markerCursor}`
+                    : `size-4 bg-primary ${markerCursor}`
                 }`}
                 style={{ left: displayX, top: displayY }}
                 onPointerDown={(event) => handleMarkerPointerDown(event, point.id)}
-                onPointerMove={handleMarkerPointerMove}
-                onPointerUp={handleMarkerPointerUp}
-                onPointerCancel={handleMarkerPointerUp}
+                onPointerMove={markerDraggable ? handleMarkerPointerMove : undefined}
+                onPointerUp={markerDraggable ? handleMarkerPointerUp : undefined}
+                onPointerCancel={markerDraggable ? handleMarkerPointerUp : undefined}
               >
                 {index + 1}
               </div>

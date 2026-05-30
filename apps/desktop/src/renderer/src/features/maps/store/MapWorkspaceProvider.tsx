@@ -10,6 +10,7 @@ import {
   useScopedMapWorkspaceUiStore,
   type MapWorkspaceUiStore,
 } from "@renderer/features/maps/store/map-workspace-ui-store";
+import { ControlPointMoveBridge } from "@renderer/features/maps/context/control-point-move-context";
 
 const MapWorkspaceStoreContext = createContext<MapWorkspaceStore | null>(null);
 const MapWorkspaceUiStoreContext = createContext<MapWorkspaceUiStore | null>(null);
@@ -28,7 +29,7 @@ export function MapWorkspaceProvider({ children }: { children: ReactNode }) {
   return (
     <MapWorkspaceStoreContext.Provider value={storeRef.current}>
       <MapWorkspaceUiStoreContext.Provider value={uiStoreRef.current}>
-        {children}
+        <ControlPointMoveBridge>{children}</ControlPointMoveBridge>
       </MapWorkspaceUiStoreContext.Provider>
     </MapWorkspaceStoreContext.Provider>
   );

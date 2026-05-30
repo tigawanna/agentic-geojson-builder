@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { IpcEventPayload } from "@shared/ipc-contract";
+import { getApi } from "@renderer/lib/api";
 import { ipcInvoke } from "@renderer/hooks/useIpc";
 
 export type UpdaterStatus = IpcEventPayload<"updater:status">;
@@ -12,7 +13,11 @@ export function useUpdater() {
   const [status, setStatus] = useState<UpdaterStatus | null>(null);
 
   useEffect(() => {
-    return window.api.on("updater:status", setStatus);
+    const api = getApi();
+    if (!api) {
+      return;
+    }
+    return api.on("updater:status", setStatus);
   }, []);
 
   const checkForUpdates = useCallback(() => ipcInvoke("updater:check", undefined), []);
