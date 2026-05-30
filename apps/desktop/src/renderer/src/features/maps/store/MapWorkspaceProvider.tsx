@@ -78,3 +78,7 @@ export function useMapWorkspaceUiActions() {
   const store = useWorkspaceUiStoreApi();
   return store.getState();
 }
+
+export function useMapWorkspaceUiStore(): MapWorkspaceUiStore {
+  return useWorkspaceUiStoreApi();
+}

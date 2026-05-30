@@ -274,6 +274,13 @@
         "collapseMap": "Collapse map",
         "expandMap": "Expand map"
       },
+      "quickMenu": {
+        "label": "View",
+        "open": "Open view options menu",
+        "referenceOverlay": "Reference overlay",
+        "trailInspectTooltip": "Trail inspect tooltip",
+        "dragReferencePoints": "Drag reference points"
+      },
       "addReference": "Add reference",
       "referenceHint": "Ctrl+click the base map or paste coordinates, then Ctrl+click the PDF.",
       "referenceGeoJson": {

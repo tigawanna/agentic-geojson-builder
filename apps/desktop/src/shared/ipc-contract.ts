@@ -27,7 +27,11 @@ import type {
   UpdateControlPointInput,
 } from "./control-points.types.js";
 import type { McpStatus } from "./mcp.types.js";
-import type { AppMenuAction, ShowMapContextMenuInput } from "./menu.types.js";
+import type {
+  AppMenuAction,
+  ShowMapContextMenuInput,
+  ShowMapWorkspaceQuickMenuInput,
+} from "./menu.types.js";
 import type {
   BuildTileCacheResult,
   GetMapSectorViewInput,
@@ -118,6 +122,10 @@ export interface IpcContract {
   "app:getVersion": { req: void; res: string };
   "app:getPlatform": { req: void; res: NodeJS.Platform };
   "app:showMapContextMenu": { req: ShowMapContextMenuInput; res: { ok: true } | { ok: false } };
+  "app:showMapWorkspaceQuickMenu": {
+    req: ShowMapWorkspaceQuickMenuInput;
+    res: { ok: true } | { ok: false };
+  };
   "app:hardReload": { req: void; res: { ok: true } | { ok: false } };
 
   "window:minimize": { req: void; res: { ok: true } };

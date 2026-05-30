@@ -220,6 +220,12 @@ textarea,
   -webkit-app-region: no-drag;
 }
 
+.map-workspace-panels [data-panel] {
+  transition:
+    flex-grow 220ms ease-out,
+    flex-shrink 220ms ease-out;
+}
+
 .playground-map-pane .playground-trail-tooltip {
   font-size: 0.8125rem;
   line-height: 1.35;

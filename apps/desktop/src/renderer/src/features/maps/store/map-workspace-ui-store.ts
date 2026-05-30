@@ -77,7 +77,7 @@ const initialState: MapWorkspaceUiState = {
   referenceMode: false,
   traceMode: false,
   showReferenceOverlay: true,
-  showReferenceInspectTooltip: true,
+  showReferenceInspectTooltip: false,
   controlPointDragEnabled: false,
   sourcePanelPresentation: "docked",
   mapPanelCollapsed: false,

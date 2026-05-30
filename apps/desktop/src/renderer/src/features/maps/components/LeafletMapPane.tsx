@@ -226,9 +226,18 @@ export function LeafletMapPane({
         captureInitialViewport();
       }
 
-      const observer = new ResizeObserver(() => map.invalidateSize());
+      let resizeTimer: number | undefined;
+      const observer = new ResizeObserver(() => {
+        window.clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(() => {
+          map.invalidateSize({ animate: false });
+        }, 150);
+      });
       observer.observe(containerRef.current);
-      return () => observer.disconnect();
+      return () => {
+        observer.disconnect();
+        window.clearTimeout(resizeTimer);
+      };
     }
 
     const cleanupPromise = initMap();

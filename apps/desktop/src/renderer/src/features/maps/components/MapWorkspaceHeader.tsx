@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { formatMapCoordinates } from "@renderer/features/maps/lib/copy-map-coordinates";
+import { MapWorkspaceQuickMenuButton } from "@renderer/features/maps/components/MapWorkspaceQuickMenuButton";
 import {
   useMapWorkspaceUiActions,
   useMapWorkspaceUiState,
@@ -172,6 +173,8 @@ export function MapWorkspaceHeader({
         ) : null}
 
         <div className="mx-1 h-4 w-px bg-base-content/10" />
+
+        <MapWorkspaceQuickMenuButton />
 
         <button
           type="button"

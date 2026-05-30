@@ -1,6 +1,7 @@
 import type { BrowserWindow } from "electron";
 import type { IpcChannel, IpcRequest, IpcResponse } from "@shared/ipc-contract.js";
 import { showMapContextMenu } from "@main/menu/show-map-context-menu.js";
+import { showMapWorkspaceQuickMenu } from "@main/menu/show-map-workspace-quick-menu.js";
 
 type Handler<K extends IpcChannel> = (
   req: IpcRequest<K>,
@@ -14,6 +15,14 @@ export const appMenuHandlers: { [K in IpcChannel]?: Handler<K> } = {
     }
 
     showMapContextMenu(window, input);
+    return { ok: true as const };
+  },
+  "app:showMapWorkspaceQuickMenu": (input, window) => {
+    if (!window) {
+      return { ok: false as const };
+    }
+
+    showMapWorkspaceQuickMenu(window, input);
     return { ok: true as const };
   },
   "app:hardReload": (_input, window) => {
