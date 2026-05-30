@@ -23,14 +23,14 @@ export function MapProjectCard({ map }: MapProjectCardProps) {
 
   return (
     <article
-      className="group flex flex-col overflow-hidden rounded-2xl border border-base-content/12 bg-base-100 shadow-md transition-all hover:border-base-content/20 hover:shadow-xl"
+      className="group flex flex-col overflow-hidden rounded-2xl border border-base-content/12 bg-base-200 shadow-md transition-all hover:border-base-content/20 hover:shadow-xl"
       data-test={`map-card-${map.id}`}
       onContextMenu={(event) => void openNativeContextMenu(map, event)}
     >
       <Link
         to="/maps/$mapId"
         params={{ mapId: String(map.id) }}
-        className="relative block aspect-[4/3] overflow-hidden bg-base-200/50"
+        className="relative block aspect-[4/3] overflow-hidden bg-base-300/50"
       >
         {thumbnail.data ? (
           <img
@@ -39,7 +39,7 @@ export function MapProjectCard({ map }: MapProjectCardProps) {
             className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
         ) : (
-          <div className="flex size-full items-center justify-center bg-base-200/60">
+          <div className="flex size-full items-center justify-center bg-base-300/60">
             <MapIcon className="size-10 text-base-content/20" aria-hidden />
           </div>
         )}

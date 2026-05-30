@@ -399,7 +399,7 @@
     "flip": "Flip",
     "flipHint": "Card flip effect",
     "slides": "Slides",
-    "slidesHint": "Side-by-side panels"
+    "slidesHint": "Staggered column reveal"
   },
   "about": {
     "heading": "About",

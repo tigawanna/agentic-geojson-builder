@@ -58,10 +58,19 @@ function TransitionPreview({ variant }: { variant: ViewTransitionStyle }) {
   }
 
   return (
-    <div className="relative h-14 overflow-hidden rounded-lg border border-base-content/10 bg-base-200/50">
-      <div className="absolute inset-y-1 left-1 w-[42%] rounded bg-base-100/90" />
-      <div className="absolute inset-y-1 right-1 w-[42%] rounded bg-primary/20" />
-      <div className="absolute inset-y-2 left-1/2 w-px -translate-x-1/2 bg-base-content/20" />
+    <div className="relative flex h-14 overflow-hidden rounded-lg border border-base-content/10 bg-base-200/50">
+      {[0, 22, 44, 66, 88].map((top, index) => (
+        <div
+          key={index}
+          className="relative h-full flex-1 border-r border-base-content/10 last:border-r-0"
+        >
+          <div className="absolute inset-x-0 bottom-0 bg-primary/30" style={{ top: `${top}%` }} />
+          <div
+            className="absolute inset-x-0 bottom-0 bg-base-100/90"
+            style={{ top: `${Math.max(0, top - 8)}%` }}
+          />
+        </div>
+      ))}
     </div>
   );
 }
