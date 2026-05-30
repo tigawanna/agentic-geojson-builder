@@ -1,3 +1,4 @@
+import type { GeoCoordinate } from "@repo/isomorphic/elevation-at-point";
 import type { MapBounds } from "@renderer/features/maps/lib/map-handle";
 
 export function segmentGroupColor(segmentGroupId: string) {
@@ -9,7 +10,7 @@ export function segmentGroupColor(segmentGroupId: string) {
   return `hsl(${hue}, 72%, 42%)`;
 }
 
-export function lineStringToLatLngs(coordinates: [number, number][]) {
+export function lineStringToLatLngs(coordinates: GeoCoordinate[]) {
   return coordinates.map(([longitude, latitude]) => ({ lat: latitude, lng: longitude }));
 }
 

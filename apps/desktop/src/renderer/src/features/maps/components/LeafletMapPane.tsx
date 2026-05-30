@@ -376,15 +376,16 @@ export function LeafletMapPane({
       return;
     }
 
-    const map = mapRef.current;
-    const L = leafletRef.current;
-    if (!map || !L) {
+    if (!mapRef.current || !leafletRef.current) {
       return;
     }
 
+    const mapForInspect: import("leaflet").Map = mapRef.current;
+    const leafletForInspect: typeof import("leaflet") = leafletRef.current;
+
     function closeInspectTooltip() {
       if (inspectTooltipRef.current) {
-        map.closeTooltip(inspectTooltipRef.current);
+        mapForInspect.closeTooltip(inspectTooltipRef.current);
         inspectTooltipRef.current = null;
       }
     }
@@ -396,11 +397,7 @@ export function LeafletMapPane({
         return;
       }
 
-      const nearest = findNearestPointOnGuides(
-        event.latlng.lat,
-        event.latlng.lng,
-        guides,
-      );
+      const nearest = findNearestPointOnGuides(event.latlng.lat, event.latlng.lng, guides);
 
       if (!nearest || nearest.distanceMeters > REFERENCE_INSPECT_MAX_DISTANCE_METERS) {
         closeInspectTooltip();
@@ -414,7 +411,7 @@ export function LeafletMapPane({
       });
 
       if (!inspectTooltipRef.current) {
-        inspectTooltipRef.current = L.tooltip({
+        inspectTooltipRef.current = leafletForInspect.tooltip({
           sticky: true,
           direction: "top",
           opacity: 0.96,
@@ -422,15 +419,15 @@ export function LeafletMapPane({
         });
       }
 
-      inspectTooltipRef.current.setLatLng(event.latlng).setContent(content).openOn(map);
+      inspectTooltipRef.current.setLatLng(event.latlng).setContent(content).openOn(mapForInspect);
     }
 
-    map.on("mousemove", handleInspectMove);
-    map.on("mouseout", closeInspectTooltip);
+    mapForInspect.on("mousemove", handleInspectMove);
+    mapForInspect.on("mouseout", closeInspectTooltip);
 
     return () => {
-      map.off("mousemove", handleInspectMove);
-      map.off("mouseout", closeInspectTooltip);
+      mapForInspect.off("mousemove", handleInspectMove);
+      mapForInspect.off("mouseout", closeInspectTooltip);
       closeInspectTooltip();
     };
   }, [mapReady, showReferenceOverlay, showReferenceInspectTooltip, referenceOverlay]);

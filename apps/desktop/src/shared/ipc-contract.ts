@@ -100,6 +100,10 @@ import type {
   SnapTraceInput,
   SnapTraceResult,
 } from "./reference-snap.types.js";
+import type {
+  WorkspaceSourceDocumentWindowClosedEvent,
+  WorkspaceUiSyncState,
+} from "./workspace-layout.types.js";
 
 /**
  * Single source of truth for every IPC channel in the app.
@@ -344,6 +348,16 @@ export interface IpcContract {
   "mcp:getStatus": { req: void; res: McpStatus };
   "mcp:setEnabled": { req: { enabled: boolean }; res: McpStatus };
 
+  // --- Map workspace layout --------------------------------------------------
+  "workspace:openSourceDocumentWindow": { req: { mapId: number }; res: { open: boolean } };
+  "workspace:closeSourceDocumentWindow": { req: { mapId: number }; res: { closed: boolean } };
+  "workspace:getSourceDocumentWindowOpen": { req: { mapId: number }; res: { open: boolean } };
+  "workspace:publishUiSync": {
+    req: { mapId: number; state: WorkspaceUiSyncState };
+    res: { ok: true };
+  };
+  "workspace:getUiSync": { req: { mapId: number }; res: { state: WorkspaceUiSyncState | null } };
+
   // --- Auto updater ---------------------------------------------------------
   "updater:check": { req: void; res: { updateAvailable: boolean; version?: string } };
   "updater:download": { req: void; res: { ok: true } };
@@ -373,6 +387,8 @@ export interface IpcEventMap {
     error?: string;
   };
   "dbBackup:changed": DbBackupChangedEvent;
+  "workspace:sourceDocumentWindowClosed": WorkspaceSourceDocumentWindowClosedEvent;
+  "workspace:uiSync": WorkspaceUiSyncState;
 }
 
 export type IpcEventName = keyof IpcEventMap;

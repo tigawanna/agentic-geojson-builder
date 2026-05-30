@@ -8,6 +8,7 @@ export type MapCoordinates = {
 
 import type { MapViewport } from "@renderer/features/maps/lib/map-handle";
 import type { GeoSegmentPathKind } from "@shared/geo-segments.types";
+import type { SourcePanelPresentation } from "@shared/workspace-layout.types";
 
 type MapWorkspaceUiState = {
   controlsOpen: boolean;
@@ -20,6 +21,8 @@ type MapWorkspaceUiState = {
   traceMode: boolean;
   showReferenceOverlay: boolean;
   showReferenceInspectTooltip: boolean;
+  sourcePanelPresentation: SourcePanelPresentation;
+  mapPanelCollapsed: boolean;
   pendingMapPoint: MapCoordinates | null;
   pendingTracePoints: MapCoordinates[];
   selectedControlPointId: number | null;
@@ -43,6 +46,8 @@ type MapWorkspaceUiActions = {
   setTraceMode: (enabled: boolean) => void;
   setShowReferenceOverlay: (visible: boolean) => void;
   setShowReferenceInspectTooltip: (visible: boolean) => void;
+  setSourcePanelPresentation: (presentation: SourcePanelPresentation) => void;
+  setMapPanelCollapsed: (collapsed: boolean) => void;
   setPendingMapPoint: (point: MapCoordinates | null) => void;
   setPendingTracePoints: (
     points: MapCoordinates[] | ((current: MapCoordinates[]) => MapCoordinates[]),
@@ -71,6 +76,8 @@ const initialState: MapWorkspaceUiState = {
   traceMode: false,
   showReferenceOverlay: true,
   showReferenceInspectTooltip: true,
+  sourcePanelPresentation: "docked",
+  mapPanelCollapsed: false,
   pendingMapPoint: null,
   pendingTracePoints: [],
   selectedControlPointId: null,
@@ -97,6 +104,8 @@ export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
     setShowReferenceOverlay: (showReferenceOverlay) => set({ showReferenceOverlay }),
     setShowReferenceInspectTooltip: (showReferenceInspectTooltip) =>
       set({ showReferenceInspectTooltip }),
+    setSourcePanelPresentation: (sourcePanelPresentation) => set({ sourcePanelPresentation }),
+    setMapPanelCollapsed: (mapPanelCollapsed) => set({ mapPanelCollapsed }),
     setPendingMapPoint: (pendingMapPoint) => set({ pendingMapPoint }),
     setPendingTracePoints: (pendingTracePoints) =>
       set((state) => ({

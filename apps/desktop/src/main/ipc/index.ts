@@ -15,6 +15,8 @@ import { dataBackupHandlers } from "@main/ipc/data-backup.js";
 import { playgroundHandlers } from "@main/ipc/playground.js";
 import { updaterHandlers } from "@main/ipc/updater.js";
 import { referenceSnapHandlers } from "@main/ipc/reference-snap.js";
+import { workspaceLayoutHandlers } from "@main/ipc/workspace-layout.js";
+import { openSourceDocumentWindow } from "@main/workspace/source-document-window.js";
 import { listAuditLog } from "@main/lib/pglite/audit-log.service.js";
 
 /**
@@ -110,6 +112,7 @@ export function registerIpcHandlers(): void {
     ...geoSegmentsHandlers,
     ...mcpSettingsHandlers,
     ...referenceSnapHandlers,
+    ...workspaceLayoutHandlers,
     ...updaterHandlers,
     "auditLog:list": async (req) => {
       const result = await listAuditLog({
@@ -148,6 +151,11 @@ export function registerIpcHandlers(): void {
   ][]) {
     if (handler) register(channel, handler);
   }
+
+  registerWithWindow("workspace:openSourceDocumentWindow", (req, window) => {
+    openSourceDocumentWindow(req.mapId, window);
+    return { open: true };
+  });
 
   for (const [channel, handler] of Object.entries({
     ...appMenuHandlers,

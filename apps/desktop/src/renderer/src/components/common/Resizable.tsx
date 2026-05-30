@@ -1,11 +1,15 @@
+import { forwardRef } from "react";
 import {
   Panel,
   PanelGroup,
   PanelResizeHandle,
+  type ImperativePanelHandle,
   type PanelGroupProps,
   type PanelProps,
   type PanelResizeHandleProps,
 } from "react-resizable-panels";
+
+export type { ImperativePanelHandle };
 
 type HandleProps = PanelResizeHandleProps & { withHandle?: boolean };
 
@@ -18,9 +22,11 @@ export function ResizablePanelGroup({ className = "", ...props }: PanelGroupProp
   );
 }
 
-export function ResizablePanel(props: PanelProps) {
-  return <Panel {...props} />;
-}
+export const ResizablePanel = forwardRef<ImperativePanelHandle, PanelProps>(
+  function ResizablePanel(props, ref) {
+    return <Panel ref={ref} {...props} />;
+  },
+);
 
 export function ResizableHandle({ withHandle, className = "", ...props }: HandleProps) {
   return (

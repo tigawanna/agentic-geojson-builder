@@ -14,7 +14,9 @@ function toNamedLineStrings(lines: ReferenceLineInput[]): NamedLineString[] {
   return lines.map((line) => ({
     id: line.id,
     name: line.name,
-    coordinates: line.coordinates,
+    coordinates: line.coordinates.map(
+      (coordinate) => [coordinate[0], coordinate[1]] as [number, number],
+    ),
   }));
 }
 

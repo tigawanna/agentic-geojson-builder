@@ -8,8 +8,10 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
+  type ImperativePanelHandle,
 } from "@renderer/components/common/Resizable";
 import { ipcInvoke, useIpcMutation } from "@renderer/hooks/useIpc";
+import { useIpcEvent } from "@renderer/hooks/useIpcEvent";
 import { useControlPointsQuery } from "@renderer/features/maps/hooks/useControlPointsQuery";
 import { useGeoSegmentsQuery } from "@renderer/features/maps/hooks/useGeoSegmentsQuery";
 import { useReferenceGeoJsonQuery } from "@renderer/features/maps/hooks/useReferenceGeoJsonQuery";
@@ -45,7 +47,10 @@ import { MapWorkspaceHeader } from "@renderer/features/maps/components/MapWorksp
 import { GeoJsonPreviewModal } from "@renderer/features/maps/components/GeoJsonPreviewModal";
 import { MapAuditLogModal } from "@renderer/features/maps/components/MapAuditLogModal";
 import { MapWorkspaceOnboardingModal } from "@renderer/features/maps/components/MapWorkspaceOnboardingModal";
-import { SourceDocumentPane } from "@renderer/features/maps/components/SourceDocumentPane";
+import { MapWorkspacePanelToolbar } from "@renderer/features/maps/components/MapWorkspacePanelToolbar";
+import { MapWorkspaceSourceDocumentPane } from "@renderer/features/maps/components/MapWorkspaceSourceDocumentPane";
+import { useWorkspaceMapsChangedRefresh } from "@renderer/features/maps/hooks/useWorkspaceMapsChangedRefresh";
+import { useWorkspaceUiSyncPublisher } from "@renderer/features/maps/hooks/useWorkspaceUiSync";
 import { ControlPointDetailPanel } from "@renderer/features/maps/components/ControlPointDetailPanel";
 
 const WORKSPACE_ONBOARDING_STORE_KEY = "maps.workspace.onboardingSeen";
@@ -87,7 +92,14 @@ export function MapWorkspaceSplitView() {
   const showReferenceInspectTooltip = useMapWorkspaceUiState(
     (state) => state.showReferenceInspectTooltip,
   );
-  const { setShowReferenceOverlay, setShowReferenceInspectTooltip } = useMapWorkspaceUiActions();
+  const sourcePanelPresentation = useMapWorkspaceUiState((state) => state.sourcePanelPresentation);
+  const mapPanelCollapsed = useMapWorkspaceUiState((state) => state.mapPanelCollapsed);
+  const {
+    setShowReferenceOverlay,
+    setShowReferenceInspectTooltip,
+    setSourcePanelPresentation,
+    setMapPanelCollapsed,
+  } = useMapWorkspaceUiActions();
   const pendingMapPoint = useMapWorkspaceUiState((state) => state.pendingMapPoint);
   const selectedControlPointId = useMapWorkspaceUiState((state) => state.selectedControlPointId);
   const detailPanelControlPointId = useMapWorkspaceUiState(
@@ -97,7 +109,6 @@ export function MapWorkspaceSplitView() {
   const controlPointsQuery = useControlPointsQuery(workspace?.id ?? null);
   const geoSegmentsQuery = useGeoSegmentsQuery(workspace?.id ?? null);
   const referenceGeoJsonQuery = useReferenceGeoJsonQuery(workspace?.id ?? null);
-  const createControlPoint = useIpcMutation("controlPoints:create");
   const updateControlPoint = useIpcMutation("controlPoints:update");
   const deleteGeoSegment = useIpcMutation("geoSegments:delete");
   const createGeoSegment = useIpcMutation("geoSegments:create");
@@ -121,6 +132,8 @@ export function MapWorkspaceSplitView() {
     getDocumentDimensions: () => { width: number; height: number } | null;
   } | null>(null);
   const statusTimerRef = useRef<number | undefined>(undefined);
+  const sourcePanelRef = useRef<ImperativePanelHandle>(null);
+  const mapPanelRef = useRef<ImperativePanelHandle>(null);
   const tileCache = useTileCacheStatusQuery(workspace?.id ?? null);
   const localTileUrl = workspace
     ? resolveLocalTileUrl(workspace.id, workspace.baseMapStyle, tileCache.data)
@@ -137,6 +150,75 @@ export function MapWorkspaceSplitView() {
 
   useMapWorkspaceControlsShortcut(workspace != null);
   useMapWorkspaceAuditLogShortcut(workspace != null, () => setAuditLogOpen(true));
+  useWorkspaceUiSyncPublisher(workspace?.id ?? null);
+  useWorkspaceMapsChangedRefresh(workspace?.id ?? null);
+
+  const showSourceDocked = sourcePanelPresentation === "docked";
+
+  useIpcEvent("workspace:sourceDocumentWindowClosed", (event) => {
+    if (!workspace || event.mapId !== workspace.id) {
+      return;
+    }
+    setSourcePanelPresentation("collapsed");
+  });
+
+  useEffect(() => {
+    if (sourcePanelPresentation === "docked") {
+      sourcePanelRef.current?.expand();
+      return;
+    }
+    sourcePanelRef.current?.collapse();
+  }, [sourcePanelPresentation]);
+
+  useEffect(() => {
+    if (mapPanelCollapsed) {
+      mapPanelRef.current?.collapse();
+      return;
+    }
+    mapPanelRef.current?.expand();
+  }, [mapPanelCollapsed]);
+
+  const handleCollapseSourcePanel = useCallback(() => {
+    if (!workspace) {
+      return;
+    }
+    if (sourcePanelPresentation === "detached") {
+      void ipcInvoke("workspace:closeSourceDocumentWindow", { mapId: workspace.id });
+    }
+    setSourcePanelPresentation("collapsed");
+  }, [setSourcePanelPresentation, sourcePanelPresentation, workspace]);
+
+  const handleExpandSourcePanel = useCallback(() => {
+    if (!workspace) {
+      return;
+    }
+    if (sourcePanelPresentation === "detached") {
+      void ipcInvoke("workspace:closeSourceDocumentWindow", { mapId: workspace.id });
+    }
+    setSourcePanelPresentation("docked");
+    requestAnimationFrame(() => {
+      sourcePanelRef.current?.expand();
+    });
+  }, [setSourcePanelPresentation, sourcePanelPresentation, workspace]);
+
+  const handlePopOutSourcePanel = useCallback(() => {
+    if (!workspace) {
+      return;
+    }
+    void ipcInvoke("workspace:openSourceDocumentWindow", { mapId: workspace.id });
+    setSourcePanelPresentation("detached");
+  }, [setSourcePanelPresentation, workspace]);
+
+  const handleCollapseMapPanel = useCallback(() => {
+    setMapPanelCollapsed(true);
+  }, [setMapPanelCollapsed]);
+
+  const handleExpandMapPanel = useCallback(() => {
+    setMapPanelCollapsed(false);
+    requestAnimationFrame(() => {
+      mapPanelRef.current?.expand();
+    });
+  }, [setMapPanelCollapsed]);
 
   useEffect(() => {
     if (!workspace) {
@@ -377,7 +459,7 @@ export function MapWorkspaceSplitView() {
 
       return captureWorkspaceView({
         mapId: workspace.id,
-        pdfCanvas: sourceCaptureRef.current?.getPdfCanvas() ?? null,
+        pdfCanvas: showSourceDocked ? (sourceCaptureRef.current?.getPdfCanvas() ?? null) : null,
         pdfControlPoints: controlPoints.map((point) => ({
           id: point.id,
           imageX: point.imageX,
@@ -388,7 +470,14 @@ export function MapWorkspaceSplitView() {
         controlPointsVisible: controlPointsRef.current.length > 0,
       });
     });
-  }, [captureOverlays, controlPoints, pendingMapPoint, selectedControlPointId, workspace]);
+  }, [
+    captureOverlays,
+    controlPoints,
+    pendingMapPoint,
+    selectedControlPointId,
+    showSourceDocked,
+    workspace,
+  ]);
 
   useEffect(() => {
     if (!workspace || !mapHandle) {
@@ -456,13 +545,6 @@ export function MapWorkspaceSplitView() {
     [queueSave, setSelectedCoordinates, setStatusMessage],
   );
 
-  const handlePdfTransformChange = useCallback(
-    (patch: Parameters<typeof pdfTransformToWorkspacePatch>[0]) => {
-      queueSave(pdfTransformToWorkspacePatch(patch));
-    },
-    [queueSave],
-  );
-
   const handleMapLocationPick = useCallback(
     (latitude: number, longitude: number) => {
       if (!referenceMode) {
@@ -477,43 +559,6 @@ export function MapWorkspaceSplitView() {
       );
     },
     [referenceMode, setPendingMapPoint, setStatusMessage, t],
-  );
-
-  const handlePdfLocationPick = useCallback(
-    (imageX: number, imageY: number) => {
-      if (!referenceMode || !pendingMapPoint || !workspace) {
-        return;
-      }
-
-      void createControlPoint
-        .mutateAsync({
-          mapId: workspace.id,
-          imageX,
-          imageY,
-          longitude: pendingMapPoint.longitude,
-          latitude: pendingMapPoint.latitude,
-        })
-        .then(() => {
-          setPendingMapPoint(null);
-          setStatusMessage(t("maps.workspace.referenceCreated"));
-          window.clearTimeout(statusTimerRef.current);
-          statusTimerRef.current = window.setTimeout(() => setStatusMessage(null), 2500);
-        })
-        .catch((error) => {
-          setStatusMessage(
-            error instanceof Error ? error.message : t("maps.workspace.referenceError"),
-          );
-        });
-    },
-    [
-      createControlPoint,
-      pendingMapPoint,
-      referenceMode,
-      setPendingMapPoint,
-      setStatusMessage,
-      t,
-      workspace,
-    ],
   );
 
   const handleTracePointAdd = useCallback(
@@ -803,37 +848,97 @@ export function MapWorkspaceSplitView() {
         />
       ) : null}
 
-      <div className="min-h-0 flex-1">
-        <ResizablePanelGroup direction="horizontal">
-          <ResizablePanel defaultSize={50} minSize={25}>
-            <section className="relative h-full min-h-0 bg-base-200">
-              <span className="pointer-events-none absolute top-3 left-3 z-10 rounded-box bg-base-100/90 px-2 py-1 text-xs font-medium">
-                Source document
+      <div className="relative min-h-0 flex-1">
+        {!showSourceDocked ? (
+          <div className="absolute top-14 bottom-0 left-0 z-30 flex w-11 flex-col items-center gap-2 border-r border-base-300 bg-base-100/95 py-3 shadow-sm">
+            <button
+              type="button"
+              className="btn btn-square btn-ghost btn-sm"
+              onClick={handleExpandSourcePanel}
+              title={t("maps.workspace.panels.expandSource")}
+              aria-label={t("maps.workspace.panels.expandSource")}
+            >
+              <span className="rotate-180 text-[10px] font-semibold [writing-mode:vertical-rl]">
+                {t("maps.workspace.panels.sourceDocument")}
               </span>
-              {sourceFile ? (
-                <SourceDocumentPane
-                  sourceFile={sourceFile}
-                  transform={workspaceToPdfTransform(workspace)}
-                  controlPoints={controlPoints}
-                  selectedControlPointId={selectedControlPointId}
-                  referenceMode={referenceMode}
-                  canPickPdfPoint={referenceMode && pendingMapPoint !== null}
-                  onTransformChange={handlePdfTransformChange}
-                  onPdfLocationPick={handlePdfLocationPick}
-                  onControlPointPdfMove={handleControlPointPdfMove}
-                  onCaptureReady={handleCaptureReady}
+            </button>
+            {sourcePanelPresentation === "collapsed" ? (
+              <button
+                type="button"
+                className="btn btn-square btn-ghost btn-xs"
+                onClick={handlePopOutSourcePanel}
+                title={t("maps.workspace.panels.popOutSource")}
+                aria-label={t("maps.workspace.panels.popOutSource")}
+              >
+                ↗
+              </button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {mapPanelCollapsed ? (
+          <div className="absolute top-14 right-0 bottom-0 z-30 flex w-11 flex-col items-center gap-2 border-l border-base-300 bg-base-100/95 py-3 shadow-sm">
+            <button
+              type="button"
+              className="btn btn-square btn-ghost btn-sm"
+              onClick={handleExpandMapPanel}
+              title={t("maps.workspace.panels.expandMap")}
+              aria-label={t("maps.workspace.panels.expandMap")}
+            >
+              <span className="text-[10px] font-semibold [writing-mode:vertical-rl]">
+                {t(`maps.workspace.baseMap.${workspace.baseMapStyle}`)}
+              </span>
+            </button>
+          </div>
+        ) : null}
+
+        <ResizablePanelGroup direction="horizontal">
+          <ResizablePanel
+            ref={sourcePanelRef}
+            defaultSize={50}
+            minSize={18}
+            maxSize={82}
+            collapsible
+            collapsedSize={0}
+            order={1}
+          >
+            {showSourceDocked ? (
+              <section className="relative h-full min-h-0 bg-base-200">
+                <span className="pointer-events-none absolute top-3 left-3 z-10 rounded-box bg-base-100/90 px-2 py-1 text-xs font-medium">
+                  {t("maps.workspace.panels.sourceDocument")}
+                </span>
+                <MapWorkspacePanelToolbar
+                  side="source"
+                  sourcePresentation={sourcePanelPresentation}
+                  onCollapse={handleCollapseSourcePanel}
+                  onExpand={handleExpandSourcePanel}
+                  onPopOut={handlePopOutSourcePanel}
                 />
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-base-content/50">
-                  No source file found
-                </div>
-              )}
-            </section>
+                {sourceFile ? (
+                  <MapWorkspaceSourceDocumentPane
+                    onCaptureReady={handleCaptureReady}
+                    onControlPointPdfMove={handleControlPointPdfMove}
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-sm text-base-content/50">
+                    No source file found
+                  </div>
+                )}
+              </section>
+            ) : null}
           </ResizablePanel>
 
-          <ResizableHandle withHandle />
+          {showSourceDocked && !mapPanelCollapsed ? <ResizableHandle withHandle /> : null}
 
-          <ResizablePanel defaultSize={50} minSize={25}>
+          <ResizablePanel
+            ref={mapPanelRef}
+            defaultSize={50}
+            minSize={18}
+            maxSize={82}
+            collapsible
+            collapsedSize={0}
+            order={2}
+          >
             <section className="relative h-full min-h-0 bg-base-200">
               <span className="pointer-events-none absolute top-3 left-3 z-10 rounded-box bg-base-100/90 px-2 py-1 text-xs font-medium">
                 {t(`maps.workspace.baseMap.${workspace.baseMapStyle}`)}
@@ -841,6 +946,13 @@ export function MapWorkspaceSplitView() {
                   ? ` · ${referenceOverlayFeatureCount} refs`
                   : ""}
               </span>
+              <MapWorkspacePanelToolbar
+                side="map"
+                collapsed={mapPanelCollapsed}
+                onCollapse={handleCollapseMapPanel}
+                onExpand={handleExpandMapPanel}
+                className="top-12"
+              />
               <button
                 type="button"
                 className="btn absolute top-16 left-3 z-[1000] btn-square bg-base-100/90 shadow-sm btn-ghost btn-sm"

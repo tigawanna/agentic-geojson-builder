@@ -264,6 +264,16 @@
       "downloadTileCache": "Download tiles",
       "tileCacheError": "Could not build the tile cache.",
       "centerMap": "Center map",
+      "panels": {
+        "sourceDocument": "Source document",
+        "collapseSource": "Collapse source document",
+        "expandSource": "Expand source document",
+        "popOutSource": "Open source in separate window",
+        "popOutHint": "Detached window — close it or use Expand in the main workspace to dock again.",
+        "detached": "Detached",
+        "collapseMap": "Collapse map",
+        "expandMap": "Expand map"
+      },
       "addReference": "Add reference",
       "referenceHint": "Ctrl+click the base map or paste coordinates, then Ctrl+click the PDF.",
       "referenceGeoJson": {

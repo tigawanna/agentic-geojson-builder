@@ -1,7 +1,9 @@
+export type GeoCoordinate = [number, number] | [number, number, number];
+
 export type ReferenceLineInput = {
   id: string;
   name: string;
-  coordinates: [number, number][];
+  coordinates: GeoCoordinate[];
 };
 
 export type ComputeIntersectionsInput = {
