@@ -315,8 +315,9 @@ export function ControlPointDetailPanel({
           </div>
           {!snapshot ? (
             <p className="text-xs text-base-content/50">
-              No trail context yet. Click &quot;Inherit&quot; to capture properties from a nearby
-              trail segment.
+              No trail context yet. Click &quot;Inherit&quot; to capture properties from the nearest
+              point on a visible trail (within 100 m). Altitude is interpolated on that trail when
+              the reference GeoJSON includes elevation.
             </p>
           ) : null}
         </section>

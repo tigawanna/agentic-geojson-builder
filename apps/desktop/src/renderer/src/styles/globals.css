@@ -274,3 +274,55 @@ textarea,
   font-weight: 600;
   color: var(--color-primary);
 }
+
+.leaflet-tooltip.reference-inspect-tooltip {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.65rem;
+  border: 1px solid color-mix(in oklab, var(--color-base-content) 12%, transparent);
+  background: color-mix(in oklab, var(--color-base-100) 96%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 24px color-mix(in oklab, var(--color-neutral) 18%, transparent);
+  width: max-content;
+  max-width: min(24rem, calc(100vw - 2rem));
+  white-space: normal;
+}
+
+.reference-inspect-tooltip-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-base-content);
+  margin-bottom: 0.35rem;
+}
+
+.reference-inspect-tooltip-row {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
+  font-size: 0.6875rem;
+  color: color-mix(in oklab, var(--color-base-content) 75%, transparent);
+}
+
+.reference-inspect-tooltip-label {
+  flex-shrink: 0;
+  color: color-mix(in oklab, var(--color-base-content) 50%, transparent);
+}
+
+.reference-inspect-tooltip-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  text-align: right;
+}
+
+.reference-inspect-tooltip-elevation {
+  margin-top: 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.reference-inspect-tooltip-elevation-hint {
+  font-weight: 500;
+  font-size: 0.625rem;
+  color: color-mix(in oklab, var(--color-base-content) 45%, transparent);
+}

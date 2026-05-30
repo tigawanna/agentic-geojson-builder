@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
+import type { LineGuide } from "@repo/isomorphic/nearest-line-point";
+import { findNearestPointOnGuides } from "@repo/isomorphic/nearest-line-point";
 import type { ReferenceGeoJsonCollection } from "@repo/isomorphic/reference-geojson";
+import { buildReferenceInspectTooltipContent } from "@renderer/features/maps/lib/reference-inspect-tooltip";
 import type { ControlPointRecord } from "@shared/control-points.types";
 import type { GeoSegmentRecord } from "@shared/geo-segments.types";
 import type { MapWorkspaceState } from "@shared/maps.types";
@@ -32,6 +35,7 @@ type LeafletMapPaneProps = {
   tileCacheOverlay?: TileCacheBounds | null;
   referenceOverlay?: ReferenceGeoJsonCollection | null;
   showReferenceOverlay?: boolean;
+  showReferenceInspectTooltip?: boolean;
   controlPoints?: ControlPointRecord[];
   geoSegments?: GeoSegmentRecord[];
   pendingMapPoint?: PendingMapPoint | null;
@@ -60,6 +64,7 @@ export function LeafletMapPane({
   tileCacheOverlay,
   referenceOverlay = null,
   showReferenceOverlay = true,
+  showReferenceInspectTooltip = true,
   controlPoints = [],
   geoSegments = [],
   pendingMapPoint = null,
@@ -104,7 +109,11 @@ export function LeafletMapPane({
   const geocodedRef = useRef(false);
   const initialViewportCapturedRef = useRef(false);
   const mapClickTimerRef = useRef<number | undefined>(undefined);
+  const referenceGuidesRef = useRef<LineGuide[]>([]);
+  const inspectTooltipRef = useRef<import("leaflet").Tooltip | null>(null);
   const [mapReady, setMapReady] = useState(false);
+
+  const REFERENCE_INSPECT_MAX_DISTANCE_METERS = 100;
   const pickModifierHeld = usePickModifierHeld();
 
   onReadyRef.current = onReady;
@@ -338,12 +347,93 @@ export function LeafletMapPane({
           weight: 5,
           opacity: 0.95,
           dashArray: "10 6",
-        })
-          .bindTooltip(`${featureName} · ${layerName}`, { sticky: true })
-          .addTo(referenceLayer);
+        }).addTo(referenceLayer);
       });
     })();
   }, [mapReady, referenceOverlay, showReferenceOverlay]);
+
+  useEffect(() => {
+    if (!showReferenceOverlay || !referenceOverlay) {
+      referenceGuidesRef.current = [];
+      return;
+    }
+
+    referenceGuidesRef.current = referenceOverlay.features
+      .filter((feature) => feature.geometry.coordinates.length >= 2)
+      .map((feature, index) => {
+        const featureName =
+          typeof feature.properties.name === "string" ? feature.properties.name : "Reference line";
+        return {
+          id: `ref-${index}-${featureName}`,
+          name: featureName,
+          coordinates: feature.geometry.coordinates,
+        };
+      });
+  }, [referenceOverlay, showReferenceOverlay]);
+
+  useEffect(() => {
+    if (!mapReady) {
+      return;
+    }
+
+    const map = mapRef.current;
+    const L = leafletRef.current;
+    if (!map || !L) {
+      return;
+    }
+
+    function closeInspectTooltip() {
+      if (inspectTooltipRef.current) {
+        map.closeTooltip(inspectTooltipRef.current);
+        inspectTooltipRef.current = null;
+      }
+    }
+
+    function handleInspectMove(event: import("leaflet").LeafletMouseEvent) {
+      const guides = referenceGuidesRef.current;
+      if (!showReferenceOverlay || !showReferenceInspectTooltip || guides.length === 0) {
+        closeInspectTooltip();
+        return;
+      }
+
+      const nearest = findNearestPointOnGuides(
+        event.latlng.lat,
+        event.latlng.lng,
+        guides,
+      );
+
+      if (!nearest || nearest.distanceMeters > REFERENCE_INSPECT_MAX_DISTANCE_METERS) {
+        closeInspectTooltip();
+        return;
+      }
+
+      const content = buildReferenceInspectTooltipContent({
+        cursorLatitude: event.latlng.lat,
+        cursorLongitude: event.latlng.lng,
+        nearest,
+      });
+
+      if (!inspectTooltipRef.current) {
+        inspectTooltipRef.current = L.tooltip({
+          sticky: true,
+          direction: "top",
+          opacity: 0.96,
+          className: "reference-inspect-tooltip",
+        });
+      }
+
+      inspectTooltipRef.current.setLatLng(event.latlng).setContent(content).openOn(map);
+    }
+
+    map.on("mousemove", handleInspectMove);
+    map.on("mouseout", closeInspectTooltip);
+
+    return () => {
+      map.off("mousemove", handleInspectMove);
+      map.off("mouseout", closeInspectTooltip);
+      closeInspectTooltip();
+    };
+  }, [mapReady, showReferenceOverlay, showReferenceInspectTooltip, referenceOverlay]);
 
   useEffect(() => {
     if (!mapReady) {

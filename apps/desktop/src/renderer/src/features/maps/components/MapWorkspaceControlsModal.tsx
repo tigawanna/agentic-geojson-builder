@@ -30,6 +30,8 @@ type MapWorkspaceControlsModalProps = {
   selectedControlPointId: number | null;
   showReferenceOverlay: boolean;
   onShowReferenceOverlayChange: (visible: boolean) => void;
+  showReferenceInspectTooltip: boolean;
+  onShowReferenceInspectTooltipChange: (visible: boolean) => void;
   onFocusControlPoint: (point: ControlPointRecord) => void;
   onOpenAuditLog: () => void;
 };
@@ -73,6 +75,8 @@ export function MapWorkspaceControlsModal({
   selectedControlPointId,
   showReferenceOverlay,
   onShowReferenceOverlayChange,
+  showReferenceInspectTooltip,
+  onShowReferenceInspectTooltipChange,
   onFocusControlPoint,
   onOpenAuditLog,
 }: MapWorkspaceControlsModalProps) {
@@ -426,6 +430,8 @@ export function MapWorkspaceControlsModal({
             mapId={mapId}
             showReferenceOverlay={showReferenceOverlay}
             onShowReferenceOverlayChange={onShowReferenceOverlayChange}
+            showReferenceInspectTooltip={showReferenceInspectTooltip}
+            onShowReferenceInspectTooltipChange={onShowReferenceInspectTooltipChange}
           />
 
           <ControlsSection

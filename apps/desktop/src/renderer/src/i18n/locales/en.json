@@ -275,6 +275,8 @@
         "invalidDrop": "Drop one or more .geojson or .json files.",
         "overlayOn": "Overlay on ({{count}})",
         "overlayOff": "Overlay off",
+        "inspectOn": "Trail inspect on",
+        "inspectOff": "Trail inspect off",
         "shown": "Shown",
         "hidden": "Hidden",
         "remove": "Remove {{name}}",

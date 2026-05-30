@@ -1,6 +1,8 @@
+import type { GeoCoordinate } from "./elevation-at-point.js";
+
 export type ReferenceGeoJsonLineString = {
   type: "LineString";
-  coordinates: [number, number][];
+  coordinates: GeoCoordinate[];
 };
 
 export type ReferenceGeoJsonFeature = {
@@ -16,7 +18,7 @@ export type ReferenceGeoJsonCollection = {
 
 const MAX_REFERENCE_GEOJSON_BYTES = 12 * 1024 * 1024;
 
-function normalizeCoordinatePair(value: unknown): [number, number] | null {
+function normalizeCoordinatePair(value: unknown): GeoCoordinate | null {
   if (!Array.isArray(value) || value.length < 2) {
     return null;
   }
@@ -30,15 +32,20 @@ function normalizeCoordinatePair(value: unknown): [number, number] | null {
     return null;
   }
 
+  const elevation = value[2];
+  if (typeof elevation === "number" && Number.isFinite(elevation)) {
+    return [longitude, latitude, elevation];
+  }
+
   return [longitude, latitude];
 }
 
-function normalizeLineStringCoordinates(value: unknown): [number, number][] | null {
+function normalizeLineStringCoordinates(value: unknown): GeoCoordinate[] | null {
   if (!Array.isArray(value) || value.length < 2) {
     return null;
   }
 
-  const coordinates: [number, number][] = [];
+  const coordinates: GeoCoordinate[] = [];
   for (const coordinate of value) {
     const normalized = normalizeCoordinatePair(coordinate);
     if (!normalized) {

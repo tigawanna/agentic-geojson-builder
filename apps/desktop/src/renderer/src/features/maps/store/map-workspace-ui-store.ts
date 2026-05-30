@@ -19,6 +19,7 @@ type MapWorkspaceUiState = {
   referenceMode: boolean;
   traceMode: boolean;
   showReferenceOverlay: boolean;
+  showReferenceInspectTooltip: boolean;
   pendingMapPoint: MapCoordinates | null;
   pendingTracePoints: MapCoordinates[];
   selectedControlPointId: number | null;
@@ -41,6 +42,7 @@ type MapWorkspaceUiActions = {
   setReferenceMode: (enabled: boolean) => void;
   setTraceMode: (enabled: boolean) => void;
   setShowReferenceOverlay: (visible: boolean) => void;
+  setShowReferenceInspectTooltip: (visible: boolean) => void;
   setPendingMapPoint: (point: MapCoordinates | null) => void;
   setPendingTracePoints: (
     points: MapCoordinates[] | ((current: MapCoordinates[]) => MapCoordinates[]),
@@ -68,6 +70,7 @@ const initialState: MapWorkspaceUiState = {
   referenceMode: false,
   traceMode: false,
   showReferenceOverlay: true,
+  showReferenceInspectTooltip: true,
   pendingMapPoint: null,
   pendingTracePoints: [],
   selectedControlPointId: null,
@@ -92,6 +95,8 @@ export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
     setReferenceMode: (referenceMode) => set({ referenceMode }),
     setTraceMode: (traceMode) => set({ traceMode }),
     setShowReferenceOverlay: (showReferenceOverlay) => set({ showReferenceOverlay }),
+    setShowReferenceInspectTooltip: (showReferenceInspectTooltip) =>
+      set({ showReferenceInspectTooltip }),
     setPendingMapPoint: (pendingMapPoint) => set({ pendingMapPoint }),
     setPendingTracePoints: (pendingTracePoints) =>
       set((state) => ({

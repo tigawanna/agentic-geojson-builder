@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { LocateFixed } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { getElevationAtLatLng } from "@repo/isomorphic/elevation-at-point";
+import type { GeoCoordinate } from "@repo/isomorphic/elevation-at-point";
 import { mergeReferenceGeoJsonCollections } from "@repo/isomorphic/reference-geojson";
 import {
   ResizableHandle,
@@ -47,6 +49,7 @@ import { SourceDocumentPane } from "@renderer/features/maps/components/SourceDoc
 import { ControlPointDetailPanel } from "@renderer/features/maps/components/ControlPointDetailPanel";
 
 const WORKSPACE_ONBOARDING_STORE_KEY = "maps.workspace.onboardingSeen";
+const REFERENCE_INSPECT_TOOLTIP_STORE_KEY = "maps.referenceInspectTooltip";
 
 export function MapWorkspaceSplitView() {
   const { t } = useTranslation();
@@ -81,7 +84,10 @@ export function MapWorkspaceSplitView() {
   const segmentName = useMapWorkspaceUiState((state) => state.segmentName);
   const segmentPathKind = useMapWorkspaceUiState((state) => state.segmentPathKind);
   const showReferenceOverlay = useMapWorkspaceUiState((state) => state.showReferenceOverlay);
-  const setShowReferenceOverlay = useMapWorkspaceUiActions().setShowReferenceOverlay;
+  const showReferenceInspectTooltip = useMapWorkspaceUiState(
+    (state) => state.showReferenceInspectTooltip,
+  );
+  const { setShowReferenceOverlay, setShowReferenceInspectTooltip } = useMapWorkspaceUiActions();
   const pendingMapPoint = useMapWorkspaceUiState((state) => state.pendingMapPoint);
   const selectedControlPointId = useMapWorkspaceUiState((state) => state.selectedControlPointId);
   const detailPanelControlPointId = useMapWorkspaceUiState(
@@ -140,6 +146,12 @@ export function MapWorkspaceSplitView() {
       return;
     }
     checkedOnboardingRef.current = true;
+
+    void ipcInvoke("store:get", { key: REFERENCE_INSPECT_TOOLTIP_STORE_KEY }).then((value) => {
+      if (typeof value === "boolean") {
+        setShowReferenceInspectTooltip(value);
+      }
+    });
 
     void ipcInvoke("store:get", { key: WORKSPACE_ONBOARDING_STORE_KEY }).then((value) => {
       if (!value) {
@@ -256,12 +268,16 @@ export function MapWorkspaceSplitView() {
       const point = controlPoints.find((p) => p.id === controlPointId);
       if (!point || !workspace) return;
 
-      const guides = geoSegments
+      const guides: Array<{
+        id: string;
+        name: string;
+        coordinates: GeoCoordinate[];
+      }> = geoSegments
         .filter((s) => s.geometry?.coordinates?.length >= 2)
         .map((s) => ({
           id: String(s.id),
           name: s.name ?? s.segmentGroupId,
-          coordinates: s.geometry.coordinates as [number, number][],
+          coordinates: s.geometry.coordinates as GeoCoordinate[],
         }));
 
       const refLayers = referenceGeoJsonQuery.data?.layers ?? [];
@@ -272,7 +288,7 @@ export function MapWorkspaceSplitView() {
             guides.push({
               id: `ref-${layer.id}-${String(feature.properties?.name ?? "")}`,
               name: (feature.properties?.name as string) ?? layer.name,
-              coordinates: feature.geometry.coordinates,
+              coordinates: feature.geometry.coordinates as GeoCoordinate[],
             });
           }
         }
@@ -289,7 +305,11 @@ export function MapWorkspaceSplitView() {
 
       if (!result.snapped) return;
 
+      const matchedGuide = guides.find((guide) => guide.id === result.snappedTo.lineId);
       const matchedSegment = geoSegments.find((s) => String(s.id) === result.snappedTo.lineId);
+      const inheritedAltitudeM = matchedGuide
+        ? getElevationAtLatLng(matchedGuide.coordinates, result.latitude, result.longitude)
+        : null;
 
       const snapshot = {
         capturedAt: new Date().toISOString(),
@@ -305,7 +325,7 @@ export function MapWorkspaceSplitView() {
         position: {
           latitude: result.latitude,
           longitude: result.longitude,
-          altitudeM: null,
+          altitudeM: inheritedAltitudeM,
         },
         properties: matchedSegment
           ? { pathKind: matchedSegment.pathKind, segmentGroupId: matchedSegment.segmentGroupId }
@@ -319,6 +339,7 @@ export function MapWorkspaceSplitView() {
         imageY: point.imageY,
         latitude: point.latitude,
         longitude: point.longitude,
+        altitudeM: inheritedAltitudeM ?? point.altitudeM,
         contextSnapshot: snapshot,
         sourceSegmentId: matchedSegment?.id ?? null,
       });
@@ -836,6 +857,7 @@ export function MapWorkspaceSplitView() {
                 tileCacheOverlay={tileCache.data?.bounds ?? null}
                 referenceOverlay={referenceOverlay}
                 showReferenceOverlay={showReferenceOverlay}
+                showReferenceInspectTooltip={showReferenceInspectTooltip}
                 controlPoints={controlPoints}
                 geoSegments={geoSegments}
                 pendingMapPoint={pendingMapPoint}
@@ -912,6 +934,11 @@ export function MapWorkspaceSplitView() {
         selectedControlPointId={selectedControlPointId}
         showReferenceOverlay={showReferenceOverlay}
         onShowReferenceOverlayChange={setShowReferenceOverlay}
+        showReferenceInspectTooltip={showReferenceInspectTooltip}
+        onShowReferenceInspectTooltipChange={(visible) => {
+          setShowReferenceInspectTooltip(visible);
+          void ipcInvoke("store:set", { key: REFERENCE_INSPECT_TOOLTIP_STORE_KEY, value: visible });
+        }}
         onFocusControlPoint={handleFocusControlPoint}
         onOpenAuditLog={() => setAuditLogOpen(true)}
       />

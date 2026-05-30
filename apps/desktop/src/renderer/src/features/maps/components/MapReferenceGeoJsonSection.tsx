@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Layers, Trash2, Upload } from "lucide-react";
+import { Crosshair, Layers, Trash2, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { mergeReferenceGeoJsonCollections } from "@repo/isomorphic/reference-geojson";
 import { ipcInvoke, useIpcMutation } from "@renderer/hooks/useIpc";
@@ -24,12 +24,16 @@ type MapReferenceGeoJsonSectionProps = {
   mapId: number;
   showReferenceOverlay: boolean;
   onShowReferenceOverlayChange: (visible: boolean) => void;
+  showReferenceInspectTooltip: boolean;
+  onShowReferenceInspectTooltipChange: (visible: boolean) => void;
 };
 
 export function MapReferenceGeoJsonSection({
   mapId,
   showReferenceOverlay,
   onShowReferenceOverlayChange,
+  showReferenceInspectTooltip,
+  onShowReferenceInspectTooltipChange,
 }: MapReferenceGeoJsonSectionProps) {
   const { t } = useTranslation();
   const [importError, setImportError] = useState<string | null>(null);
@@ -163,6 +167,17 @@ export function MapReferenceGeoJsonSection({
           {showReferenceOverlay
             ? t("maps.workspace.referenceGeoJson.overlayOn", { count: visibleFeatureCount })
             : t("maps.workspace.referenceGeoJson.overlayOff")}
+        </button>
+        <button
+          type="button"
+          className={`btn btn-sm ${showReferenceInspectTooltip ? "btn-primary" : "btn-outline"}`}
+          disabled={visibleFeatureCount === 0 || !showReferenceOverlay}
+          onClick={() => onShowReferenceInspectTooltipChange(!showReferenceInspectTooltip)}
+        >
+          <Crosshair className="size-4" />
+          {showReferenceInspectTooltip
+            ? t("maps.workspace.referenceGeoJson.inspectOn")
+            : t("maps.workspace.referenceGeoJson.inspectOff")}
         </button>
       </div>
 
