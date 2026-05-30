@@ -8,6 +8,7 @@ import { queryClient } from "@renderer/lib/query-client";
 import { router } from "@renderer/router";
 import { i18n } from "@renderer/i18n";
 import { ThemeProvider } from "@renderer/features/theme/ThemeProvider";
+import { ViewTransitionProvider } from "@renderer/features/view-transition/ViewTransitionProvider";
 import "./styles/globals.css";
 
 const root = document.getElementById("root");
@@ -18,7 +19,9 @@ ReactDOM.createRoot(root).render(
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <RouterProvider router={router} />
+          <ViewTransitionProvider>
+            <RouterProvider router={router} />
+          </ViewTransitionProvider>
         </ThemeProvider>
         {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
       </QueryClientProvider>

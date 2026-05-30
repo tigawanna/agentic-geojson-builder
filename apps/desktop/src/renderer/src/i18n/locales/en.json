@@ -322,6 +322,8 @@
     "heading": "Settings",
     "theme": "Theme",
     "themeHint": "Choose how the app looks. System follows your OS preference.",
+    "viewTransition": "View transitions",
+    "viewTransitionHint": "Animation style when switching themes and other view updates.",
     "backup": {
       "heading": "Backups",
       "description": "Full snapshots of your local database and map files (PDFs, thumbnails, reference layers). Restoring replaces live data; a safety backup is created automatically before each restore.",
@@ -379,7 +381,25 @@
     "dark": "Dark",
     "darkHint": "Easy on the eyes",
     "system": "System",
-    "systemHint": "Match your OS"
+    "systemHint": "Match your OS",
+    "lightThemes": "Light themes",
+    "darkThemes": "Dark themes",
+    "customizeColors": "Customize colors",
+    "resetColors": "Reset to defaults"
+  },
+  "viewTransition": {
+    "default": "Default",
+    "defaultHint": "Browser native crossfade",
+    "vertical": "Vertical",
+    "verticalHint": "Slide up and down",
+    "wipe": "Wipe",
+    "wipeHint": "Horizontal reveal",
+    "angled": "Angled",
+    "angledHint": "Diagonal sweep",
+    "flip": "Flip",
+    "flipHint": "Card flip effect",
+    "slides": "Slides",
+    "slidesHint": "Side-by-side panels"
   },
   "about": {
     "heading": "About",

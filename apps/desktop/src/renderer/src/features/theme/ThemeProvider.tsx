@@ -1,64 +1,134 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { ipcInvoke } from "@renderer/hooks/useIpc";
+import {
+  getThemeColorScheme,
+  type ThemeColorScheme,
+} from "@renderer/features/theme/theme-metadata";
 
-export type Theme = "light" | "dark" | "system";
+export type ThemeConfig = {
+  name: string;
+  overrides?: Record<string, string>;
+};
 
 interface ThemeContextValue {
-  theme: Theme;
-  resolved: "light" | "dark";
-  setTheme: (next: Theme) => void;
+  config: ThemeConfig;
+  colorScheme: ThemeColorScheme;
+  setThemeConfig: (next: ThemeConfig) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
-const STORAGE_KEY = "theme";
+const STORAGE_KEY = "theme-config";
+const LEGACY_KEY = "theme";
 
-function resolveSystem(): "light" | "dark" {
+function resolveSystemScheme(): ThemeColorScheme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
-function applyTheme(theme: Theme): "light" | "dark" {
+function resolveColorScheme(name: string): ThemeColorScheme {
+  if (name === "system") return resolveSystemScheme();
+  return getThemeColorScheme(name);
+}
+
+function resolveThemeName(name: string): string {
+  if (name === "system") {
+    return resolveSystemScheme() === "dark" ? "dark" : "light";
+  }
+  return name;
+}
+
+function applyToDocument(config: ThemeConfig): ThemeColorScheme {
   const root = document.documentElement;
-  const resolved = theme === "system" ? resolveSystem() : theme;
+  const resolvedName = resolveThemeName(config.name);
+  const colorScheme = resolveColorScheme(config.name);
 
   root.classList.remove("light", "dark");
-  root.classList.add(resolved);
-  root.setAttribute("data-theme", theme === "system" ? resolved : theme);
+  root.classList.add(colorScheme);
+  root.setAttribute("data-theme", resolvedName);
 
-  return resolved;
+  const existingOverrides = root.dataset.themeOverrides;
+  if (existingOverrides) {
+    for (const key of existingOverrides.split(",")) {
+      root.style.removeProperty(key);
+    }
+  }
+
+  if (config.overrides && Object.keys(config.overrides).length > 0) {
+    const keys: string[] = [];
+    for (const [key, value] of Object.entries(config.overrides)) {
+      root.style.setProperty(key, value);
+      keys.push(key);
+    }
+    root.dataset.themeOverrides = keys.join(",");
+  } else {
+    delete root.dataset.themeOverrides;
+  }
+
+  return colorScheme;
+}
+
+function migrateLegacyValue(value: unknown): ThemeConfig | null {
+  if (value === "light" || value === "dark" || value === "system") {
+    return { name: value };
+  }
+  return null;
+}
+
+function parseStoredConfig(value: unknown): ThemeConfig {
+  if (value && typeof value === "object" && "name" in value) {
+    const obj = value as Record<string, unknown>;
+    return {
+      name: typeof obj.name === "string" ? obj.name : "system",
+      overrides:
+        obj.overrides && typeof obj.overrides === "object"
+          ? (obj.overrides as Record<string, string>)
+          : undefined,
+    };
+  }
+  return { name: "system" };
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("system");
-  const [resolved, setResolved] = useState<"light" | "dark">(() => resolveSystem());
+  const [config, setConfigState] = useState<ThemeConfig>({ name: "system" });
+  const [colorScheme, setColorScheme] = useState<ThemeColorScheme>(() => resolveSystemScheme());
 
   useEffect(() => {
-    ipcInvoke("store:get", { key: STORAGE_KEY })
-      .then((value) => {
-        if (value === "light" || value === "dark" || value === "system") {
-          setThemeState(value);
+    (async () => {
+      let stored = await ipcInvoke("store:get", { key: STORAGE_KEY }).catch(() => null);
+
+      if (!stored) {
+        const legacy = await ipcInvoke("store:get", { key: LEGACY_KEY }).catch(() => null);
+        const migrated = migrateLegacyValue(legacy);
+        if (migrated) {
+          stored = migrated;
+          void ipcInvoke("store:set", { key: STORAGE_KEY, value: migrated });
         }
-      })
-      .catch(() => {});
+      }
+
+      if (stored) {
+        const parsed = parseStoredConfig(stored);
+        setConfigState(parsed);
+      }
+    })();
   }, []);
 
   useEffect(() => {
-    const nextResolved = applyTheme(theme);
-    setResolved(nextResolved);
+    const scheme = applyToDocument(config);
+    setColorScheme(scheme);
 
-    if (theme !== "system") return;
+    if (config.name !== "system") return;
 
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const onChange = () => {
-      const next = applyTheme("system");
-      setResolved(next);
+      const newScheme = applyToDocument(config);
+      setColorScheme(newScheme);
     };
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
-  }, [theme]);
+  }, [config]);
 
-  const setTheme = useCallback((next: Theme) => {
+  const setThemeConfig = useCallback((next: ThemeConfig) => {
     const apply = () => {
-      setThemeState(next);
+      setConfigState(next);
       void ipcInvoke("store:set", { key: STORAGE_KEY, value: next });
     };
 
@@ -71,11 +141,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme, resolved, setTheme }}>{children}</ThemeContext.Provider>
+    <ThemeContext.Provider value={{ config, colorScheme, setThemeConfig }}>
+      {children}
+    </ThemeContext.Provider>
   );
 }
 
-export function useTheme(): ThemeContextValue {
+export function useTheme() {
   const ctx = useContext(ThemeContext);
   if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
   return ctx;
