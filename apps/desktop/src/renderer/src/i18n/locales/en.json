@@ -1,6 +1,6 @@
 {
   "app": {
-    "title": "desktop",
+    "title": "Agentic GeoJSON Builder",
     "tagline": "Electron + React + Vite + TypeScript"
   },
   "nav": {
@@ -321,14 +321,7 @@
   "settings": {
     "heading": "Settings",
     "theme": "Theme",
-    "storageHeading": "Local storage",
-    "storageHint": "This demo persists a value in the main-process storage backend via typed IPC.",
-    "keyLabel": "Key",
-    "valueLabel": "Value",
-    "save": "Save",
-    "load": "Load",
-    "clear": "Clear",
-    "saved": "Saved.",
+    "themeHint": "Choose how the app looks. System follows your OS preference.",
     "backup": {
       "heading": "Backups",
       "description": "Full snapshots of your local database and map files (PDFs, thumbnails, reference layers). Restoring replaces live data; a safety backup is created automatically before each restore.",
@@ -382,8 +375,11 @@
   },
   "theme": {
     "light": "Light",
+    "lightHint": "Bright surfaces",
     "dark": "Dark",
-    "system": "System"
+    "darkHint": "Easy on the eyes",
+    "system": "System",
+    "systemHint": "Match your OS"
   },
   "about": {
     "heading": "About",

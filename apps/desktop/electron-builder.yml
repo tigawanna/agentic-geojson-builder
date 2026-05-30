@@ -1,5 +1,5 @@
-appId: com.tigawanna.desktop
-productName: "desktop"
+appId: com.tigawanna.agentic-geojson-builder
+productName: "Agentic GeoJSON Builder"
 copyright: Copyright © 2026 ${author}
 
 directories:

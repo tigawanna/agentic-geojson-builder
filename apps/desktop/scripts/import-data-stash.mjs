@@ -17,7 +17,10 @@ const defaultStashPath = join(
 );
 
 function defaultDataDir() {
-  return process.env.DESKTOP_PGLITE_DIR ?? join(homedir(), ".config", "desktop", "pglite");
+  return (
+    process.env.DESKTOP_PGLITE_DIR ??
+    join(homedir(), ".config", "agentic-geojson-builder", "pglite")
+  );
 }
 
 function printUsage() {
@@ -33,7 +36,7 @@ Options:
   --map-id <n>                   Same as --target-map-id
                                  (default: stash sourceMapId, usually 1 — pass your desktop map id)
   --data-dir <path>              Desktop PGlite directory
-                                 (default: ~/.config/desktop/pglite)
+                                 (default: ~/.config/agentic-geojson-builder/pglite)
   --replace-control-points       Delete existing control points for the map before import
   --update-map                   Apply map viewport + PDF transform fields from stash
   --dry-run                      Print actions without writing

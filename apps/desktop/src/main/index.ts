@@ -20,6 +20,7 @@ function createWindow(): BrowserWindow {
     height: 800,
     minWidth: 800,
     minHeight: 600,
+    title: "Agentic GeoJSON Builder",
     show: false,
     autoHideMenuBar: process.platform !== "darwin",
     backgroundColor: "#0a0a0a",

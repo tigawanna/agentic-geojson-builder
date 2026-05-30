@@ -17,7 +17,10 @@ const defaultStashPath = join(
 );
 
 function defaultDataDir() {
-  return process.env.DESKTOP_PGLITE_DIR ?? join(homedir(), ".config", "desktop", "pglite");
+  return (
+    process.env.DESKTOP_PGLITE_DIR ??
+    join(homedir(), ".config", "agentic-geojson-builder", "pglite")
+  );
 }
 
 function printUsage() {
@@ -29,7 +32,7 @@ Usage:
 Options:
   --stash <path>       pgLite stash JSON from trailfork-to-geojson.mjs
                        (default: map-data/geojson/karura-trailfork-pglite-stash.json)
-  --data-dir <path>    Desktop PGlite directory (default: ~/.config/desktop/pglite)
+  --data-dir <path>    Desktop PGlite directory (default: ~/.config/agentic-geojson-builder/pglite)
   --replace            Delete existing karura_trails rows before import
   --dry-run            Print actions without writing
   --help               Show this help

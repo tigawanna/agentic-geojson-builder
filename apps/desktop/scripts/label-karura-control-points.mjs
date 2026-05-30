@@ -38,7 +38,7 @@ const LABELS = {
   37: "Family Trail start near Gate E (PDF)",
 };
 
-const dataDir = `${process.env.HOME}/.config/desktop/pglite`;
+const dataDir = `${process.env.HOME}/.config/agentic-geojson-builder/pglite`;
 const pg = new PGlite({ dataDir, extensions: { postgis } });
 await pg.waitReady;
 

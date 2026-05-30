@@ -1,5 +1,5 @@
 {
-  "name": "desktop",
+  "name": "agentic-geojson-builder",
   "version": "0.1.0",
   "private": true,
   "description": "Electron desktop shell for Agentic GeoJSON Builder.",

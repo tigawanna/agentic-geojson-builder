@@ -21,5 +21,5 @@ export function usePageTitle(): string {
   const nested = routes.find(
     (route) => route.href !== "/" && current.startsWith(`${normalizePath(route.href)}/`),
   );
-  return nested?.title ?? "Desktop";
+  return nested?.title ?? "Agentic GeoJSON Builder";
 }
