@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Crosshair, Layers, Trash2, Upload } from "lucide-react";
+import { Trash2, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { mergeReferenceGeoJsonCollections } from "@repo/isomorphic/reference-geojson";
 import { ipcInvoke, useIpcMutation } from "@renderer/hooks/useIpc";
@@ -22,19 +22,9 @@ function isGeoJsonFile(file: File) {
 
 type MapReferenceGeoJsonSectionProps = {
   mapId: number;
-  showReferenceOverlay: boolean;
-  onShowReferenceOverlayChange: (visible: boolean) => void;
-  showReferenceInspectTooltip: boolean;
-  onShowReferenceInspectTooltipChange: (visible: boolean) => void;
 };
 
-export function MapReferenceGeoJsonSection({
-  mapId,
-  showReferenceOverlay,
-  onShowReferenceOverlayChange,
-  showReferenceInspectTooltip,
-  onShowReferenceInspectTooltipChange,
-}: MapReferenceGeoJsonSectionProps) {
+export function MapReferenceGeoJsonSection({ mapId }: MapReferenceGeoJsonSectionProps) {
   const { t } = useTranslation();
   const [importError, setImportError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -145,41 +135,17 @@ export function MapReferenceGeoJsonSection({
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          className="btn btn-outline btn-sm"
-          disabled={isImporting || importLayer.isPending}
-          onClick={() => void openFilePicker()}
-        >
-          <Upload className="size-4" />
-          {isImporting || importLayer.isPending
-            ? t("maps.workspace.referenceGeoJson.importing")
-            : t("maps.workspace.referenceGeoJson.import")}
-        </button>
-        <button
-          type="button"
-          className={`btn btn-sm ${showReferenceOverlay ? "btn-primary" : "btn-outline"}`}
-          disabled={visibleFeatureCount === 0}
-          onClick={() => onShowReferenceOverlayChange(!showReferenceOverlay)}
-        >
-          <Layers className="size-4" />
-          {showReferenceOverlay
-            ? t("maps.workspace.referenceGeoJson.overlayOn", { count: visibleFeatureCount })
-            : t("maps.workspace.referenceGeoJson.overlayOff")}
-        </button>
-        <button
-          type="button"
-          className={`btn btn-sm ${showReferenceInspectTooltip ? "btn-primary" : "btn-outline"}`}
-          disabled={visibleFeatureCount === 0 || !showReferenceOverlay}
-          onClick={() => onShowReferenceInspectTooltipChange(!showReferenceInspectTooltip)}
-        >
-          <Crosshair className="size-4" />
-          {showReferenceInspectTooltip
-            ? t("maps.workspace.referenceGeoJson.inspectOn")
-            : t("maps.workspace.referenceGeoJson.inspectOff")}
-        </button>
-      </div>
+      <button
+        type="button"
+        className="btn w-fit btn-outline btn-sm"
+        disabled={isImporting || importLayer.isPending}
+        onClick={() => void openFilePicker()}
+      >
+        <Upload className="size-4" />
+        {isImporting || importLayer.isPending
+          ? t("maps.workspace.referenceGeoJson.importing")
+          : t("maps.workspace.referenceGeoJson.import")}
+      </button>
 
       {importError ? <p className="text-sm whitespace-pre-wrap text-error">{importError}</p> : null}
 

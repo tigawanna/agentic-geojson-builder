@@ -52,15 +52,11 @@ import { MapWorkspaceSourceDocumentPane } from "@renderer/features/maps/componen
 import { useWorkspaceMapsChangedRefresh } from "@renderer/features/maps/hooks/useWorkspaceMapsChangedRefresh";
 import { useMapWorkspaceQuickMenuActions } from "@renderer/features/maps/hooks/useMapWorkspaceQuickMenuActions";
 import { useWorkspaceUiSyncPublisher } from "@renderer/features/maps/hooks/useWorkspaceUiSync";
-import {
-  CONTROL_POINT_DRAG_STORE_KEY,
-  usePersistedControlPointDragPreference,
-} from "@renderer/features/maps/hooks/usePersistedControlPointDragPreference";
+import { usePersistedControlPointDragPreference } from "@renderer/features/maps/hooks/usePersistedControlPointDragPreference";
 import { ControlPointDetailPanel } from "@renderer/features/maps/components/ControlPointDetailPanel";
 import { cn } from "@renderer/lib/utils";
 
 const WORKSPACE_ONBOARDING_STORE_KEY = "maps.workspace.onboardingSeen";
-const REFERENCE_INSPECT_TOOLTIP_STORE_KEY = "maps.referenceInspectTooltip";
 
 type WorkspaceSourcePanelSectionProps = {
   sourcePresentation: import("@shared/workspace-layout.types").SourcePanelPresentation;
@@ -170,13 +166,7 @@ export function MapWorkspaceSplitView() {
   const controlPointDragEnabled = useMapWorkspaceUiState((state) => state.controlPointDragEnabled);
   const sourcePanelPresentation = useMapWorkspaceUiState((state) => state.sourcePanelPresentation);
   const mapPanelCollapsed = useMapWorkspaceUiState((state) => state.mapPanelCollapsed);
-  const {
-    setShowReferenceOverlay,
-    setShowReferenceInspectTooltip,
-    setControlPointDragEnabled,
-    setSourcePanelPresentation,
-    setMapPanelCollapsed,
-  } = useMapWorkspaceUiActions();
+  const { setSourcePanelPresentation, setMapPanelCollapsed } = useMapWorkspaceUiActions();
   const pendingMapPoint = useMapWorkspaceUiState((state) => state.pendingMapPoint);
   const selectedControlPointId = useMapWorkspaceUiState((state) => state.selectedControlPointId);
   const detailPanelControlPointId = useMapWorkspaceUiState(
@@ -323,12 +313,6 @@ export function MapWorkspaceSplitView() {
       return;
     }
     checkedOnboardingRef.current = true;
-
-    void ipcInvoke("store:get", { key: REFERENCE_INSPECT_TOOLTIP_STORE_KEY }).then((value) => {
-      if (typeof value === "boolean") {
-        setShowReferenceInspectTooltip(value);
-      }
-    });
 
     void ipcInvoke("store:get", { key: WORKSPACE_ONBOARDING_STORE_KEY }).then((value) => {
       if (!value) {
@@ -1081,18 +1065,6 @@ export function MapWorkspaceSplitView() {
         controlPoints={controlPoints}
         geoSegments={geoSegments}
         selectedControlPointId={selectedControlPointId}
-        showReferenceOverlay={showReferenceOverlay}
-        onShowReferenceOverlayChange={setShowReferenceOverlay}
-        showReferenceInspectTooltip={showReferenceInspectTooltip}
-        onShowReferenceInspectTooltipChange={(visible) => {
-          setShowReferenceInspectTooltip(visible);
-          void ipcInvoke("store:set", { key: REFERENCE_INSPECT_TOOLTIP_STORE_KEY, value: visible });
-        }}
-        controlPointDragEnabled={controlPointDragEnabled}
-        onControlPointDragEnabledChange={(enabled) => {
-          setControlPointDragEnabled(enabled);
-          void ipcInvoke("store:set", { key: CONTROL_POINT_DRAG_STORE_KEY, value: enabled });
-        }}
         onFocusControlPoint={handleFocusControlPoint}
         onOpenAuditLog={() => setAuditLogOpen(true)}
       />
