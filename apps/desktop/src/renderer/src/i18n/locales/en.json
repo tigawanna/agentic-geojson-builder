@@ -383,7 +383,52 @@
   },
   "about": {
     "heading": "About",
-    "body": "Built with create-era-next — the modern successor to electron-react-boilerplate."
+    "body": "Built with create-era-next — the modern successor to electron-react-boilerplate.",
+    "version": "Version",
+    "platform": "Platform",
+    "tipsHeading": "Tips & workflow",
+    "tipsIntro": "A quick guide to getting the most out of the map editor and agent tools.",
+    "tips": {
+      "reference": {
+        "title": "Align with reference points",
+        "body": "Open a map project, add at least three reference points with Ctrl+click on the base map and the same spots on your PDF. Spread them across the sheet for better alignment."
+      },
+      "trace": {
+        "title": "Trace trails on the map",
+        "body": "Use Trace trail mode to place vertices along paths. Drag points to fine-tune. Save each segment when finished — segments become exportable GeoJSON LineStrings."
+      },
+      "export": {
+        "title": "Preview before you export",
+        "body": "Use Preview GeoJSON in the workspace toolbar to inspect your FeatureCollection. Export when routes and metadata look right."
+      },
+      "mcp": {
+        "title": "Connect an AI agent via MCP",
+        "body": "Enable the local MCP server in Settings and paste the config into Cursor. Agents can place reference points, trace segments, and read map state while you review."
+      },
+      "history": {
+        "title": "Review every edit",
+        "body": "Open History in the sidebar for a global audit log, or Ctrl+Shift+H inside a map project. Filter, search, and expand entries to see what changed."
+      },
+      "playground": {
+        "title": "Try the map playground",
+        "body": "Home is a lightweight sandbox — drop GeoJSON files, toggle layers, and explore trails without creating a full map project."
+      }
+    },
+    "shortcutsHeading": "Keyboard shortcuts",
+    "shortcuts": {
+      "controls": "Open project controls",
+      "history": "Open change history (in map workspace)",
+      "placePoint": "Place reference or trail vertices"
+    },
+    "exploreHeading": "Explore",
+    "exploreIntro": "Jump straight to the main areas of the app.",
+    "explore": {
+      "mapsHint": "Projects, PDF alignment & tracing",
+      "historyHint": "Search and review every edit",
+      "settingsHint": "Theme, MCP server & backups"
+    },
+    "updatesHeading": "Updates",
+    "updatesHint": "Check whether a newer build is available."
   },
   "updater": {
     "checking": "Checking for updates...",
