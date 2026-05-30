@@ -23,35 +23,35 @@ export function MapProjectCard({ map }: MapProjectCardProps) {
 
   return (
     <article
-      className="glass-card group flex aspect-[3/4] flex-col overflow-hidden transition-shadow hover:shadow-lg"
+      className="group flex flex-col overflow-hidden rounded-2xl border border-base-content/12 bg-base-100 shadow-md transition-all hover:border-base-content/20 hover:shadow-xl"
       data-test={`map-card-${map.id}`}
       onContextMenu={(event) => void openNativeContextMenu(map, event)}
     >
       <Link
         to="/maps/$mapId"
         params={{ mapId: String(map.id) }}
-        className="relative block min-h-0 flex-[7] overflow-hidden bg-base-200/40"
+        className="relative block aspect-[4/3] overflow-hidden bg-base-200/50"
       >
         {thumbnail.data ? (
           <img
             src={thumbnail.data}
             alt=""
-            className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+            className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
           />
         ) : (
-          <div className="flex size-full min-h-0 items-center justify-center bg-base-200/60">
+          <div className="flex size-full items-center justify-center bg-base-200/60">
             <MapIcon className="size-10 text-base-content/20" aria-hidden />
           </div>
         )}
       </Link>
 
-      <div className="flex min-h-0 flex-[3] items-start justify-between gap-2 px-4 py-3">
+      <div className="flex items-center justify-between gap-2 px-4 py-3">
         <Link
           to="/maps/$mapId"
           params={{ mapId: String(map.id) }}
           className="min-w-0 flex-1 hover:underline"
         >
-          <h3 className="truncate font-medium">{map.name}</h3>
+          <h3 className="truncate text-sm font-semibold">{map.name}</h3>
           {map.locationQuery ? (
             <p className="mt-0.5 truncate text-xs text-base-content/50">{map.locationQuery}</p>
           ) : null}

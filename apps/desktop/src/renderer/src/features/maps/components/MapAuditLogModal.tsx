@@ -1,7 +1,6 @@
-import { useState } from "react";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useAuditLogQuery } from "@renderer/features/maps/hooks/useAuditLogQuery";
+import { AuditLogPanel } from "@renderer/features/audit-log/components/AuditLogPanel";
 
 type MapAuditLogModalProps = {
   mapId: number;
@@ -9,168 +8,29 @@ type MapAuditLogModalProps = {
   onClose: () => void;
 };
 
-const PER_PAGE = 20;
-
-const ACTION_BADGE: Record<string, string> = {
-  create: "badge-success",
-  update: "badge-warning",
-  delete: "badge-error",
-};
-
-const ENTITY_LABEL: Record<string, string> = {
-  control_point: "Control Point",
-  geo_segment: "Segment",
-  map: "Map",
-};
-
-function formatTimestamp(iso: string) {
-  const date = new Date(iso);
-  return date.toLocaleString(undefined, {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
-
-function summarizeChange(entry: {
-  action: string;
-  entityType: string;
-  entityId: number;
-  oldValue: unknown;
-  newValue: unknown;
-}) {
-  const entity = ENTITY_LABEL[entry.entityType] ?? entry.entityType;
-
-  if (entry.action === "create") {
-    return `Created ${entity} #${entry.entityId}`;
-  }
-  if (entry.action === "delete") {
-    return `Deleted ${entity} #${entry.entityId}`;
-  }
-
-  const oldVal = entry.oldValue as Record<string, unknown> | null;
-  const newVal = entry.newValue as Record<string, unknown> | null;
-  if (!oldVal || !newVal) {
-    return `Updated ${entity} #${entry.entityId}`;
-  }
-
-  const changedFields: string[] = [];
-  for (const key of Object.keys(newVal)) {
-    if (key === "updatedAt" || key === "createdAt") continue;
-    if (JSON.stringify(oldVal[key]) !== JSON.stringify(newVal[key])) {
-      changedFields.push(key);
-    }
-  }
-
-  if (changedFields.length === 0) {
-    return `Updated ${entity} #${entry.entityId}`;
-  }
-
-  const fieldSummary = changedFields.slice(0, 3).join(", ");
-  const extra = changedFields.length > 3 ? ` +${changedFields.length - 3} more` : "";
-  return `Updated ${entity} #${entry.entityId}: ${fieldSummary}${extra}`;
-}
-
 export function MapAuditLogModal({ mapId, open, onClose }: MapAuditLogModalProps) {
   const { t } = useTranslation();
-  const [page, setPage] = useState(1);
-  const [entityFilter, setEntityFilter] = useState<string | undefined>(undefined);
-
-  const query = useAuditLogQuery(mapId, page, PER_PAGE, { entityType: entityFilter });
-  const entries = query.data?.entries ?? [];
-  const total = query.data?.total ?? 0;
-  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
 
   if (!open) {
     return null;
   }
 
   return (
-    <div className="modal-open modal z-[1200]">
-      <div className="modal-box max-h-[88vh] max-w-2xl overflow-y-auto px-6 py-6 shadow-2xl">
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold">{t("maps.workspace.auditLogTitle")}</h3>
+    <div className="modal-open modal z-1200">
+      <div className="modal-box flex max-h-[88vh] max-w-3xl flex-col px-6 py-6 shadow-2xl">
+        <div className="mb-4 flex shrink-0 items-start justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-semibold">{t("maps.workspace.auditLogTitle")}</h3>
+            <p className="mt-1 text-xs text-base-content/55">
+              {t("maps.workspace.auditLogSubtitle")}
+            </p>
+          </div>
           <button type="button" className="btn btn-square btn-ghost btn-sm" onClick={onClose}>
             <X className="size-4" />
           </button>
         </div>
 
-        <div className="mb-3 flex items-center gap-2">
-          <select
-            className="select-bordered select select-sm"
-            value={entityFilter ?? ""}
-            onChange={(e) => {
-              setEntityFilter(e.target.value || undefined);
-              setPage(1);
-            }}
-          >
-            <option value="">{t("maps.workspace.auditLogAllEntities")}</option>
-            <option value="control_point">{t("maps.workspace.auditLogEntityControlPoint")}</option>
-            <option value="geo_segment">{t("maps.workspace.auditLogEntitySegment")}</option>
-            <option value="map">{t("maps.workspace.auditLogEntityMap")}</option>
-          </select>
-          <span className="text-xs text-base-content/60">
-            {t("maps.workspace.auditLogEntryCount", { count: total })}
-          </span>
-        </div>
-
-        {query.isLoading && !query.data ? (
-          <div className="flex justify-center py-8">
-            <span className="loading loading-sm loading-spinner" />
-          </div>
-        ) : entries.length === 0 ? (
-          <div className="rounded-box border border-dashed border-base-content/20 px-4 py-8 text-center text-sm text-base-content/50">
-            {t("maps.workspace.auditLogEmpty")}
-          </div>
-        ) : (
-          <div className="space-y-1">
-            {entries.map((entry) => (
-              <div
-                key={entry.id}
-                className="flex items-start gap-3 rounded-box px-3 py-2 hover:bg-base-200/60"
-              >
-                <div className="flex min-w-0 flex-1 flex-col">
-                  <span className="text-sm">{summarizeChange(entry)}</span>
-                  <span className="text-xs text-base-content/50">
-                    {formatTimestamp(entry.createdAt)}
-                    {entry.source !== "user" ? ` · via ${entry.source}` : ""}
-                  </span>
-                </div>
-                <span className={`badge badge-sm ${ACTION_BADGE[entry.action] ?? "badge-ghost"}`}>
-                  {entry.action}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {totalPages > 1 ? (
-          <div className="mt-4 flex items-center justify-between border-t border-base-content/10 pt-3">
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              <ChevronLeft className="size-4" />
-              {t("maps.workspace.auditLogPrev")}
-            </button>
-            <span className="text-xs text-base-content/60">
-              {t("maps.workspace.auditLogPage", { page, total: totalPages })}
-            </span>
-            <button
-              type="button"
-              className="btn btn-ghost btn-sm"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            >
-              {t("maps.workspace.auditLogNext")}
-              <ChevronRight className="size-4" />
-            </button>
-          </div>
-        ) : null}
+        <AuditLogPanel mapId={mapId} fillHeight className="min-h-0 flex-1" />
       </div>
       <button type="button" className="modal-backdrop" onClick={onClose} aria-hidden />
     </div>

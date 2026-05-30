@@ -1,5 +1,4 @@
 import { useTranslation } from "react-i18next";
-import { PageShell } from "@renderer/components/common/PageShell";
 import { MapProjectCard } from "@renderer/features/maps/components/MapProjectCard";
 import { useCreateMapWizardStore } from "@renderer/features/maps/store/create-map-wizard-store";
 import { useMapsListQuery } from "@renderer/features/maps/useMapsListQuery";
@@ -10,20 +9,21 @@ export function MapsListPage() {
   const openWizard = useCreateMapWizardStore((state) => state.open);
 
   return (
-    <PageShell title={t("maps.list.heading")} description={t("maps.list.description")}>
-      <div className="flex justify-end">
+    <section className="animate-fade-in">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-base-content/55">{t("maps.list.description")}</p>
         <button type="button" className="btn btn-sm btn-primary" onClick={openWizard}>
           {t("maps.list.create")}
         </button>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-6">
         {maps.isLoading ? (
           <p className="text-sm text-base-content/60">{t("maps.list.loading")}</p>
         ) : maps.isError ? (
           <p className="text-sm text-error">{t("maps.list.error")}</p>
         ) : maps.data?.length ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {maps.data.map((map) => (
               <MapProjectCard key={map.id} map={map} />
             ))}
@@ -37,6 +37,6 @@ export function MapsListPage() {
           </div>
         )}
       </div>
-    </PageShell>
+    </section>
   );
 }

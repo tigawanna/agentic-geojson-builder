@@ -291,11 +291,21 @@ export interface IpcContract {
 
   // --- Audit log ---------------------------------------------------------------
   "auditLog:list": {
-    req: { mapId: number; entityType?: string; entityId?: number; limit?: number; offset?: number };
+    req: {
+      mapId?: number;
+      entityType?: string;
+      entityId?: number;
+      action?: string;
+      source?: string;
+      search?: string;
+      limit?: number;
+      offset?: number;
+    };
     res: {
       entries: Array<{
         id: number;
         mapId: number;
+        mapName: string | null;
         entityType: string;
         entityId: number;
         action: string;

@@ -15,12 +15,13 @@ import { SidebarProvider, useSidebar } from "@renderer/components/sidebar/Sideba
 function DashboardShell() {
   const { toggleSidebar, isCollapsed } = useSidebar();
   const pageTitle = usePageTitle();
-  const { isHomePlayground, isFullWidth } = useRouterState({
+  const { isHomePlayground, isFullWidth, isFillHeight } = useRouterState({
     select: (state) => {
       const path = state.location.pathname.replace(/\/$/, "") || "/";
       return {
         isHomePlayground: path === "/",
         isFullWidth: path === "/" || (/^\/maps\/[^/]+$/.test(path) && path !== "/maps/new"),
+        isFillHeight: path === "/audit-log",
       };
     },
   });
@@ -46,11 +47,15 @@ function DashboardShell() {
         ) : null}
 
         <main
-          className={`no-drag min-h-0 flex-1 ${isFullWidth ? "overflow-hidden" : "overflow-y-auto"}`}
+          className={`no-drag min-h-0 flex-1 ${isFullWidth || isFillHeight ? "overflow-hidden" : "overflow-y-auto"}`}
         >
           <div
             className={
-              isFullWidth ? "h-full min-h-0" : "mx-auto w-full max-w-5xl px-6 py-8 pb-12 lg:px-10"
+              isFullWidth
+                ? "h-full min-h-0"
+                : isFillHeight
+                  ? "mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col px-6 py-4 lg:px-10"
+                  : "mx-auto w-full max-w-5xl px-6 py-8 pb-12 lg:px-10"
             }
           >
             <Outlet />

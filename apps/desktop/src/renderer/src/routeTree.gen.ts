@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as MapsIndexRouteImport } from './routes/maps/index'
+import { Route as AuditLogIndexRouteImport } from './routes/audit-log/index'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as MapsNewIndexRouteImport } from './routes/maps/new/index'
 import { Route as MapsMapIdIndexRouteImport } from './routes/maps/$mapId/index'
@@ -29,6 +30,11 @@ const SettingsIndexRoute = SettingsIndexRouteImport.update({
 const MapsIndexRoute = MapsIndexRouteImport.update({
   id: '/maps/',
   path: '/maps/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuditLogIndexRoute = AuditLogIndexRouteImport.update({
+  id: '/audit-log/',
+  path: '/audit-log/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutIndexRoute = AboutIndexRouteImport.update({
@@ -50,6 +56,7 @@ const MapsMapIdIndexRoute = MapsMapIdIndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about/': typeof AboutIndexRoute
+  '/audit-log/': typeof AuditLogIndexRoute
   '/maps/': typeof MapsIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/maps/$mapId/': typeof MapsMapIdIndexRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutIndexRoute
+  '/audit-log': typeof AuditLogIndexRoute
   '/maps': typeof MapsIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/maps/$mapId': typeof MapsMapIdIndexRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about/': typeof AboutIndexRoute
+  '/audit-log/': typeof AuditLogIndexRoute
   '/maps/': typeof MapsIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/maps/$mapId/': typeof MapsMapIdIndexRoute
@@ -77,16 +86,25 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about/'
+    | '/audit-log/'
     | '/maps/'
     | '/settings/'
     | '/maps/$mapId/'
     | '/maps/new/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/maps' | '/settings' | '/maps/$mapId' | '/maps/new'
+  to:
+    | '/'
+    | '/about'
+    | '/audit-log'
+    | '/maps'
+    | '/settings'
+    | '/maps/$mapId'
+    | '/maps/new'
   id:
     | '__root__'
     | '/'
     | '/about/'
+    | '/audit-log/'
     | '/maps/'
     | '/settings/'
     | '/maps/$mapId/'
@@ -96,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutIndexRoute: typeof AboutIndexRoute
+  AuditLogIndexRoute: typeof AuditLogIndexRoute
   MapsIndexRoute: typeof MapsIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
   MapsMapIdIndexRoute: typeof MapsMapIdIndexRoute
@@ -125,6 +144,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MapsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/audit-log/': {
+      id: '/audit-log/'
+      path: '/audit-log'
+      fullPath: '/audit-log/'
+      preLoaderRoute: typeof AuditLogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about/': {
       id: '/about/'
       path: '/about'
@@ -152,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutIndexRoute: AboutIndexRoute,
+  AuditLogIndexRoute: AuditLogIndexRoute,
   MapsIndexRoute: MapsIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
   MapsMapIdIndexRoute: MapsMapIdIndexRoute,

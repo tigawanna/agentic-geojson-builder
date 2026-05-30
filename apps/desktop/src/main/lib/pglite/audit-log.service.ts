@@ -1,11 +1,11 @@
-import { desc, eq, and, count } from "drizzle-orm";
+import { desc, eq, and, count, or, ilike, sql, type SQL } from "drizzle-orm";
 import { getPgliteDb } from "@main/lib/pglite/client.js";
 import {
   auditLogTable,
   type AuditAction,
   type AuditEntityType,
-  type AuditLogRecord,
 } from "@main/lib/pglite/schema/audit-log.schema.js";
+import { mapTable } from "@main/lib/pglite/schema/map.schema.js";
 
 type WriteAuditEntryInput = {
   mapId: number;
@@ -30,47 +30,107 @@ export async function writeAuditEntry(input: WriteAuditEntryInput): Promise<void
   });
 }
 
-type ListAuditLogOptions = {
+export type AuditLogListEntry = {
+  id: number;
+  mapId: number;
+  mapName: string | null;
+  entityType: string;
+  entityId: number;
+  action: string;
+  oldValue: unknown;
+  newValue: unknown;
+  source: string;
+  createdAt: Date;
+};
+
+type ListAuditLogInput = {
+  mapId?: number;
   entityType?: AuditEntityType;
   entityId?: number;
+  action?: AuditAction;
+  source?: string;
+  search?: string;
   limit?: number;
   offset?: number;
 };
 
 type ListAuditLogResult = {
-  entries: AuditLogRecord[];
+  entries: AuditLogListEntry[];
   total: number;
   limit: number;
   offset: number;
 };
 
-export async function listAuditLog(
-  mapId: number,
-  options?: ListAuditLogOptions,
-): Promise<ListAuditLogResult> {
+function buildAuditLogConditions(input?: ListAuditLogInput): SQL | undefined {
+  const conditions: SQL[] = [];
+
+  if (input?.mapId != null) {
+    conditions.push(eq(auditLogTable.mapId, input.mapId));
+  }
+  if (input?.entityType) {
+    conditions.push(eq(auditLogTable.entityType, input.entityType));
+  }
+  if (input?.entityId) {
+    conditions.push(eq(auditLogTable.entityId, input.entityId));
+  }
+  if (input?.action) {
+    conditions.push(eq(auditLogTable.action, input.action));
+  }
+  if (input?.source) {
+    conditions.push(eq(auditLogTable.source, input.source));
+  }
+  if (input?.search?.trim()) {
+    const term = `%${input.search.trim()}%`;
+    conditions.push(
+      or(
+        ilike(auditLogTable.entityType, term),
+        ilike(auditLogTable.action, term),
+        ilike(auditLogTable.source, term),
+        ilike(mapTable.name, term),
+        sql`${auditLogTable.entityId}::text ILIKE ${term}`,
+        sql`${auditLogTable.mapId}::text ILIKE ${term}`,
+        sql`${auditLogTable.oldValue}::text ILIKE ${term}`,
+        sql`${auditLogTable.newValue}::text ILIKE ${term}`,
+      )!,
+    );
+  }
+
+  return conditions.length > 0 ? and(...conditions) : undefined;
+}
+
+export async function listAuditLog(input?: ListAuditLogInput): Promise<ListAuditLogResult> {
   const db = getPgliteDb();
-  const conditions = [eq(auditLogTable.mapId, mapId)];
+  const whereClause = buildAuditLogConditions(input);
+  const limit = input?.limit ?? 20;
+  const offset = input?.offset ?? 0;
 
-  if (options?.entityType) {
-    conditions.push(eq(auditLogTable.entityType, options.entityType));
-  }
-  if (options?.entityId) {
-    conditions.push(eq(auditLogTable.entityId, options.entityId));
-  }
+  const baseQuery = db
+    .select({
+      id: auditLogTable.id,
+      mapId: auditLogTable.mapId,
+      mapName: mapTable.name,
+      entityType: auditLogTable.entityType,
+      entityId: auditLogTable.entityId,
+      action: auditLogTable.action,
+      oldValue: auditLogTable.oldValue,
+      newValue: auditLogTable.newValue,
+      source: auditLogTable.source,
+      createdAt: auditLogTable.createdAt,
+    })
+    .from(auditLogTable)
+    .leftJoin(mapTable, eq(auditLogTable.mapId, mapTable.id));
 
-  const whereClause = and(...conditions);
-  const limit = options?.limit ?? 20;
-  const offset = options?.offset ?? 0;
+  const countQuery = db
+    .select({ total: count() })
+    .from(auditLogTable)
+    .leftJoin(mapTable, eq(auditLogTable.mapId, mapTable.id));
 
   const [entries, [countRow]] = await Promise.all([
-    db
-      .select()
-      .from(auditLogTable)
-      .where(whereClause)
+    (whereClause ? baseQuery.where(whereClause) : baseQuery)
       .orderBy(desc(auditLogTable.createdAt))
       .limit(limit)
       .offset(offset),
-    db.select({ total: count() }).from(auditLogTable).where(whereClause),
+    whereClause ? countQuery.where(whereClause) : countQuery,
   ]);
 
   return {

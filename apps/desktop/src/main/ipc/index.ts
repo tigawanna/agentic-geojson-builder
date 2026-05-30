@@ -112,9 +112,13 @@ export function registerIpcHandlers(): void {
     ...referenceSnapHandlers,
     ...updaterHandlers,
     "auditLog:list": async (req) => {
-      const result = await listAuditLog(req.mapId, {
+      const result = await listAuditLog({
+        mapId: req.mapId,
         entityType: req.entityType as "control_point" | "geo_segment" | "map" | undefined,
         entityId: req.entityId,
+        action: req.action as "create" | "update" | "delete" | undefined,
+        source: req.source,
+        search: req.search,
         limit: req.limit,
         offset: req.offset,
       });
@@ -122,6 +126,7 @@ export function registerIpcHandlers(): void {
         entries: result.entries.map((e) => ({
           id: e.id,
           mapId: e.mapId,
+          mapName: e.mapName,
           entityType: e.entityType,
           entityId: e.entityId,
           action: e.action,
