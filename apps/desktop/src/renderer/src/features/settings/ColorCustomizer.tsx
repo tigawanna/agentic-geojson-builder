@@ -14,6 +14,12 @@ const COLOR_TOKENS = [
   { key: "--color-base-content", label: "Base Content" },
 ] as const;
 
+const RADIUS_TOKENS = [
+  { key: "--radius-selector", label: "selector", min: 0, max: 1.5, step: 0.05, fallback: 0.5 },
+  { key: "--radius-field", label: "field", min: 0, max: 1.5, step: 0.05, fallback: 0.5 },
+  { key: "--radius-box", label: "box", min: 0, max: 2, step: 0.05, fallback: 0.5 },
+] as const;
+
 function cssColorToHex(cssColor: string): string {
   const canvas = document.createElement("canvas");
   canvas.width = 1;
@@ -44,6 +50,25 @@ function resolveAllTokens(): Record<string, string> {
   return result;
 }
 
+function resolveRadiusRem(key: string, fallback: number): number {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(key).trim();
+  if (!raw) return fallback;
+
+  const parsed = Number.parseFloat(raw);
+  if (!Number.isFinite(parsed)) return fallback;
+  if (raw.endsWith("px")) return parsed / 16;
+
+  return parsed;
+}
+
+function resolveAllRadiusTokens(): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const token of RADIUS_TOKENS) {
+    result[token.key] = resolveRadiusRem(token.key, token.fallback);
+  }
+  return result;
+}
+
 export function ColorCustomizer() {
   const { t } = useTranslation();
   const { config, setThemeConfig } = useTheme();
@@ -51,10 +76,12 @@ export function ColorCustomizer() {
   const hasOverrides = Object.keys(overrides).length > 0;
 
   const [resolved, setResolved] = useState<Record<string, string>>({});
+  const [resolvedRadius, setResolvedRadius] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const timer = requestAnimationFrame(() => {
       setResolved(resolveAllTokens());
+      setResolvedRadius(resolveAllRadiusTokens());
     });
     return () => cancelAnimationFrame(timer);
   }, [config.name]);
@@ -66,6 +93,11 @@ export function ColorCustomizer() {
 
   function handleReset() {
     setThemeConfig({ ...config, overrides: undefined });
+  }
+
+  function handleRadiusChange(key: string, value: number) {
+    const next = { ...overrides, [key]: `${value}rem` };
+    setThemeConfig({ ...config, overrides: next });
   }
 
   return (
@@ -102,6 +134,36 @@ export function ColorCustomizer() {
             </label>
           );
         })}
+      </div>
+      <div className="space-y-2 pt-2">
+        <h4 className="text-xs font-semibold tracking-wide text-base-content/50 uppercase">
+          {t("theme.customizeRadius")}
+        </h4>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {RADIUS_TOKENS.map(({ key, label, min, max, step, fallback }) => {
+            const current = overrides[key] ?? `${resolvedRadius[key] ?? fallback}rem`;
+            const value = Number.parseFloat(current);
+            const safeValue = Number.isFinite(value) ? value : fallback;
+
+            return (
+              <label key={key} className="space-y-2 rounded-lg border border-base-content/10 p-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium">{t(`theme.radius.${label}`)}</span>
+                  <span className="font-mono text-base-content/45">{safeValue.toFixed(2)}rem</span>
+                </div>
+                <input
+                  type="range"
+                  min={min}
+                  max={max}
+                  step={step}
+                  value={safeValue}
+                  onChange={(e) => handleRadiusChange(key, Number.parseFloat(e.target.value))}
+                  className="range w-full range-xs"
+                />
+              </label>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

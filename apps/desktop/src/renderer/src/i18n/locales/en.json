@@ -385,7 +385,13 @@
     "lightThemes": "Light themes",
     "darkThemes": "Dark themes",
     "customizeColors": "Customize colors",
-    "resetColors": "Reset to defaults"
+    "customizeRadius": "Customize radius",
+    "resetColors": "Reset customizations",
+    "radius": {
+      "selector": "Selector",
+      "field": "Field",
+      "box": "Box"
+    }
   },
   "viewTransition": {
     "default": "Default",

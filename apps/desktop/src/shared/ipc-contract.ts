@@ -11,15 +11,19 @@ import type {
   UpdateMapWorkspaceInput,
 } from "./maps.types.js";
 import type {
+  AddControlPointAttachmentInput,
+  ControlPointAttachmentRecord,
   ControlPointRecord,
   ControlPointsChangedEvent,
   CreateControlPointFromViewportPixelsInput,
   CreateControlPointInput,
   DeleteControlPointInput,
   ImagePixelResult,
+  ListControlPointAttachmentsInput,
   LonLatResult,
   MapPanePixelInput,
   PdfPanePixelInput,
+  RemoveControlPointAttachmentInput,
   UpdateControlPointInput,
 } from "./control-points.types.js";
 import type { McpStatus } from "./mcp.types.js";
@@ -197,6 +201,22 @@ export interface IpcContract {
       controlPoint: ControlPointRecord;
       converted: ImagePixelResult & LonLatResult;
     };
+  };
+  "controlPoints:listAttachments": {
+    req: ListControlPointAttachmentsInput;
+    res: { attachments: ControlPointAttachmentRecord[] };
+  };
+  "controlPoints:addAttachment": {
+    req: AddControlPointAttachmentInput;
+    res: { attachment: ControlPointAttachmentRecord };
+  };
+  "controlPoints:removeAttachment": {
+    req: RemoveControlPointAttachmentInput;
+    res: { ok: true };
+  };
+  "controlPoints:pickAttachmentFile": {
+    req: { controlPointId: number };
+    res: { attachment: ControlPointAttachmentRecord } | { canceled: true };
   };
 
   // --- Reference GeoJSON (per-map files under userData/maps/{id}/) ----------

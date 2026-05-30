@@ -383,7 +383,10 @@ export function MapWorkspaceControlsModal({
                       onClick={() => onFocusControlPoint(point)}
                     >
                       <p className="font-medium">
-                        {point.label ?? t("maps.workspace.referenceItem", { index: index + 1 })}
+                        {point.poleNumber
+                          ? `#${point.poleNumber}`
+                          : (point.label ??
+                            t("maps.workspace.referenceItem", { index: index + 1 }))}
                       </p>
                       <p className="font-mono text-xs text-base-content/60">
                         PDF ({point.imageX.toFixed(1)}, {point.imageY.toFixed(1)})

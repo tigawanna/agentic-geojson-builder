@@ -23,7 +23,7 @@ export function ThemeModeSelector() {
             key={value}
             type="button"
             aria-pressed={selected}
-            onClick={() => setThemeConfig({ name: value })}
+            onClick={() => setThemeConfig({ name: value, overrides: config.overrides })}
             className={cn(
               "flex items-center gap-3 rounded-xl border p-3 text-left transition-all",
               selected

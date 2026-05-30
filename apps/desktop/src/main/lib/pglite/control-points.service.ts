@@ -1,25 +1,51 @@
 import { and, asc, eq } from "drizzle-orm";
 import type {
+  ControlPointAttachmentRecord,
   ControlPointRecord,
+  AddControlPointAttachmentInput,
   CreateControlPointInput,
   DeleteControlPointInput,
+  ListControlPointAttachmentsInput,
+  RemoveControlPointAttachmentInput,
   UpdateControlPointInput,
 } from "@shared/control-points.types.js";
 import { writeAuditEntry } from "@main/lib/pglite/audit-log.service.js";
 import { getPgliteDb } from "@main/lib/pglite/client.js";
-import { controlPointTable } from "@main/lib/pglite/schema/control-point.schema.js";
+import {
+  controlPointAttachmentTable,
+  controlPointTable,
+} from "@main/lib/pglite/schema/control-point.schema.js";
 
 type ControlPointRow = typeof controlPointTable.$inferSelect;
+type AttachmentRow = typeof controlPointAttachmentTable.$inferSelect;
 
 function toControlPointRecord(row: ControlPointRow): ControlPointRecord {
   return {
     id: row.id,
     mapId: row.mapId,
     label: row.label,
+    poleNumber: row.poleNumber,
+    description: row.description,
     imageX: row.imageX,
     imageY: row.imageY,
     longitude: row.location.x,
     latitude: row.location.y,
+    altitudeM: row.altitudeM,
+    metadata: (row.metadata as ControlPointRecord["metadata"]) ?? {},
+    contextSnapshot: (row.contextSnapshot as ControlPointRecord["contextSnapshot"]) ?? null,
+    sourceSegmentId: row.sourceSegmentId,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+function toAttachmentRecord(row: AttachmentRow): ControlPointAttachmentRecord {
+  return {
+    id: row.id,
+    controlPointId: row.controlPointId,
+    filePath: row.filePath,
+    mimeType: row.mimeType,
+    caption: row.caption,
+    sortOrder: row.sortOrder,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -47,6 +73,10 @@ export async function createControlPoint(
       imageY: input.imageY,
       location: { x: input.longitude, y: input.latitude },
       label: input.label?.trim() || null,
+      poleNumber: input.poleNumber?.trim() || null,
+      description: input.description?.trim() || null,
+      altitudeM: input.altitudeM ?? null,
+      metadata: input.metadata ?? {},
     })
     .returning();
 
@@ -82,8 +112,27 @@ export async function updateControlPoint(
     imageY: input.imageY,
     location: { x: input.longitude, y: input.latitude },
   };
+
   if (input.label !== undefined) {
     patch.label = input.label?.trim() || null;
+  }
+  if (input.poleNumber !== undefined) {
+    patch.poleNumber = input.poleNumber?.trim() || null;
+  }
+  if (input.description !== undefined) {
+    patch.description = input.description?.trim() || null;
+  }
+  if (input.altitudeM !== undefined) {
+    patch.altitudeM = input.altitudeM;
+  }
+  if (input.metadata !== undefined) {
+    patch.metadata = input.metadata ?? {};
+  }
+  if (input.contextSnapshot !== undefined) {
+    patch.contextSnapshot = input.contextSnapshot;
+  }
+  if (input.sourceSegmentId !== undefined) {
+    patch.sourceSegmentId = input.sourceSegmentId;
   }
 
   const [row] = await db
@@ -134,6 +183,51 @@ export async function deleteControlPoint(input: DeleteControlPointInput): Promis
       oldValue: toControlPointRecord(existing),
     });
   }
+
+  return { ok: true };
+}
+
+export async function listControlPointAttachments(
+  input: ListControlPointAttachmentsInput,
+): Promise<ControlPointAttachmentRecord[]> {
+  const db = getPgliteDb();
+  const rows = await db
+    .select()
+    .from(controlPointAttachmentTable)
+    .where(eq(controlPointAttachmentTable.controlPointId, input.controlPointId))
+    .orderBy(asc(controlPointAttachmentTable.sortOrder), asc(controlPointAttachmentTable.id));
+
+  return rows.map(toAttachmentRecord);
+}
+
+export async function addControlPointAttachment(
+  input: AddControlPointAttachmentInput,
+): Promise<ControlPointAttachmentRecord> {
+  const db = getPgliteDb();
+  const [row] = await db
+    .insert(controlPointAttachmentTable)
+    .values({
+      controlPointId: input.controlPointId,
+      filePath: input.filePath,
+      mimeType: input.mimeType,
+      caption: input.caption?.trim() || null,
+    })
+    .returning();
+
+  if (!row) {
+    throw new Error("Failed to add attachment.");
+  }
+
+  return toAttachmentRecord(row);
+}
+
+export async function removeControlPointAttachment(
+  input: RemoveControlPointAttachmentInput,
+): Promise<{ ok: true }> {
+  const db = getPgliteDb();
+  await db
+    .delete(controlPointAttachmentTable)
+    .where(eq(controlPointAttachmentTable.id, input.attachmentId));
 
   return { ok: true };
 }

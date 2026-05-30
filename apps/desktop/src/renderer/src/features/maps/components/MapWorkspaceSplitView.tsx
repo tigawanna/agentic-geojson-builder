@@ -44,6 +44,7 @@ import { GeoJsonPreviewModal } from "@renderer/features/maps/components/GeoJsonP
 import { MapAuditLogModal } from "@renderer/features/maps/components/MapAuditLogModal";
 import { MapWorkspaceOnboardingModal } from "@renderer/features/maps/components/MapWorkspaceOnboardingModal";
 import { SourceDocumentPane } from "@renderer/features/maps/components/SourceDocumentPane";
+import { ControlPointDetailPanel } from "@renderer/features/maps/components/ControlPointDetailPanel";
 
 const WORKSPACE_ONBOARDING_STORE_KEY = "maps.workspace.onboardingSeen";
 
@@ -60,6 +61,7 @@ export function MapWorkspaceSplitView() {
     setStatusMessage,
     setPendingMapPoint,
     setSelectedControlPointId,
+    setDetailPanelControlPointId,
     setPendingTracePoints,
     setEditingSegmentId,
     setSegmentGroupId,
@@ -82,6 +84,9 @@ export function MapWorkspaceSplitView() {
   const setShowReferenceOverlay = useMapWorkspaceUiActions().setShowReferenceOverlay;
   const pendingMapPoint = useMapWorkspaceUiState((state) => state.pendingMapPoint);
   const selectedControlPointId = useMapWorkspaceUiState((state) => state.selectedControlPointId);
+  const detailPanelControlPointId = useMapWorkspaceUiState(
+    (state) => state.detailPanelControlPointId,
+  );
   const { queueSave } = useWorkspacePersistence();
   const controlPointsQuery = useControlPointsQuery(workspace?.id ?? null);
   const geoSegmentsQuery = useGeoSegmentsQuery(workspace?.id ?? null);
@@ -118,6 +123,11 @@ export function MapWorkspaceSplitView() {
   const controlPoints = controlPointsQuery.data?.controlPoints ?? [];
   const geoSegments = geoSegmentsQuery.data?.segments ?? [];
   controlPointsRef.current = controlPoints;
+
+  const detailPanelControlPoint =
+    detailPanelControlPointId !== null
+      ? (controlPoints.find((point) => point.id === detailPanelControlPointId) ?? null)
+      : null;
 
   useMapWorkspaceControlsShortcut(workspace != null);
   useMapWorkspaceAuditLogShortcut(workspace != null, () => setAuditLogOpen(true));
@@ -239,6 +249,90 @@ export function MapWorkspaceSplitView() {
       queueSave(pdfTransformToWorkspacePatch(pdfPan));
     },
     [queueSave, setSelectedControlPointId, workspace],
+  );
+
+  const handleInheritFromTrail = useCallback(
+    async (controlPointId: number) => {
+      const point = controlPoints.find((p) => p.id === controlPointId);
+      if (!point || !workspace) return;
+
+      const guides = geoSegments
+        .filter((s) => s.geometry?.coordinates?.length >= 2)
+        .map((s) => ({
+          id: String(s.id),
+          name: s.name ?? s.segmentGroupId,
+          coordinates: s.geometry.coordinates as [number, number][],
+        }));
+
+      const refLayers = referenceGeoJsonQuery.data?.layers ?? [];
+      for (const layer of refLayers) {
+        if (!layer.visible || !layer.collection?.features) continue;
+        for (const feature of layer.collection.features) {
+          if (feature.geometry?.coordinates?.length >= 2) {
+            guides.push({
+              id: `ref-${layer.id}-${String(feature.properties?.name ?? "")}`,
+              name: (feature.properties?.name as string) ?? layer.name,
+              coordinates: feature.geometry.coordinates,
+            });
+          }
+        }
+      }
+
+      if (guides.length === 0) return;
+
+      const result = await ipcInvoke("referenceSnap:snapPoint", {
+        latitude: point.latitude,
+        longitude: point.longitude,
+        guides,
+        toleranceMeters: 100,
+      });
+
+      if (!result.snapped) return;
+
+      const matchedSegment = geoSegments.find((s) => String(s.id) === result.snappedTo.lineId);
+
+      const snapshot = {
+        capturedAt: new Date().toISOString(),
+        distanceMeters: result.distanceMeters,
+        source: {
+          type: (result.snappedTo.lineId.startsWith("ref-")
+            ? "reference_geojson"
+            : "geo_segment") as "geo_segment" | "reference_geojson",
+          id: matchedSegment ? matchedSegment.id : result.snappedTo.lineId,
+          name: result.snappedTo.lineName,
+          pathKind: matchedSegment?.pathKind ?? null,
+        },
+        position: {
+          latitude: result.latitude,
+          longitude: result.longitude,
+          altitudeM: null,
+        },
+        properties: matchedSegment
+          ? { pathKind: matchedSegment.pathKind, segmentGroupId: matchedSegment.segmentGroupId }
+          : {},
+      };
+
+      await updateControlPoint.mutateAsync({
+        mapId: workspace.id,
+        controlPointId: point.id,
+        imageX: point.imageX,
+        imageY: point.imageY,
+        latitude: point.latitude,
+        longitude: point.longitude,
+        contextSnapshot: snapshot,
+        sourceSegmentId: matchedSegment?.id ?? null,
+      });
+
+      void controlPointsQuery.refetch();
+    },
+    [
+      controlPoints,
+      geoSegments,
+      referenceGeoJsonQuery.data,
+      workspace,
+      updateControlPoint,
+      controlPointsQuery,
+    ],
   );
 
   useEffect(() => {
@@ -761,6 +855,7 @@ export function MapWorkspaceSplitView() {
                 onTracePointAdd={handleTracePointAdd}
                 onPendingTracePointMove={handlePendingTracePointMove}
                 onControlPointMapMove={handleControlPointMapMove}
+                onControlPointClick={(id) => setDetailPanelControlPointId(id)}
                 onSegmentClick={handleSegmentClick}
                 selectedSegmentId={selectedSegmentId}
               />
@@ -796,6 +891,18 @@ export function MapWorkspaceSplitView() {
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
+
+      {detailPanelControlPoint ? (
+        <div className="absolute inset-y-0 right-0 z-1100 w-80 shadow-xl">
+          <ControlPointDetailPanel
+            controlPoint={detailPanelControlPoint}
+            mapId={workspace.id}
+            onClose={() => setDetailPanelControlPointId(null)}
+            onUpdated={() => void controlPointsQuery.refetch()}
+            onInheritFromTrail={handleInheritFromTrail}
+          />
+        </div>
+      ) : null}
 
       <MapWorkspaceControlsModal
         mapId={workspace.id}

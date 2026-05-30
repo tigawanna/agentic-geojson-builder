@@ -22,6 +22,7 @@ type MapWorkspaceUiState = {
   pendingMapPoint: MapCoordinates | null;
   pendingTracePoints: MapCoordinates[];
   selectedControlPointId: number | null;
+  detailPanelControlPointId: number | null;
   editingSegmentId: number | null;
   segmentGroupId: string;
   segmentName: string;
@@ -45,6 +46,7 @@ type MapWorkspaceUiActions = {
     points: MapCoordinates[] | ((current: MapCoordinates[]) => MapCoordinates[]),
   ) => void;
   setSelectedControlPointId: (controlPointId: number | null) => void;
+  setDetailPanelControlPointId: (controlPointId: number | null) => void;
   setEditingSegmentId: (segmentId: number | null) => void;
   setSegmentGroupId: (segmentGroupId: string) => void;
   setSegmentName: (name: string) => void;
@@ -69,6 +71,7 @@ const initialState: MapWorkspaceUiState = {
   pendingMapPoint: null,
   pendingTracePoints: [],
   selectedControlPointId: null,
+  detailPanelControlPointId: null,
   editingSegmentId: null,
   segmentGroupId: "10k-blue",
   segmentName: "",
@@ -98,6 +101,8 @@ export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
             : pendingTracePoints,
       })),
     setSelectedControlPointId: (selectedControlPointId) => set({ selectedControlPointId }),
+    setDetailPanelControlPointId: (detailPanelControlPointId) =>
+      set({ detailPanelControlPointId, selectedControlPointId: detailPanelControlPointId }),
     setEditingSegmentId: (editingSegmentId) => set({ editingSegmentId }),
     setSegmentGroupId: (segmentGroupId) => set({ segmentGroupId }),
     setSegmentName: (segmentName) => set({ segmentName }),

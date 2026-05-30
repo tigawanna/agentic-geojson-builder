@@ -36,6 +36,13 @@
       "when": 1779902200000,
       "tag": "0004_audit_log",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1779902300000,
+      "tag": "0005_control_point_enrichment",
+      "breakpoints": true
     }
   ]
 }

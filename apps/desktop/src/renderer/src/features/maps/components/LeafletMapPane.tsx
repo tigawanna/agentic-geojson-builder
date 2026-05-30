@@ -49,6 +49,7 @@ type LeafletMapPaneProps = {
   onTracePointAdd?: (latitude: number, longitude: number) => void;
   onPendingTracePointMove?: (index: number, latitude: number, longitude: number) => void;
   onControlPointMapMove?: (controlPointId: number, latitude: number, longitude: number) => void;
+  onControlPointClick?: (controlPointId: number) => void;
   onSegmentClick?: (segmentId: number) => void;
   selectedSegmentId?: number | null;
 };
@@ -76,6 +77,7 @@ export function LeafletMapPane({
   onTracePointAdd,
   onPendingTracePointMove,
   onControlPointMapMove,
+  onControlPointClick,
   onSegmentClick,
   selectedSegmentId = null,
 }: LeafletMapPaneProps) {
@@ -97,6 +99,7 @@ export function LeafletMapPane({
   const onTracePointAddRef = useRef(onTracePointAdd);
   const onPendingTracePointMoveRef = useRef(onPendingTracePointMove);
   const onControlPointMapMoveRef = useRef(onControlPointMapMove);
+  const onControlPointClickRef = useRef(onControlPointClick);
   const onSegmentClickRef = useRef(onSegmentClick);
   const geocodedRef = useRef(false);
   const initialViewportCapturedRef = useRef(false);
@@ -113,6 +116,7 @@ export function LeafletMapPane({
   onTracePointAddRef.current = onTracePointAdd;
   onPendingTracePointMoveRef.current = onPendingTracePointMove;
   onControlPointMapMoveRef.current = onControlPointMapMove;
+  onControlPointClickRef.current = onControlPointClick;
   onSegmentClickRef.current = onSegmentClick;
 
   useEffect(() => {
@@ -422,11 +426,12 @@ export function LeafletMapPane({
     controlPoints.forEach((point, index) => {
       const selected = point.id === selectedControlPointId;
       const fillColor = selected ? "#2563eb" : "#16a34a";
+      const displayLabel = point.poleNumber ?? String(index + 1);
       const marker = L.marker([point.latitude, point.longitude], {
         draggable: true,
         icon: L.divIcon({
           className: "",
-          html: `<div style="margin-left:-12px;margin-top:-12px;width:24px;height:24px;border-radius:9999px;border:2px solid white;background:${fillColor};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;cursor:grab;">${index + 1}</div>`,
+          html: `<div style="margin-left:-12px;margin-top:-12px;width:24px;height:24px;border-radius:9999px;border:2px solid white;background:${fillColor};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white;cursor:grab;">${displayLabel}</div>`,
           iconSize: [24, 24],
         }),
       }).addTo(markersLayer);
@@ -434,6 +439,11 @@ export function LeafletMapPane({
       marker.on("dragend", () => {
         const { lat, lng } = marker.getLatLng();
         onControlPointMapMoveRef.current?.(point.id, lat, lng);
+      });
+
+      marker.on("click", (event) => {
+        L.DomEvent.stopPropagation(event);
+        onControlPointClickRef.current?.(point.id);
       });
     });
 
