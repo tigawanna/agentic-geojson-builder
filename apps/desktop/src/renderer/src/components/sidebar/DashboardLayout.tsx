@@ -19,16 +19,14 @@ import { SidebarProvider, useSidebar } from "@renderer/components/sidebar/Sideba
 function DashboardShell() {
   const { toggleSidebar, isCollapsed } = useSidebar();
   const pageTitle = usePageTitle();
-  const { isHomePlayground, isFullWidth, isFillHeight } = useRouterState({
+  const { hideDashboardHeader, isFullWidth, isFillHeight } = useRouterState({
     select: (state) => {
       const path = state.location.pathname.replace(/\/$/, "") || "/";
+      const isMapWorkspace = /^\/maps\/[^/]+$/.test(path) && path !== "/maps/new";
       return {
-        isHomePlayground: path === "/" || path === "/mapbox",
+        hideDashboardHeader: path === "/" || path === "/mapbox" || isMapWorkspace,
         isFullWidth:
-          path === "/" ||
-          path === "/mapbox" ||
-          path.startsWith("/mapbox/") ||
-          (/^\/maps\/[^/]+$/.test(path) && path !== "/maps/new"),
+          path === "/" || path === "/mapbox" || path.startsWith("/mapbox/") || isMapWorkspace,
         isFillHeight: path === "/audit-log" || path.startsWith("/mapbox/"),
       };
     },
@@ -46,7 +44,7 @@ function DashboardShell() {
         />
 
         <div className="flex min-w-0 flex-1 flex-col bg-grid">
-          {!isHomePlayground ? (
+          {!hideDashboardHeader ? (
             <header className="drag-region glass-panel sticky top-0 z-20 flex h-14 items-center gap-3 px-4">
               <DashboardSidebarTrigger onClick={toggleSidebar} collapsed={isCollapsed} />
               <div className="no-drag min-w-0 flex-1">

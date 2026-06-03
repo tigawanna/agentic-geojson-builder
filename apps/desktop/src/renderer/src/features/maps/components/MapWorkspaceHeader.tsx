@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Link2, MapPin, PanelRightOpen, Pencil } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { DashboardSidebarTrigger } from "@renderer/components/sidebar/DashboardSidebar";
+import { useSidebar } from "@renderer/components/sidebar/SidebarProvider";
 import { formatMapCoordinates } from "@renderer/features/maps/lib/copy-map-coordinates";
 import {
   useMapWorkspaceUiActions,
@@ -21,6 +23,7 @@ function inactiveToolClass() {
 
 export function MapWorkspaceHeader({ hasSourceFile }: MapWorkspaceHeaderProps) {
   const { t } = useTranslation();
+  const { toggleSidebar, isCollapsed } = useSidebar();
   const workspace = useMapWorkspaceState((state) => state.workspace);
   const cursorCoordinates = useMapWorkspaceUiState((state) => state.cursorCoordinates);
   const selectedCoordinates = useMapWorkspaceUiState((state) => state.selectedCoordinates);
@@ -54,25 +57,27 @@ export function MapWorkspaceHeader({ hasSourceFile }: MapWorkspaceHeaderProps) {
       : null;
 
   return (
-    <header className="relative z-20 flex items-center gap-2 border-b border-base-content/10 px-2 py-1.5">
+    <header className="drag-region glass-panel relative z-20 flex h-11 shrink-0 items-center gap-2 border-b border-base-content/10 px-2">
+      <DashboardSidebarTrigger onClick={toggleSidebar} collapsed={isCollapsed} />
+
       <Link
         to="/maps"
-        className="inline-flex size-7 shrink-0 items-center justify-center rounded-md text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content"
+        className="no-drag inline-flex size-7 shrink-0 items-center justify-center rounded-md text-base-content/60 transition-colors hover:bg-base-content/10 hover:text-base-content"
         aria-label={t("maps.workspace.back")}
       >
         <ArrowLeft className="size-4" />
       </Link>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-baseline sm:gap-3">
-        <h1 className="min-w-0 truncate text-sm font-semibold">{workspace.name}</h1>
+      <div className="no-drag flex min-w-0 flex-1 items-baseline gap-2">
+        <h1 className="min-w-0 truncate text-sm font-semibold tracking-tight">{workspace.name}</h1>
         {coordinateLine ? (
-          <span className="truncate font-mono text-[11px] text-base-content/40">
+          <span className="hidden truncate font-mono text-[11px] text-base-content/40 sm:inline">
             {coordinateLine}
           </span>
         ) : null}
       </div>
 
-      <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-base-content/10 bg-base-100/50 p-0.5">
+      <div className="no-drag flex shrink-0 items-center gap-0.5 rounded-lg border border-base-content/10 bg-base-100/50 p-0.5">
         <button
           type="button"
           className={
@@ -174,7 +179,7 @@ export function MapWorkspaceHeader({ hasSourceFile }: MapWorkspaceHeaderProps) {
 
       <button
         type="button"
-        className={`${toolButtonClass} ${
+        className={`no-drag ${toolButtonClass} ${
           toolsPanelOpen
             ? "bg-base-content/12 text-base-content"
             : "text-base-content/55 hover:bg-base-content/8 hover:text-base-content"
