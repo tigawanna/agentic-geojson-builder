@@ -63,6 +63,7 @@ import { MapWorkspaceSourceDocumentPane } from "@renderer/features/maps/componen
 import { useWorkspaceMapsChangedRefresh } from "@renderer/features/maps/hooks/useWorkspaceMapsChangedRefresh";
 import { useMapWorkspaceMenuActions } from "@renderer/features/maps/hooks/useMapWorkspaceMenuActions";
 import { useMapWorkspaceToolsPanelShortcut } from "@renderer/features/maps/hooks/useMapWorkspaceToolsPanelShortcut";
+import { useReferenceInspectCopyShortcut } from "@renderer/features/maps/hooks/useReferenceInspectCopyShortcut";
 import { useWorkspaceUiSyncPublisher } from "@renderer/features/maps/hooks/useWorkspaceUiSync";
 import { usePersistedControlPointDragPreference } from "@renderer/features/maps/hooks/usePersistedControlPointDragPreference";
 import { ControlPointDetailPanel } from "@renderer/features/maps/components/ControlPointDetailPanel";
@@ -210,6 +211,7 @@ export function MapWorkspaceSplitView() {
 
   const { handleControlPointMapMove } = useControlPointMove();
   usePersistedControlPointDragPreference();
+  useReferenceInspectCopyShortcut();
   const [selectedSegmentId, setSelectedSegmentId] = useState<number | null>(null);
   const [auditLogOpen, setAuditLogOpen] = useState(false);
   const [geoJsonPreviewOpen, setGeoJsonPreviewOpen] = useState(false);

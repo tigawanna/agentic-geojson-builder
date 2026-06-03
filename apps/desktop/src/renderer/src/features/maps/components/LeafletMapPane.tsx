@@ -3,7 +3,12 @@ import "leaflet/dist/leaflet.css";
 import type { LineGuide } from "@repo/isomorphic/nearest-line-point";
 import { findNearestPointOnGuides } from "@repo/isomorphic/nearest-line-point";
 import type { ReferenceGeoJsonCollection } from "@repo/isomorphic/reference-geojson";
-import { buildReferenceInspectTooltipContent } from "@renderer/features/maps/lib/reference-inspect-tooltip";
+import {
+  buildReferenceInspectCopyTarget,
+  buildReferenceInspectTooltipContent,
+  REFERENCE_INSPECT_MAX_DISTANCE_METERS,
+} from "@renderer/features/maps/lib/reference-inspect-tooltip";
+import { setReferenceInspectCopyTarget } from "@renderer/features/maps/lib/reference-inspect-copy-registry";
 import type { ControlPointRecord } from "@shared/control-points.types";
 import type { GeoSegmentRecord } from "@shared/geo-segments.types";
 import type { MapPointRecord } from "@shared/map-points.types";
@@ -146,7 +151,6 @@ export function LeafletMapPane({
   const inspectTooltipRef = useRef<import("leaflet").Tooltip | null>(null);
   const [mapReady, setMapReady] = useState(false);
 
-  const REFERENCE_INSPECT_MAX_DISTANCE_METERS = 100;
   const pickModifierHeld = usePickModifierHeld();
   const mapboxToken = useMapboxTokenQuery().data ?? null;
   const mapboxTokenRef = useRef(mapboxToken);
@@ -474,6 +478,7 @@ export function LeafletMapPane({
         mapForInspect.closeTooltip(inspectTooltipRef.current);
         inspectTooltipRef.current = null;
       }
+      setReferenceInspectCopyTarget(null);
     }
 
     function handleInspectMove(event: import("leaflet").LeafletMouseEvent) {
@@ -490,11 +495,13 @@ export function LeafletMapPane({
         return;
       }
 
-      const content = buildReferenceInspectTooltipContent({
+      const hover = {
         cursorLatitude: event.latlng.lat,
         cursorLongitude: event.latlng.lng,
         nearest,
-      });
+      };
+      setReferenceInspectCopyTarget(buildReferenceInspectCopyTarget(hover));
+      const content = buildReferenceInspectTooltipContent(hover);
 
       if (!inspectTooltipRef.current) {
         inspectTooltipRef.current = leafletForInspect.tooltip({

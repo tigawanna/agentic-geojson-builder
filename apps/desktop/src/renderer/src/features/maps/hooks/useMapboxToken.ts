@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ipcInvoke } from "@renderer/hooks/useIpc";
+import {
+  MapboxTokenValidationError,
+  validateMapboxAccessToken,
+} from "@renderer/features/maps/lib/mapbox-auth-error";
+import { clearMapboxTokenInvalid } from "@renderer/features/maps/lib/mapbox-token-invalid-store";
 
 export const MAPBOX_TOKEN_STORE_KEY = "maps.mapboxAccessToken";
 
@@ -24,10 +29,17 @@ export function useSetMapboxTokenMutation() {
       const trimmed = token?.trim() ?? "";
       if (trimmed.length === 0) {
         await ipcInvoke("store:delete", { key: MAPBOX_TOKEN_STORE_KEY });
+        clearMapboxTokenInvalid();
         return null;
       }
 
+      const valid = await validateMapboxAccessToken(trimmed);
+      if (!valid) {
+        throw new MapboxTokenValidationError();
+      }
+
       await ipcInvoke("store:set", { key: MAPBOX_TOKEN_STORE_KEY, value: trimmed });
+      clearMapboxTokenInvalid();
       return trimmed;
     },
     onSuccess: (value) => {

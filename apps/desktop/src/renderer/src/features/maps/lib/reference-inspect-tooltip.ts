@@ -27,19 +27,46 @@ function formatDistanceMeters(meters: number) {
   return `${meters.toFixed(1)} m`;
 }
 
+export const REFERENCE_INSPECT_MAX_DISTANCE_METERS = 100;
+
 export type ReferenceInspectHover = {
   cursorLatitude: number;
   cursorLongitude: number;
   nearest: NearestLinePointResult;
 };
 
+export type ReferenceInspectCopyTarget = {
+  latitude: number;
+  longitude: number;
+  elevationMeters: number | null;
+};
+
+export function buildReferenceInspectCopyTarget(
+  hover: ReferenceInspectHover,
+): ReferenceInspectCopyTarget {
+  return {
+    latitude: hover.nearest.latitude,
+    longitude: hover.nearest.longitude,
+    elevationMeters: getElevationAtLatLng(
+      hover.nearest.coordinates,
+      hover.nearest.latitude,
+      hover.nearest.longitude,
+    ),
+  };
+}
+
+export function formatReferenceInspectCopyText(target: ReferenceInspectCopyTarget): string {
+  const latitude = target.latitude.toFixed(6);
+  const longitude = target.longitude.toFixed(6);
+  if (target.elevationMeters === null) {
+    return `${latitude}, ${longitude}`;
+  }
+  return `${latitude}, ${longitude}, ${target.elevationMeters.toFixed(1)}`;
+}
+
 export function buildReferenceInspectTooltipContent(hover: ReferenceInspectHover): string {
   const { cursorLatitude, cursorLongitude, nearest } = hover;
-  const trailElevation = getElevationAtLatLng(
-    nearest.coordinates,
-    nearest.latitude,
-    nearest.longitude,
-  );
+  const trailElevation = buildReferenceInspectCopyTarget(hover).elevationMeters;
   const elevationLabel = formatElevation(trailElevation);
   const title = escapeHtml(nearest.lineName);
 

@@ -12,6 +12,8 @@ import {
 } from "@renderer/features/map-playground/lib/playground-viewport";
 import { trailFeatureColor } from "@renderer/features/map-playground/lib/trail-colors";
 import { useMapboxTokenQuery } from "@renderer/features/maps/hooks/useMapboxToken";
+import { useMapboxTokenInvalid } from "@renderer/features/maps/hooks/useMapboxTokenInvalid";
+import { attachMapboxUnauthorizedListener } from "@renderer/features/maps/lib/attach-mapbox-unauthorized-listener";
 import {
   MAPBOX_GL_STYLES,
   resolveMapboxGlStyleId,
@@ -116,6 +118,7 @@ export function PlaygroundMapboxGlPane({
   const [mapReady, setMapReady] = useState(false);
 
   const token = useMapboxTokenQuery().data ?? null;
+  const tokenInvalid = useMapboxTokenInvalid();
   const styleId = resolveMapboxGlStyleId(null, baseMapStyle);
 
   onFeatureSelectRef.current = onFeatureSelect;
@@ -205,17 +208,28 @@ export function PlaygroundMapboxGlPane({
     };
   }, []);
 
+  function handleMapboxUnauthorized() {
+    mapRef.current?.remove();
+    mapRef.current = null;
+    appliedStyleIdRef.current = null;
+    setMapReady(false);
+  }
+
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !token) {
+    if (!container || !token || tokenInvalid) {
       return;
     }
 
     if (mapRef.current) {
-      applySharedViewport(mapRef.current);
-      mapRef.current.resize();
-      syncTrails(mapRef.current);
-      return;
+      const existingMap = mapRef.current;
+      const detachAuth = attachMapboxUnauthorizedListener(existingMap, handleMapboxUnauthorized);
+      applySharedViewport(existingMap);
+      existingMap.resize();
+      syncTrails(existingMap);
+      return () => {
+        detachAuth();
+      };
     }
 
     mapboxgl.accessToken = token;
@@ -231,6 +245,7 @@ export function PlaygroundMapboxGlPane({
     map.addControl(new mapboxgl.NavigationControl(), "top-right");
     mapRef.current = map;
     appliedStyleIdRef.current = styleId;
+    const detachAuth = attachMapboxUnauthorizedListener(map, handleMapboxUnauthorized);
 
     function handleStyleReady() {
       syncTrails(map);
@@ -267,10 +282,11 @@ export function PlaygroundMapboxGlPane({
     observer.observe(container);
 
     return () => {
+      detachAuth();
       emitViewportFromMap(map);
       observer.disconnect();
     };
-  }, [styleId, token]);
+  }, [styleId, token, tokenInvalid]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -305,10 +321,10 @@ export function PlaygroundMapboxGlPane({
     syncTrails(map);
   }, [layers, mapReady, selectedFeature]);
 
-  if (!token) {
+  if (!token || tokenInvalid) {
     return (
       <div className="absolute inset-0 z-0 bg-base-200">
-        <MapboxTokenRequiredModal />
+        <MapboxTokenRequiredModal reason={tokenInvalid ? "invalid" : "missing"} />
       </div>
     );
   }

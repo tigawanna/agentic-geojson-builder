@@ -251,10 +251,10 @@
       "mapboxTokenModal": {
         "title": "Mapbox access token required",
         "description": "The Mapbox GL engine needs a public access token stored on this device. Add one below or in Settings—the map appears as soon as a token is saved.",
-        "stepAccount": "Sign in at mapbox.com and open Access tokens.",
-        "stepToken": "Create a token (default public scopes are fine) and copy it.",
-        "stepPaste": "Paste the token here and save, or add it under Settings → Mapbox.",
-        "openMapbox": "Open Mapbox token page",
+        "invalidTitle": "Mapbox access token rejected",
+        "invalidDescription": "Mapbox refused the saved token—it may be expired, revoked, or incorrect. Replace it with a valid public token below.",
+        "invalidSave": "Mapbox rejected this token. Check it on mapbox.com and try again.",
+        "openMapbox": "Get a token on mapbox.com",
         "openSettings": "Settings",
         "saveAndShowMap": "Save and show map"
       },
@@ -496,7 +496,8 @@
       "hide": "Hide token",
       "save": "Save token",
       "saved": "Saved",
-      "clear": "Clear"
+      "clear": "Clear",
+      "invalidSave": "Mapbox rejected this token. Check it on mapbox.com and try again."
     },
     "mcp": {
       "heading": "Local MCP server",

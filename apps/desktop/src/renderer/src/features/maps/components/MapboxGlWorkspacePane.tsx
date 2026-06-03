@@ -4,7 +4,12 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import type { LineGuide } from "@repo/isomorphic/nearest-line-point";
 import { findNearestPointOnGuides } from "@repo/isomorphic/nearest-line-point";
 import type { CreateMapboxGroundCaptureInput } from "@shared/mapbox-capture.types";
-import { buildReferenceInspectTooltipContent } from "@renderer/features/maps/lib/reference-inspect-tooltip";
+import {
+  buildReferenceInspectCopyTarget,
+  buildReferenceInspectTooltipContent,
+  REFERENCE_INSPECT_MAX_DISTANCE_METERS,
+} from "@renderer/features/maps/lib/reference-inspect-tooltip";
+import { setReferenceInspectCopyTarget } from "@renderer/features/maps/lib/reference-inspect-copy-registry";
 import { referenceGeoJsonColor } from "@renderer/features/maps/lib/reference-geojson-color";
 import { DEFAULT_MAP_VIEWPORT } from "@renderer/features/maps/lib/map-handle";
 import { createMapboxMapHandle } from "@renderer/features/maps/lib/create-mapbox-map-handle";
@@ -20,6 +25,8 @@ import { MapboxInspectPanel } from "@renderer/features/maps/components/MapboxIns
 import { MapboxTokenRequiredModal } from "@renderer/features/maps/components/MapboxTokenRequiredModal";
 import { isPickModifierEvent } from "@renderer/features/maps/lib/pick-modifier";
 import { useMapboxTokenQuery } from "@renderer/features/maps/hooks/useMapboxToken";
+import { useMapboxTokenInvalid } from "@renderer/features/maps/hooks/useMapboxTokenInvalid";
+import { attachMapboxUnauthorizedListener } from "@renderer/features/maps/lib/attach-mapbox-unauthorized-listener";
 import { segmentGroupColor } from "@renderer/features/maps/lib/segment-utils";
 import type { LeafletMapPaneProps } from "@renderer/features/maps/components/LeafletMapPane";
 
@@ -37,8 +44,6 @@ const MAP_POINT_CATEGORY_COLORS: Record<string, string> = {
 function mapPointColor(category: string): string {
   return MAP_POINT_CATEGORY_COLORS[category] ?? "#db2777";
 }
-
-const REFERENCE_INSPECT_MAX_DISTANCE_METERS = 100;
 
 const REFERENCE_SOURCE_ID = "workspace-reference-lines";
 const REFERENCE_LAYER_ID = "workspace-reference-lines-layer";
@@ -115,6 +120,7 @@ export function MapboxGlWorkspacePane({
   const [referenceInspect, setReferenceInspect] = useState<ReferenceInspectState | null>(null);
 
   const token = useMapboxTokenQuery().data ?? null;
+  const tokenInvalid = useMapboxTokenInvalid();
   const styleId = resolveMapboxGlStyleId(workspace.mapboxGlStyle, workspace.baseMapStyle);
   const styleIdRef = useRef(styleId);
   const appliedStyleIdRef = useRef<MapboxGlStyleId | null>(null);
@@ -232,14 +238,22 @@ export function MapboxGlWorkspacePane({
     };
   }, [workspace.id]);
 
+  function handleMapboxUnauthorized() {
+    mapRef.current?.remove();
+    mapRef.current = null;
+    appliedStyleIdRef.current = null;
+    setMapReady(false);
+  }
+
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !token) {
+    if (!container || !token || tokenInvalid) {
       return;
     }
 
     if (mapRef.current) {
       const map = mapRef.current;
+      const detachAuth = attachMapboxUnauthorizedListener(map, handleMapboxUnauthorized);
       map.resize();
       onReadyRef.current(
         createMapboxMapHandle(map, {
@@ -261,7 +275,9 @@ export function MapboxGlWorkspacePane({
       );
       syncSourcesRef.current();
       syncMarkersRef.current();
-      return;
+      return () => {
+        detachAuth();
+      };
     }
 
     mapboxgl.accessToken = token;
@@ -281,6 +297,7 @@ export function MapboxGlWorkspacePane({
     map.addControl(new mapboxgl.NavigationControl(), "top-right");
     mapRef.current = map;
     appliedStyleIdRef.current = styleIdRef.current;
+    const detachAuth = attachMapboxUnauthorizedListener(map, handleMapboxUnauthorized);
 
     function emitViewportChange() {
       if (suppressViewportSyncRef.current) {
@@ -523,19 +540,23 @@ export function MapboxGlWorkspacePane({
       const guides = referenceGuidesRef.current;
       if (!data.showReferenceOverlay || !data.showReferenceInspectTooltip || guides.length === 0) {
         setReferenceInspect(null);
+        setReferenceInspectCopyTarget(null);
         return;
       }
       const nearest = findNearestPointOnGuides(event.lngLat.lat, event.lngLat.lng, guides);
       if (!nearest || nearest.distanceMeters > REFERENCE_INSPECT_MAX_DISTANCE_METERS) {
         setReferenceInspect(null);
+        setReferenceInspectCopyTarget(null);
         return;
       }
+      const hover = {
+        cursorLatitude: event.lngLat.lat,
+        cursorLongitude: event.lngLat.lng,
+        nearest,
+      };
+      setReferenceInspectCopyTarget(buildReferenceInspectCopyTarget(hover));
       setReferenceInspect({
-        html: buildReferenceInspectTooltipContent({
-          cursorLatitude: event.lngLat.lat,
-          cursorLongitude: event.lngLat.lng,
-          nearest,
-        }),
+        html: buildReferenceInspectTooltipContent(hover),
         x: event.originalEvent.clientX,
         y: event.originalEvent.clientY,
       });
@@ -556,6 +577,7 @@ export function MapboxGlWorkspacePane({
     map.on("mouseout", () => {
       onCursorMoveRef.current(null);
       setReferenceInspect(null);
+      setReferenceInspectCopyTarget(null);
       if (!dataRef.current.pinnedProbe) {
         map.getCanvas().style.cursor = isPickMode(dataRef.current) ? "crosshair" : "";
         setHoverProbe(null);
@@ -638,9 +660,10 @@ export function MapboxGlWorkspacePane({
     observer.observe(container);
 
     return () => {
+      detachAuth();
       observer.disconnect();
     };
-  }, [workspace.id, token]);
+  }, [workspace.id, token, tokenInvalid]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -798,10 +821,10 @@ export function MapboxGlWorkspacePane({
     }
   }, [inspectMode]);
 
-  if (!token) {
+  if (!token || tokenInvalid) {
     return (
       <div className="absolute inset-0 bg-base-200">
-        <MapboxTokenRequiredModal />
+        <MapboxTokenRequiredModal reason={tokenInvalid ? "invalid" : "missing"} />
       </div>
     );
   }

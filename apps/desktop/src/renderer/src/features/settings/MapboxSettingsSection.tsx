@@ -5,6 +5,7 @@ import {
   useMapboxTokenQuery,
   useSetMapboxTokenMutation,
 } from "@renderer/features/maps/hooks/useMapboxToken";
+import { isMapboxTokenValidationError } from "@renderer/features/maps/lib/mapbox-auth-error";
 
 export function MapboxSettingsSection() {
   const { t } = useTranslation();
@@ -13,15 +14,23 @@ export function MapboxSettingsSection() {
   const [draft, setDraft] = useState("");
   const [revealed, setRevealed] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     setDraft(tokenQuery.data ?? "");
   }, [tokenQuery.data]);
 
   async function handleSave() {
-    await setToken.mutateAsync(draft);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1500);
+    setSaveError(null);
+    try {
+      await setToken.mutateAsync(draft);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    } catch (error) {
+      if (isMapboxTokenValidationError(error)) {
+        setSaveError(t("settings.mapbox.invalidSave"));
+      }
+    }
   }
 
   return (
@@ -42,7 +51,12 @@ export function MapboxSettingsSection() {
             spellCheck={false}
             autoComplete="off"
             data-test="mapbox-token-input"
-            onChange={(event) => setDraft(event.target.value)}
+            onChange={(event) => {
+              setDraft(event.target.value);
+              if (saveError) {
+                setSaveError(null);
+              }
+            }}
           />
           <button
             type="button"
@@ -54,6 +68,8 @@ export function MapboxSettingsSection() {
           </button>
         </div>
       </label>
+
+      {saveError ? <p className="mt-2 text-sm text-error">{saveError}</p> : null}
 
       <div className="mt-4 flex items-center gap-2">
         <button
