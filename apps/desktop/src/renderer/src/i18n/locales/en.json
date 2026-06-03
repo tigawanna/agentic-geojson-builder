@@ -248,6 +248,16 @@
       "engineLabel": "Map engine",
       "engineLeaflet": "Leaflet",
       "engineMapboxGl": "Mapbox GL",
+      "mapboxTokenModal": {
+        "title": "Mapbox access token required",
+        "description": "The Mapbox GL engine needs a public access token stored on this device. Add one below or in Settings—the map appears as soon as a token is saved.",
+        "stepAccount": "Sign in at mapbox.com and open Access tokens.",
+        "stepToken": "Create a token (default public scopes are fine) and copy it.",
+        "stepPaste": "Paste the token here and save, or add it under Settings → Mapbox.",
+        "openMapbox": "Open Mapbox token page",
+        "openSettings": "Settings",
+        "saveAndShowMap": "Save and show map"
+      },
       "captureSaved": "Saved capture to collection.",
       "linkPoints": "Link",
       "linkPickFirst": "Click the first marker to start a link.",

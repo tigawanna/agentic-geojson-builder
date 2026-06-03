@@ -1,6 +1,7 @@
 import type { MapWorkspaceMenuSyncState } from "@shared/map-workspace-menu.types";
 import { useReferenceGeoJsonQuery } from "@renderer/features/maps/hooks/useReferenceGeoJsonQuery";
 import { useMapboxTokenQuery } from "@renderer/features/maps/hooks/useMapboxToken";
+import { useMapBaseRendererQuery } from "@renderer/features/maps/hooks/useMapBaseRenderer";
 import { resolveMapboxGlStyleId } from "@renderer/features/maps/lib/mapbox-gl-styles";
 import {
   useMapWorkspaceState,
@@ -40,7 +41,7 @@ export function MapWorkspaceMenuSyncBridge({
   const hasReferenceGeoJson = (referenceGeoJsonQuery.data?.layers.length ?? 0) > 0;
   const mapboxTokenAvailable = (useMapboxTokenQuery().data ?? null) !== null;
 
-  const baseRenderer = workspace?.baseRenderer ?? "leaflet";
+  const baseRenderer = useMapBaseRendererQuery().data ?? "leaflet";
   const mapboxGlStyle = resolveMapboxGlStyleId(
     workspace?.mapboxGlStyle ?? null,
     workspace?.baseMapStyle ?? "standard",

@@ -43,8 +43,11 @@ import {
 } from "@renderer/features/maps/store/MapWorkspaceProvider";
 import { LeafletMapPane } from "@renderer/features/maps/components/LeafletMapPane";
 import { MapboxGlWorkspacePane } from "@renderer/features/maps/components/MapboxGlWorkspacePane";
-import { useMapboxTokenQuery } from "@renderer/features/maps/hooks/useMapboxToken";
 import type { MapBaseRenderer } from "@shared/maps.types";
+import {
+  useMapBaseRendererQuery,
+  useSetMapBaseRendererMutation,
+} from "@renderer/features/maps/hooks/useMapBaseRenderer";
 import type { MapboxGlStyleId } from "@renderer/features/maps/lib/mapbox-gl-styles";
 import type { CreateMapboxGroundCaptureInput } from "@shared/mapbox-capture.types";
 import { MapTileCacheBoundsModal } from "@renderer/features/maps/components/MapTileCacheBoundsModal";
@@ -202,7 +205,8 @@ export function MapWorkspaceSplitView() {
   const updateGeoSegment = useIpcMutation("geoSegments:update");
   const exportGeoJson = useIpcMutation("geoSegments:exportToFile");
   const createCapture = useIpcMutation("mapboxCaptures:create");
-  const mapboxToken = useMapboxTokenQuery().data ?? null;
+  const baseRenderer = useMapBaseRendererQuery().data ?? "leaflet";
+  const setBaseRenderer = useSetMapBaseRendererMutation();
 
   const { handleControlPointMapMove } = useControlPointMove();
   usePersistedControlPointDragPreference();
@@ -288,12 +292,26 @@ export function MapWorkspaceSplitView() {
   };
 
   useEffect(() => {
-    if (mapPanelCollapsed) {
-      mapPanelRef.current?.collapse();
+    if (!showSourceDocked) {
       return;
     }
-    mapPanelRef.current?.expand();
-  }, [mapPanelCollapsed]);
+
+    const panel = mapPanelRef.current;
+    if (!panel) {
+      return;
+    }
+
+    if (mapPanelCollapsed) {
+      if (!panel.isCollapsed()) {
+        panel.collapse();
+      }
+      return;
+    }
+
+    if (panel.isCollapsed()) {
+      panel.expand();
+    }
+  }, [mapPanelCollapsed, showSourceDocked]);
 
   const handleCollapseSourcePanel = useCallback(() => {
     if (!workspace) {
@@ -329,10 +347,13 @@ export function MapWorkspaceSplitView() {
 
   const handleExpandMapPanel = useCallback(() => {
     setMapPanelCollapsed(false);
+    if (!showSourceDocked) {
+      return;
+    }
     requestAnimationFrame(() => {
       mapPanelRef.current?.expand();
     });
-  }, [setMapPanelCollapsed]);
+  }, [setMapPanelCollapsed, showSourceDocked]);
 
   useEffect(() => {
     if (!workspace) {
@@ -905,9 +926,9 @@ export function MapWorkspaceSplitView() {
 
   const handleSetBaseRenderer = useCallback(
     (renderer: MapBaseRenderer) => {
-      queueSave({ baseRenderer: renderer });
+      void setBaseRenderer.mutateAsync(renderer);
     },
-    [queueSave],
+    [setBaseRenderer],
   );
 
   const handleSetMapboxGlStyle = useCallback(
@@ -942,7 +963,25 @@ export function MapWorkspaceSplitView() {
   });
 
   const allowControlPointDrag = controlPointDragEnabled && !referenceMode && !traceMode;
-  const useMapboxGl = workspace?.baseRenderer === "mapbox-gl" && mapboxToken !== null;
+  const mapboxGlActive = baseRenderer === "mapbox-gl";
+  const activeBaseRendererRef = useRef<MapBaseRenderer>(baseRenderer);
+  activeBaseRendererRef.current = baseRenderer;
+
+  useEffect(() => {
+    setMapHandle(null);
+  }, [baseRenderer]);
+
+  const handleLeafletMapReady = useCallback((handle: MapHandle) => {
+    if (activeBaseRendererRef.current === "leaflet") {
+      setMapHandle(handle);
+    }
+  }, []);
+
+  const handleMapboxMapReady = useCallback((handle: MapHandle) => {
+    if (activeBaseRendererRef.current === "mapbox-gl") {
+      setMapHandle(handle);
+    }
+  }, []);
 
   if (!workspace) {
     return null;
@@ -967,7 +1006,6 @@ export function MapWorkspaceSplitView() {
     controlPointDragEnabled: allowControlPointDrag,
     editingSegmentId,
     selectedControlPointId,
-    onReady: setMapHandle,
     onInitialViewportReady: setHomeViewport,
     onViewportChange: handleViewportChange,
     onCursorMove: (coordinates: { latitude: number; longitude: number } | null) =>
@@ -1076,12 +1114,17 @@ export function MapWorkspaceSplitView() {
             ref={mapPanelRef}
             defaultSize={showSourceDocked ? 50 : 100}
             minSize={18}
-            maxSize={82}
-            collapsible
+            maxSize={showSourceDocked ? 82 : 100}
+            collapsible={showSourceDocked}
             collapsedSize={0}
             order={showSourceDocked ? 2 : 1}
           >
-            <section className="relative h-full min-h-0 bg-base-200">
+            <section
+              className={cn(
+                "relative h-full min-h-0 bg-base-200",
+                mapPanelCollapsed && !showSourceDocked && "hidden",
+              )}
+            >
               <span className="pointer-events-none absolute top-3 left-3 z-10 rounded-box bg-base-100/90 px-2 py-1 text-xs font-medium">
                 {t(`maps.workspace.baseMap.${workspace.baseMapStyle}`)}
                 {showReferenceOverlay && referenceOverlayFeatureCount > 0
@@ -1105,16 +1148,24 @@ export function MapWorkspaceSplitView() {
               >
                 <LocateFixed className="size-4" />
               </button>
-              {useMapboxGl ? (
-                <MapboxGlWorkspacePane
-                  {...sharedPaneProps}
-                  inspectMode={mapboxInspectMode}
-                  capturePending={createCapture.isPending}
-                  onCapture={handleCapture}
-                />
-              ) : (
-                <LeafletMapPane {...sharedPaneProps} localTileUrl={localTileUrl} />
-              )}
+              <div className="relative h-full min-h-0">
+                <Activity mode={mapboxGlActive ? "hidden" : "visible"}>
+                  <LeafletMapPane
+                    {...sharedPaneProps}
+                    localTileUrl={localTileUrl}
+                    onReady={handleLeafletMapReady}
+                  />
+                </Activity>
+                <Activity mode={mapboxGlActive ? "visible" : "hidden"}>
+                  <MapboxGlWorkspacePane
+                    {...sharedPaneProps}
+                    onReady={handleMapboxMapReady}
+                    inspectMode={mapboxInspectMode}
+                    capturePending={createCapture.isPending}
+                    onCapture={handleCapture}
+                  />
+                </Activity>
+              </div>
               {selectedSegmentId && !traceMode ? (
                 <div className="absolute right-3 bottom-3 z-[1000] flex items-center gap-1 rounded-box bg-base-100/95 px-2 py-1.5 shadow-lg">
                   <span className="mr-1 text-xs text-base-content/70">

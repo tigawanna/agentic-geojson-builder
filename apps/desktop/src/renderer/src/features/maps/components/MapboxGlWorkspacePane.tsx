@@ -11,11 +11,13 @@ import { createMapboxMapHandle } from "@renderer/features/maps/lib/create-mapbox
 import {
   MAPBOX_GL_STYLES,
   resolveMapboxGlStyleId,
+  type MapboxGlStyleId,
 } from "@renderer/features/maps/lib/mapbox-gl-styles";
 import { buildCaptureFromProbe } from "@renderer/features/maps/lib/build-capture-from-probe";
 import type { MapboxFeatureProbe } from "@renderer/features/maps/lib/mapbox-probe.types";
 import { MapboxFeatureHoverTooltip } from "@renderer/features/maps/components/MapboxFeatureHoverTooltip";
 import { MapboxInspectPanel } from "@renderer/features/maps/components/MapboxInspectPanel";
+import { MapboxTokenRequiredModal } from "@renderer/features/maps/components/MapboxTokenRequiredModal";
 import { isPickModifierEvent } from "@renderer/features/maps/lib/pick-modifier";
 import { useMapboxTokenQuery } from "@renderer/features/maps/hooks/useMapboxToken";
 import { segmentGroupColor } from "@renderer/features/maps/lib/segment-utils";
@@ -115,6 +117,7 @@ export function MapboxGlWorkspacePane({
   const token = useMapboxTokenQuery().data ?? null;
   const styleId = resolveMapboxGlStyleId(workspace.mapboxGlStyle, workspace.baseMapStyle);
   const styleIdRef = useRef(styleId);
+  const appliedStyleIdRef = useRef<MapboxGlStyleId | null>(null);
   styleIdRef.current = styleId;
 
   const onReadyRef = useRef(onReady);
@@ -212,8 +215,52 @@ export function MapboxGlWorkspacePane({
   }, [referenceOverlay, showReferenceOverlay]);
 
   useEffect(() => {
+    return () => {
+      if (mapClickTimerRef.current !== undefined) {
+        window.clearTimeout(mapClickTimerRef.current);
+      }
+      markersRef.current.forEach((marker) => marker.remove());
+      markersRef.current = [];
+      mapRef.current?.remove();
+      mapRef.current = null;
+      appliedStyleIdRef.current = null;
+      syncSourcesRef.current = () => {};
+      syncMarkersRef.current = () => {};
+      geocodedRef.current = false;
+      initialViewportCapturedRef.current = false;
+      setMapReady(false);
+    };
+  }, [workspace.id]);
+
+  useEffect(() => {
     const container = containerRef.current;
     if (!container || !token) {
+      return;
+    }
+
+    if (mapRef.current) {
+      const map = mapRef.current;
+      map.resize();
+      onReadyRef.current(
+        createMapboxMapHandle(map, {
+          setSuppressViewportSync: (value) => {
+            suppressViewportSyncRef.current = value;
+          },
+          emitViewportChange: () => {
+            if (suppressViewportSyncRef.current) {
+              return;
+            }
+            const center = map.getCenter();
+            onViewportChangeRef.current({
+              latitude: center.lat,
+              longitude: center.lng,
+              zoom: map.getZoom(),
+            });
+          },
+        }),
+      );
+      syncSourcesRef.current();
+      syncMarkersRef.current();
       return;
     }
 
@@ -233,6 +280,7 @@ export function MapboxGlWorkspacePane({
     });
     map.addControl(new mapboxgl.NavigationControl(), "top-right");
     mapRef.current = map;
+    appliedStyleIdRef.current = styleIdRef.current;
 
     function emitViewportChange() {
       if (suppressViewportSyncRef.current) {
@@ -591,27 +639,45 @@ export function MapboxGlWorkspacePane({
 
     return () => {
       observer.disconnect();
-      if (mapClickTimerRef.current !== undefined) {
-        window.clearTimeout(mapClickTimerRef.current);
-      }
-      markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current = [];
-      map.remove();
-      mapRef.current = null;
-      syncSourcesRef.current = () => {};
-      syncMarkersRef.current = () => {};
-      geocodedRef.current = false;
-      initialViewportCapturedRef.current = false;
-      setMapReady(false);
     };
   }, [workspace.id, token]);
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) {
+    if (!map || appliedStyleIdRef.current === styleId) {
       return;
     }
-    map.setStyle(MAPBOX_GL_STYLES[styleId]);
+
+    const nextStyle = MAPBOX_GL_STYLES[styleId];
+
+    function handleStyleReady() {
+      if (!mapRef.current || styleIdRef.current !== styleId) {
+        return;
+      }
+      appliedStyleIdRef.current = styleId;
+      syncSourcesRef.current();
+      syncMarkersRef.current();
+    }
+
+    function applyStyle() {
+      if (!mapRef.current || appliedStyleIdRef.current === styleId) {
+        return;
+      }
+      mapRef.current.setStyle(nextStyle);
+    }
+
+    map.once("style.load", handleStyleReady);
+
+    if (map.isStyleLoaded()) {
+      applyStyle();
+    } else {
+      map.once("load", applyStyle);
+    }
+
+    return () => {
+      map.off("style.load", handleStyleReady);
+      map.off("load", applyStyle);
+    };
   }, [styleId]);
 
   useEffect(() => {
@@ -734,8 +800,8 @@ export function MapboxGlWorkspacePane({
 
   if (!token) {
     return (
-      <div className="absolute inset-0 flex items-center justify-center bg-base-200 px-6 text-center text-sm text-base-content/60">
-        Add a Mapbox access token in settings to use the Mapbox GL renderer.
+      <div className="absolute inset-0 bg-base-200">
+        <MapboxTokenRequiredModal />
       </div>
     );
   }
@@ -744,7 +810,7 @@ export function MapboxGlWorkspacePane({
 
   return (
     <div className="absolute inset-0">
-      <div ref={containerRef} className="absolute inset-0" />
+      <div ref={containerRef} className="absolute inset-0 h-full w-full" />
       {canPickMapPoint ? (
         <div className="pointer-events-none absolute bottom-3 left-3 z-1000 rounded-box bg-base-100/90 px-2 py-1 text-xs text-base-content/70">
           Ctrl+click to set map pin

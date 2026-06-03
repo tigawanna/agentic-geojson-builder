@@ -81,7 +81,6 @@ export function buildMapWorkspaceMenuSubmenu(): MenuItemConstructorOptions[] {
           label: "Mapbox GL (vector)",
           type: "radio",
           checked: state.baseRenderer === "mapbox-gl",
-          enabled: state.mapboxTokenAvailable,
           click: menuClick("base-renderer:mapbox-gl"),
         },
       ],

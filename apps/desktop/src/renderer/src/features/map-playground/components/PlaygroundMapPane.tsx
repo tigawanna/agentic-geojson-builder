@@ -156,9 +156,27 @@ export function PlaygroundMapPane({
   mapboxTokenRef.current = mapboxToken;
 
   useEffect(() => {
+    return () => {
+      mapRef.current?.remove();
+      mapRef.current = null;
+      baseLayerRef.current = null;
+      trailsLayerRef.current = null;
+      highlightLayerRef.current = null;
+      leafletRef.current = null;
+      hasAppliedInitialStyleRef.current = false;
+      setMapReady(false);
+    };
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
     let resizeTimer: number | undefined;
     let resizeObserver: ResizeObserver | undefined;
+
+    if (mapRef.current) {
+      mapRef.current.invalidateSize({ animate: false });
+      return;
+    }
 
     async function createMap() {
       const L = await import("leaflet");
@@ -197,18 +215,10 @@ export function PlaygroundMapPane({
 
     return () => {
       cancelled = true;
-      hasAppliedInitialStyleRef.current = false;
-      setMapReady(false);
       resizeObserver?.disconnect();
       if (resizeTimer !== undefined) {
         window.clearTimeout(resizeTimer);
       }
-      mapRef.current?.remove();
-      mapRef.current = null;
-      baseLayerRef.current = null;
-      trailsLayerRef.current = null;
-      highlightLayerRef.current = null;
-      leafletRef.current = null;
     };
   }, []);
 

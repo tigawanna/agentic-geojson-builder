@@ -4,5 +4,5 @@ export function trailFeatureColor(label: string) {
     hash = label.charCodeAt(index) + ((hash << 5) - hash);
   }
   const hue = Math.abs(hash) % 360;
-  return `hsl(${hue} 68% 46%)`;
+  return `hsl(${hue}, 68%, 46%)`;
 }

@@ -4,5 +4,5 @@ export function referenceGeoJsonColor(label: string) {
     hash = label.charCodeAt(index) + ((hash << 5) - hash);
   }
   const hue = Math.abs(hash) % 360;
-  return `hsl(${hue} 62% 45%)`;
+  return `hsl(${hue}, 62%, 45%)`;
 }

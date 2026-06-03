@@ -167,9 +167,48 @@ export function LeafletMapPane({
   onSegmentClickRef.current = onSegmentClick;
 
   useEffect(() => {
+    return () => {
+      mapRef.current?.remove();
+      mapRef.current = null;
+      baseLayerRef.current = null;
+      overlayRef.current = null;
+      referenceLayerRef.current = null;
+      segmentsLayerRef.current = null;
+      markersLayerRef.current = null;
+      geocodedRef.current = false;
+      initialViewportCapturedRef.current = false;
+      setMapReady(false);
+    };
+  }, [workspace.id]);
+
+  useEffect(() => {
     let disposed = false;
     const container = containerRef.current;
     if (!container) {
+      return;
+    }
+
+    if (mapRef.current) {
+      const map = mapRef.current;
+      map.invalidateSize({ animate: false });
+      onReadyRef.current(
+        createMapHandle(map, {
+          setSuppressViewportSync: (value) => {
+            suppressViewportSyncRef.current = value;
+          },
+          emitViewportChange: () => {
+            if (suppressViewportSyncRef.current) {
+              return;
+            }
+            const center = map.getCenter();
+            onViewportChangeRef.current({
+              latitude: center.lat,
+              longitude: center.lng,
+              zoom: map.getZoom(),
+            });
+          },
+        }),
+      );
       return;
     }
 
@@ -285,16 +324,6 @@ export function LeafletMapPane({
     return () => {
       disposed = true;
       void cleanupPromise.then((cleanup) => cleanup?.());
-      mapRef.current?.remove();
-      mapRef.current = null;
-      baseLayerRef.current = null;
-      overlayRef.current = null;
-      referenceLayerRef.current = null;
-      segmentsLayerRef.current = null;
-      markersLayerRef.current = null;
-      geocodedRef.current = false;
-      initialViewportCapturedRef.current = false;
-      setMapReady(false);
     };
   }, [workspace.id]);
 

@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { MapTraceTrailBar } from "@renderer/features/maps/components/MapTraceTrailBar";
 import { MapWorkspaceViewOptionsSection } from "@renderer/features/maps/components/MapWorkspaceViewOptionsSection";
 import { MapWorkspaceCapturesSection } from "@renderer/features/maps/components/MapWorkspaceCapturesSection";
+import { useMapBaseRendererQuery } from "@renderer/features/maps/hooks/useMapBaseRenderer";
 import {
   useMapWorkspaceState,
   useMapWorkspaceUiActions,
@@ -52,6 +53,7 @@ export function MapWorkspaceToolsPanel({
 }: MapWorkspaceToolsPanelProps) {
   const { t } = useTranslation();
   const workspace = useMapWorkspaceState((state) => state.workspace);
+  const baseRenderer = useMapBaseRendererQuery().data ?? "leaflet";
   const toolsPanelOpen = useMapWorkspaceUiState((state) => state.toolsPanelOpen);
   const traceMode = useMapWorkspaceUiState((state) => state.traceMode);
   const statusMessage = useMapWorkspaceUiState((state) => state.statusMessage);
@@ -99,7 +101,7 @@ export function MapWorkspaceToolsPanel({
 
         <MapWorkspaceViewOptionsSection />
 
-        {workspace.baseRenderer === "mapbox-gl" ? <MapWorkspaceCapturesSection /> : null}
+        {baseRenderer === "mapbox-gl" ? <MapWorkspaceCapturesSection /> : null}
 
         <section className="mt-4 space-y-2">
           <h3 className="text-xs font-semibold tracking-wide text-base-content/50 uppercase">

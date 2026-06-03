@@ -3,11 +3,7 @@ import { History } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { ControlPointRecord } from "@shared/control-points.types";
 import type { GeoSegmentRecord } from "@shared/geo-segments.types";
-import {
-  MAPBOX_BASE_MAP_STYLES,
-  type MapBaseMapStyle,
-  type MapBaseRenderer,
-} from "@shared/maps.types";
+import { MAPBOX_BASE_MAP_STYLES, type MapBaseMapStyle } from "@shared/maps.types";
 import { useMapboxTokenQuery } from "@renderer/features/maps/hooks/useMapboxToken";
 import { useIpcMutation } from "@renderer/hooks/useIpc";
 import { useReplaceMapSourceMutation } from "@renderer/features/maps/hooks/useReplaceMapSourceMutation";
@@ -22,6 +18,11 @@ import {
 } from "@renderer/features/maps/store/MapWorkspaceProvider";
 import type { MapHandle } from "@renderer/features/maps/lib/map-handle";
 import { BaseMapStylePicker } from "@renderer/features/maps/components/BaseMapStylePicker";
+import { MapEngineToggle } from "@renderer/features/maps/components/MapEngineToggle";
+import {
+  useMapBaseRendererQuery,
+  useSetMapBaseRendererMutation,
+} from "@renderer/features/maps/hooks/useMapBaseRenderer";
 import { MapGeoSegmentsSection } from "@renderer/features/maps/components/MapGeoSegmentsSection";
 import { MapMarkersSection } from "@renderer/features/maps/components/MapMarkersSection";
 import { MapReferenceGeoJsonSection } from "@renderer/features/maps/components/MapReferenceGeoJsonSection";
@@ -89,6 +90,8 @@ export function MapWorkspaceControlsModal({
   const deleteControlPoint = useIpcMutation("controlPoints:delete");
   const tileCache = useTileCacheStatusQuery(mapId);
   const mapboxToken = useMapboxTokenQuery().data ?? null;
+  const baseRenderer = useMapBaseRendererQuery().data ?? "leaflet";
+  const setBaseRenderer = useSetMapBaseRendererMutation();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -96,7 +99,6 @@ export function MapWorkspaceControlsModal({
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [baseMapStyle, setBaseMapStyle] = useState<MapBaseMapStyle>("standard");
-  const [baseRenderer, setBaseRenderer] = useState<MapBaseRenderer>("leaflet");
   const [pdfScale, setPdfScale] = useState(1);
   const [pdfRotation, setPdfRotation] = useState(0);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -114,7 +116,6 @@ export function MapWorkspaceControlsModal({
     setLatitude(workspace.mapCenterLat?.toString() ?? "");
     setLongitude(workspace.mapCenterLng?.toString() ?? "");
     setBaseMapStyle(workspace.baseMapStyle);
-    setBaseRenderer(workspace.baseRenderer);
     setPdfScale(workspace.pdfScale);
     setPdfRotation(workspace.pdfRotation);
     setLocationError(null);
@@ -130,11 +131,6 @@ export function MapWorkspaceControlsModal({
   function applyBaseMapStyle(style: MapBaseMapStyle) {
     setBaseMapStyle(style);
     queueSave({ baseMapStyle: style });
-  }
-
-  function applyBaseRenderer(renderer: MapBaseRenderer) {
-    setBaseRenderer(renderer);
-    queueSave({ baseRenderer: renderer });
   }
 
   function applyPdfTransform(scale: number, rotation: number) {
@@ -287,24 +283,10 @@ export function MapWorkspaceControlsModal({
               <span className="text-xs font-medium tracking-wide text-base-content/50 uppercase">
                 {t("maps.workspace.engineLabel")}
               </span>
-              <div className="join">
-                <button
-                  type="button"
-                  className={`btn join-item btn-sm ${baseRenderer === "leaflet" ? "btn-primary" : "btn-outline"}`}
-                  onClick={() => applyBaseRenderer("leaflet")}
-                >
-                  {t("maps.workspace.engineLeaflet")}
-                </button>
-                <button
-                  type="button"
-                  className={`btn join-item btn-sm ${baseRenderer === "mapbox-gl" ? "btn-primary" : "btn-outline"}`}
-                  disabled={!mapboxToken}
-                  title={mapboxToken ? undefined : t("maps.workspace.baseMap.mapboxTokenNeeded")}
-                  onClick={() => applyBaseRenderer("mapbox-gl")}
-                >
-                  {t("maps.workspace.engineMapboxGl")}
-                </button>
-              </div>
+              <MapEngineToggle
+                value={baseRenderer}
+                onChange={(renderer) => void setBaseRenderer.mutateAsync(renderer)}
+              />
             </div>
 
             <div className="flex flex-col gap-2.5">
