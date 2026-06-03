@@ -31,7 +31,10 @@ import type {
   AppMenuAction,
   ShowMapContextMenuInput,
   ShowMapWorkspaceQuickMenuInput,
+  ShowNativeMenuInput,
 } from "./menu.types.js";
+import type { PopupApplicationSubmenuInput } from "./application-menu.types.js";
+import type { MapboxMenuSyncState } from "./mapbox-menu.types.js";
 import type {
   BuildTileCacheResult,
   GetMapSectorViewInput,
@@ -116,6 +119,13 @@ import type {
   UpdateMapPointInput,
 } from "./map-points.types.js";
 import type {
+  CreateMapboxGroundCaptureInput,
+  DeleteMapboxGroundCaptureInput,
+  MapboxCapturesChangedEvent,
+  MapboxGroundCaptureRecord,
+  UpdateMapboxGroundCaptureInput,
+} from "./mapbox-capture.types.js";
+import type {
   CreateMapLinkFromPointsInput,
   CreateMapLinkInput,
   DeleteMapLinkInput,
@@ -146,6 +156,12 @@ export interface IpcContract {
   "app:showMapWorkspaceQuickMenu": {
     req: ShowMapWorkspaceQuickMenuInput;
     res: { ok: true } | { ok: false };
+  };
+  "app:showNativeMenu": { req: ShowNativeMenuInput; res: { ok: true } | { ok: false } };
+  "mapboxMenu:syncState": { req: MapboxMenuSyncState; res: { ok: true } };
+  "app:popupApplicationSubmenu": {
+    req: PopupApplicationSubmenuInput;
+    res: { ok: boolean };
   };
   "app:hardReload": { req: void; res: { ok: true } | { ok: false } };
 
@@ -344,6 +360,18 @@ export interface IpcContract {
   "mapPoints:update": { req: UpdateMapPointInput; res: { point: MapPointRecord } };
   "mapPoints:delete": { req: DeleteMapPointInput; res: { ok: true } };
 
+  // --- Mapbox ground captures (experimental basemap sampling) ----------------
+  "mapboxCaptures:list": { req: void; res: { captures: MapboxGroundCaptureRecord[] } };
+  "mapboxCaptures:create": {
+    req: CreateMapboxGroundCaptureInput;
+    res: { capture: MapboxGroundCaptureRecord };
+  };
+  "mapboxCaptures:update": {
+    req: UpdateMapboxGroundCaptureInput;
+    res: { capture: MapboxGroundCaptureRecord };
+  };
+  "mapboxCaptures:delete": { req: DeleteMapboxGroundCaptureInput; res: { ok: true } };
+
   // --- Map links (edges between points along a path) -------------------------
   "mapLinks:list": { req: { mapId: number }; res: { links: MapLinkRecord[] } };
   "mapLinks:create": { req: CreateMapLinkInput; res: { link: MapLinkRecord } };
@@ -430,6 +458,7 @@ export interface IpcEventMap {
   "referenceGeoJson:changed": ReferenceGeoJsonChangedEvent;
   "geoSegments:changed": GeoSegmentsChangedEvent;
   "mapPoints:changed": MapPointsChangedEvent;
+  "mapboxCaptures:changed": MapboxCapturesChangedEvent;
   "mapLinks:changed": MapLinksChangedEvent;
   "workspace:setMapViewport": SetMapViewportEvent;
   "updater:status": {

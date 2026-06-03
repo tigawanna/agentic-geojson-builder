@@ -5,4 +5,5 @@ export * from "./karura-trail.schema";
 export * from "./map.schema";
 export * from "./map-link.schema";
 export * from "./map-point.schema";
+export * from "./mapbox-ground-capture.schema";
 export * from "./map-tile-cache.schema";

@@ -1,4 +1,5 @@
 import { app, Menu, shell } from "electron";
+import { buildMapboxMenuSubmenu } from "@main/menu/build-mapbox-menu-submenu.js";
 import { sendAppMenuAction } from "@main/menu/menu-actions.js";
 
 function buildAppMenu(): Menu {
@@ -51,6 +52,13 @@ function buildAppMenu(): Menu {
       accelerator: "CmdOrCtrl+2",
       click: () => {
         sendAppMenuAction({ type: "navigate", path: "/maps" });
+      },
+    },
+    {
+      label: "Mapbox",
+      accelerator: "CmdOrCtrl+3",
+      click: () => {
+        sendAppMenuAction({ type: "navigate", path: "/mapbox" });
       },
     },
     { type: "separator" as const },
@@ -111,6 +119,7 @@ function buildAppMenu(): Menu {
         { label: "File", submenu: fileSubmenu },
         { label: "Edit", submenu: editSubmenu },
         { label: "View", submenu: viewSubmenu },
+        { label: "Mapbox", submenu: buildMapboxMenuSubmenu() },
         { label: "Go", submenu: goSubmenu },
         { label: "Window", role: "windowMenu" },
         { label: "Help", submenu: helpSubmenu },
@@ -119,6 +128,7 @@ function buildAppMenu(): Menu {
         { label: "File", submenu: fileSubmenu },
         { label: "Edit", submenu: editSubmenu },
         { label: "View", submenu: viewSubmenu },
+        { label: "Mapbox", submenu: buildMapboxMenuSubmenu() },
         { label: "Go", submenu: goSubmenu },
         { label: "Help", submenu: helpSubmenu },
       ];

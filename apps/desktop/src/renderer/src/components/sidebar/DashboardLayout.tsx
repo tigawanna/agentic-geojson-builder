@@ -1,8 +1,11 @@
 import { Outlet, useRouterState } from "@tanstack/react-router";
+import { ApplicationMenuBar } from "@renderer/components/ApplicationMenuBar";
 import { DetachedSourceLayout } from "@renderer/components/DetachedSourceLayout";
 import { usePageTitle } from "@renderer/hooks/usePageTitle";
 import { AppConfig } from "@renderer/utils/system";
 import { AppMenuBridge } from "@renderer/components/AppMenuBridge";
+import { MapboxMenuBridge } from "@renderer/features/mapbox-viewer/components/MapboxMenuBridge";
+import { MapboxMenuSyncBridge } from "@renderer/features/mapbox-viewer/components/MapboxMenuSyncBridge";
 import { ViewportCommandBridge } from "@renderer/components/ViewportCommandBridge";
 import { WorkspaceCaptureBridge } from "@renderer/components/WorkspaceCaptureBridge";
 import { UpdateToast } from "@renderer/components/UpdateToast";
@@ -20,54 +23,63 @@ function DashboardShell() {
     select: (state) => {
       const path = state.location.pathname.replace(/\/$/, "") || "/";
       return {
-        isHomePlayground: path === "/",
-        isFullWidth: path === "/" || (/^\/maps\/[^/]+$/.test(path) && path !== "/maps/new"),
-        isFillHeight: path === "/audit-log",
+        isHomePlayground: path === "/" || path === "/mapbox",
+        isFullWidth:
+          path === "/" ||
+          path === "/mapbox" ||
+          path.startsWith("/mapbox/") ||
+          (/^\/maps\/[^/]+$/.test(path) && path !== "/maps/new"),
+        isFillHeight: path === "/audit-log" || path.startsWith("/mapbox/"),
       };
     },
   });
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-base-100 text-base-content">
-      <DashboardSidebar
-        primaryRoutes={primaryRoutes}
-        primaryLabel="Menu"
-        accountRoutes={accountRoutes}
-        accountLabel="Account"
-      />
+    <div className="flex h-screen w-full flex-col overflow-hidden bg-base-100 text-base-content">
+      <ApplicationMenuBar />
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <DashboardSidebar
+          primaryRoutes={primaryRoutes}
+          primaryLabel="Menu"
+          accountRoutes={accountRoutes}
+          accountLabel="Account"
+        />
 
-      <div className="flex min-w-0 flex-1 flex-col bg-grid">
-        {!isHomePlayground ? (
-          <header className="drag-region glass-panel sticky top-0 z-20 flex h-14 items-center gap-3 px-4">
-            <DashboardSidebarTrigger onClick={toggleSidebar} collapsed={isCollapsed} />
-            <div className="no-drag min-w-0 flex-1">
-              <p className="truncate text-base font-semibold tracking-tight">{pageTitle}</p>
-              <p className="truncate text-xs text-base-content/50">{AppConfig.name}</p>
-            </div>
-          </header>
-        ) : null}
+        <div className="flex min-w-0 flex-1 flex-col bg-grid">
+          {!isHomePlayground ? (
+            <header className="drag-region glass-panel sticky top-0 z-20 flex h-14 items-center gap-3 px-4">
+              <DashboardSidebarTrigger onClick={toggleSidebar} collapsed={isCollapsed} />
+              <div className="no-drag min-w-0 flex-1">
+                <p className="truncate text-base font-semibold tracking-tight">{pageTitle}</p>
+                <p className="truncate text-xs text-base-content/50">{AppConfig.name}</p>
+              </div>
+            </header>
+          ) : null}
 
-        <main
-          className={`no-drag min-h-0 flex-1 ${isFullWidth || isFillHeight ? "overflow-hidden" : "overflow-y-auto"}`}
-        >
-          <div
-            className={
-              isFullWidth
-                ? "h-full min-h-0"
-                : isFillHeight
-                  ? "mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col px-6 py-4 lg:px-10"
-                  : "mx-auto w-full max-w-5xl px-6 py-8 pb-12 lg:px-10"
-            }
+          <main
+            className={`no-drag min-h-0 flex-1 ${isFullWidth || isFillHeight ? "overflow-hidden" : "overflow-y-auto"}`}
           >
-            <Outlet />
-          </div>
-        </main>
-      </div>
+            <div
+              className={
+                isFullWidth
+                  ? "h-full min-h-0"
+                  : isFillHeight
+                    ? "mx-auto flex h-full min-h-0 w-full max-w-5xl flex-col px-6 py-4 lg:px-10"
+                    : "mx-auto w-full max-w-5xl px-6 py-8 pb-12 lg:px-10"
+              }
+            >
+              <Outlet />
+            </div>
+          </main>
+        </div>
 
-      <UpdateToast />
-      <AppMenuBridge />
-      <WorkspaceCaptureBridge />
-      <ViewportCommandBridge />
+        <UpdateToast />
+        <AppMenuBridge />
+        <MapboxMenuBridge />
+        <MapboxMenuSyncBridge />
+        <WorkspaceCaptureBridge />
+        <ViewportCommandBridge />
+      </div>
     </div>
   );
 }

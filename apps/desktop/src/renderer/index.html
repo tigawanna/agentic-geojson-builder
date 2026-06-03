@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self' 'unsafe-inline'; connect-src *; img-src 'self' data: https: http://127.0.0.1:3848;"
+      content="default-src 'self' 'unsafe-inline'; connect-src *; img-src 'self' data: blob: https: http://127.0.0.1:3848; worker-src 'self' blob:; child-src 'self' blob:; font-src 'self' data: https://api.mapbox.com;"
     />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Agentic GeoJSON Builder</title>

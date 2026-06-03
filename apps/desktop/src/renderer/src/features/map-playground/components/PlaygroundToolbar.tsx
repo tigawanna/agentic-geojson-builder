@@ -58,7 +58,7 @@ export function PlaygroundToolbar({
       data-test="playground-toolbar"
       className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-2 p-3"
     >
-      <div className="pointer-events-auto flex max-w-[calc(100%-12rem)] shrink-0 flex-nowrap items-center gap-1.5 overflow-x-auto rounded-2xl border border-base-300 bg-base-100/95 px-2 py-2 shadow-lg backdrop-blur-sm sm:max-w-none sm:gap-2 sm:px-3">
+      <div className="pointer-events-auto flex max-w-[calc(100%-12rem)] shrink-0 flex-nowrap items-center gap-1.5 overflow-x-auto sm:max-w-none sm:gap-2">
         <button
           type="button"
           className="btn btn-square shrink-0 btn-ghost btn-sm"
@@ -110,7 +110,7 @@ export function PlaygroundToolbar({
         </button>
       </div>
 
-      <div className="pointer-events-auto flex shrink-0 flex-nowrap items-center gap-1.5 rounded-2xl border border-base-300 bg-base-100/95 px-2 py-2 shadow-lg backdrop-blur-sm sm:gap-2 sm:px-3">
+      <div className="pointer-events-auto flex shrink-0 flex-nowrap items-center gap-1.5 sm:gap-2">
         <BaseMapStyleDialogTrigger value={baseMapStyle} onClick={onOpenBaseMapDialog} />
 
         <button

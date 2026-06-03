@@ -73,7 +73,7 @@ export function BaseMapStyleDialog({
 }
 
 export const MAP_PLAYGROUND_FILLED_BTN =
-  "btn shrink-0 btn-sm border-0 bg-base-100/60 shadow-sm transition-colors hover:bg-base-200/70";
+  "btn shrink-0 btn-sm border-0 bg-base-100/90 shadow-md backdrop-blur-sm transition-colors hover:bg-base-200/95";
 
 type BaseMapStyleDialogTriggerProps = {
   value: MapBaseMapStyle;

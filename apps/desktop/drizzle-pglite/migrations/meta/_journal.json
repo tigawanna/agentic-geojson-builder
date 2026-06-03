@@ -50,6 +50,13 @@
       "when": 1779902400000,
       "tag": "0006_map_points_and_links",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1779902500000,
+      "tag": "0007_mapbox_ground_capture",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,9 @@
 import type { BrowserWindow } from "electron";
 import type { IpcChannel, IpcRequest, IpcResponse } from "@shared/ipc-contract.js";
+import { setMapboxMenuState } from "@main/lib/mapbox-menu-state.js";
+import { popupApplicationSubmenu } from "@main/menu/popup-application-submenu.js";
 import { showMapContextMenu } from "@main/menu/show-map-context-menu.js";
+import { showNativeMenu } from "@main/menu/show-native-menu.js";
 import { showMapWorkspaceQuickMenu } from "@main/menu/show-map-workspace-quick-menu.js";
 
 type Handler<K extends IpcChannel> = (
@@ -24,6 +27,25 @@ export const appMenuHandlers: { [K in IpcChannel]?: Handler<K> } = {
 
     showMapWorkspaceQuickMenu(window, input);
     return { ok: true as const };
+  },
+  "app:showNativeMenu": (input, window) => {
+    if (!window) {
+      return { ok: false as const };
+    }
+
+    showNativeMenu(window, input);
+    return { ok: true as const };
+  },
+  "mapboxMenu:syncState": (input) => {
+    setMapboxMenuState(input);
+    return { ok: true as const };
+  },
+  "app:popupApplicationSubmenu": (input, window) => {
+    if (!window) {
+      return { ok: false as const };
+    }
+
+    return { ok: popupApplicationSubmenu(window, input) };
   },
   "app:hardReload": (_input, window) => {
     if (!window) {

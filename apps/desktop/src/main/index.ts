@@ -17,6 +17,8 @@ const __dirname = dirname(__filename);
 let mainWindow: BrowserWindow | null = null;
 
 function createWindow(): BrowserWindow {
+  const useInWindowMenuBar = process.platform !== "darwin";
+
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -24,7 +26,7 @@ function createWindow(): BrowserWindow {
     minHeight: 600,
     title: "Agentic GeoJSON Builder",
     show: false,
-    autoHideMenuBar: process.platform !== "darwin",
+    autoHideMenuBar: useInWindowMenuBar,
     backgroundColor: "#0a0a0a",
     titleBarStyle: process.platform === "darwin" ? "hiddenInset" : "default",
     webPreferences: {
@@ -37,6 +39,10 @@ function createWindow(): BrowserWindow {
       sandbox: false,
     },
   });
+
+  if (useInWindowMenuBar) {
+    win.setMenuBarVisibility(false);
+  }
 
   win.on("ready-to-show", () => win.show());
   win.on("close", () => closeAllSourceDocumentWindows());
