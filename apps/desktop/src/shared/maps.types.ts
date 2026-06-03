@@ -1,4 +1,15 @@
-export type MapBaseMapStyle = "outline" | "standard" | "satellite";
+export type MapBaseMapStyle =
+  | "outline"
+  | "standard"
+  | "satellite"
+  | "mapbox-outdoors"
+  | "mapbox-satellite";
+
+export const MAPBOX_BASE_MAP_STYLES: MapBaseMapStyle[] = ["mapbox-outdoors", "mapbox-satellite"];
+
+export function isMapboxBaseMapStyle(style: MapBaseMapStyle): boolean {
+  return MAPBOX_BASE_MAP_STYLES.includes(style);
+}
 
 export type MapListItem = {
   id: number;

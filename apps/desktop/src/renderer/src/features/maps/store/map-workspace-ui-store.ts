@@ -32,6 +32,11 @@ type MapWorkspaceUiState = {
   segmentGroupId: string;
   segmentName: string;
   segmentPathKind: GeoSegmentPathKind;
+  markerMode: boolean;
+  linkMode: boolean;
+  selectedMapPointId: number | null;
+  detailPanelMapPointId: number | null;
+  linkFromPointId: number | null;
 };
 
 type MapWorkspaceUiActions = {
@@ -60,6 +65,13 @@ type MapWorkspaceUiActions = {
   setSegmentGroupId: (segmentGroupId: string) => void;
   setSegmentName: (name: string) => void;
   setSegmentPathKind: (pathKind: GeoSegmentPathKind) => void;
+  setMarkerMode: (enabled: boolean) => void;
+  setLinkMode: (enabled: boolean) => void;
+  setSelectedMapPointId: (pointId: number | null) => void;
+  setDetailPanelMapPointId: (pointId: number | null) => void;
+  setLinkFromPointId: (pointId: number | null) => void;
+  stopMarkerMode: () => void;
+  stopLinkMode: () => void;
   stopReferenceMode: () => void;
   stopTraceMode: () => void;
   reset: () => void;
@@ -89,6 +101,11 @@ const initialState: MapWorkspaceUiState = {
   segmentGroupId: "10k-blue",
   segmentName: "",
   segmentPathKind: "walking-trail",
+  markerMode: false,
+  linkMode: false,
+  selectedMapPointId: null,
+  detailPanelMapPointId: null,
+  linkFromPointId: null,
 };
 
 export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
@@ -125,6 +142,14 @@ export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
     setSegmentGroupId: (segmentGroupId) => set({ segmentGroupId }),
     setSegmentName: (segmentName) => set({ segmentName }),
     setSegmentPathKind: (segmentPathKind) => set({ segmentPathKind }),
+    setMarkerMode: (markerMode) => set({ markerMode }),
+    setLinkMode: (linkMode) => set({ linkMode }),
+    setSelectedMapPointId: (selectedMapPointId) => set({ selectedMapPointId }),
+    setDetailPanelMapPointId: (detailPanelMapPointId) =>
+      set({ detailPanelMapPointId, selectedMapPointId: detailPanelMapPointId }),
+    setLinkFromPointId: (linkFromPointId) => set({ linkFromPointId }),
+    stopMarkerMode: () => set({ markerMode: false }),
+    stopLinkMode: () => set({ linkMode: false, linkFromPointId: null }),
     stopReferenceMode: () =>
       set({ referenceMode: false, pendingMapPoint: null, selectedControlPointId: null }),
     stopTraceMode: () =>

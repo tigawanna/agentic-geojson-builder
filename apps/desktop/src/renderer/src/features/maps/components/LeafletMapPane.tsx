@@ -6,6 +6,7 @@ import type { ReferenceGeoJsonCollection } from "@repo/isomorphic/reference-geoj
 import { buildReferenceInspectTooltipContent } from "@renderer/features/maps/lib/reference-inspect-tooltip";
 import type { ControlPointRecord } from "@shared/control-points.types";
 import type { GeoSegmentRecord } from "@shared/geo-segments.types";
+import type { MapPointRecord } from "@shared/map-points.types";
 import type { MapWorkspaceState } from "@shared/maps.types";
 import type { TileCacheBounds } from "@shared/tile-cache.types";
 import { referenceGeoJsonColor } from "@renderer/features/maps/lib/reference-geojson-color";
@@ -20,7 +21,23 @@ import {
   isPickModifierEvent,
   usePickModifierHeld,
 } from "@renderer/features/maps/lib/pick-modifier";
+import { useMapboxTokenQuery } from "@renderer/features/maps/hooks/useMapboxToken";
 import { lineStringToLatLngs, segmentGroupColor } from "@renderer/features/maps/lib/segment-utils";
+
+const MAP_POINT_CATEGORY_COLORS: Record<string, string> = {
+  junction: "#7c3aed",
+  gate: "#dc2626",
+  viewpoint: "#0891b2",
+  water: "#2563eb",
+  cave: "#78350f",
+  rest_area: "#ca8a04",
+  sign: "#475569",
+  custom: "#db2777",
+};
+
+function mapPointColor(category: string): string {
+  return MAP_POINT_CATEGORY_COLORS[category] ?? "#db2777";
+}
 
 type PendingMapPoint = {
   latitude: number;
@@ -38,10 +55,14 @@ type LeafletMapPaneProps = {
   showReferenceInspectTooltip?: boolean;
   controlPoints?: ControlPointRecord[];
   geoSegments?: GeoSegmentRecord[];
+  mapPoints?: MapPointRecord[];
+  selectedMapPointId?: number | null;
+  linkFromPointId?: number | null;
   pendingMapPoint?: PendingMapPoint | null;
   pendingTracePoints?: PendingTracePoint[];
   canPickMapPoint?: boolean;
   canPickTracePoint?: boolean;
+  canPlaceMapPoint?: boolean;
   controlPointDragEnabled?: boolean;
   editingSegmentId?: number | null;
   selectedControlPointId?: number | null;
@@ -52,6 +73,8 @@ type LeafletMapPaneProps = {
   onCoordinateSelect: (viewport: MapViewport) => void;
   onMapLocationPick?: (latitude: number, longitude: number) => void;
   onTracePointAdd?: (latitude: number, longitude: number) => void;
+  onMapPointPlace?: (latitude: number, longitude: number) => void;
+  onMapPointClick?: (pointId: number) => void;
   onPendingTracePointMove?: (index: number, latitude: number, longitude: number) => void;
   onControlPointMapMove?: (controlPointId: number, latitude: number, longitude: number) => void;
   onControlPointClick?: (controlPointId: number) => void;
@@ -68,10 +91,14 @@ export function LeafletMapPane({
   showReferenceInspectTooltip = true,
   controlPoints = [],
   geoSegments = [],
+  mapPoints = [],
+  selectedMapPointId = null,
+  linkFromPointId = null,
   pendingMapPoint = null,
   pendingTracePoints = [],
   canPickMapPoint = false,
   canPickTracePoint = false,
+  canPlaceMapPoint = false,
   controlPointDragEnabled = false,
   editingSegmentId = null,
   selectedControlPointId = null,
@@ -82,6 +109,8 @@ export function LeafletMapPane({
   onCoordinateSelect,
   onMapLocationPick,
   onTracePointAdd,
+  onMapPointPlace,
+  onMapPointClick,
   onPendingTracePointMove,
   onControlPointMapMove,
   onControlPointClick,
@@ -104,6 +133,8 @@ export function LeafletMapPane({
   const onCoordinateSelectRef = useRef(onCoordinateSelect);
   const onMapLocationPickRef = useRef(onMapLocationPick);
   const onTracePointAddRef = useRef(onTracePointAdd);
+  const onMapPointPlaceRef = useRef(onMapPointPlace);
+  const onMapPointClickRef = useRef(onMapPointClick);
   const onPendingTracePointMoveRef = useRef(onPendingTracePointMove);
   const onControlPointMapMoveRef = useRef(onControlPointMapMove);
   const onControlPointClickRef = useRef(onControlPointClick);
@@ -117,6 +148,9 @@ export function LeafletMapPane({
 
   const REFERENCE_INSPECT_MAX_DISTANCE_METERS = 100;
   const pickModifierHeld = usePickModifierHeld();
+  const mapboxToken = useMapboxTokenQuery().data ?? null;
+  const mapboxTokenRef = useRef(mapboxToken);
+  mapboxTokenRef.current = mapboxToken;
 
   onReadyRef.current = onReady;
   onInitialViewportReadyRef.current = onInitialViewportReady;
@@ -125,6 +159,8 @@ export function LeafletMapPane({
   onCoordinateSelectRef.current = onCoordinateSelect;
   onMapLocationPickRef.current = onMapLocationPick;
   onTracePointAddRef.current = onTracePointAdd;
+  onMapPointPlaceRef.current = onMapPointPlace;
+  onMapPointClickRef.current = onMapPointClick;
   onPendingTracePointMoveRef.current = onPendingTracePointMove;
   onControlPointMapMoveRef.current = onControlPointMapMove;
   onControlPointClickRef.current = onControlPointClick;
@@ -156,7 +192,12 @@ export function LeafletMapPane({
         doubleClickZoom: false,
       });
 
-      baseLayerRef.current = createBaseLayer(L, workspace.baseMapStyle, localTileUrl).addTo(map);
+      baseLayerRef.current = createBaseLayer(
+        L,
+        workspace.baseMapStyle,
+        localTileUrl,
+        mapboxTokenRef.current,
+      ).addTo(map);
       referenceLayerRef.current = L.layerGroup().addTo(map);
       segmentsLayerRef.current = L.layerGroup().addTo(map);
       markersLayerRef.current = L.layerGroup().addTo(map);
@@ -280,7 +321,12 @@ export function LeafletMapPane({
       }
 
       baseLayerRef.current?.remove();
-      baseLayerRef.current = createBaseLayer(L, workspace.baseMapStyle, localTileUrl).addTo(map);
+      baseLayerRef.current = createBaseLayer(
+        L,
+        workspace.baseMapStyle,
+        localTileUrl,
+        mapboxToken,
+      ).addTo(map);
 
       if (referenceLayer) {
         referenceLayer.addTo(map);
@@ -294,7 +340,7 @@ export function LeafletMapPane({
     }
 
     void swapBaseLayer();
-  }, [localTileUrl, workspace.baseMapStyle]);
+  }, [localTileUrl, workspace.baseMapStyle, mapboxToken]);
 
   useEffect(() => {
     async function updateOverlay() {
@@ -548,6 +594,26 @@ export function LeafletMapPane({
       });
     });
 
+    mapPoints.forEach((point) => {
+      const selected = point.id === selectedMapPointId;
+      const isLinkSource = point.id === linkFromPointId;
+      const color = mapPointColor(point.category);
+      const ring = isLinkSource ? "#f59e0b" : selected ? "#2563eb" : "#ffffff";
+      const label = point.ref ?? point.name ?? "";
+      const marker = L.marker([point.latitude, point.longitude], {
+        icon: L.divIcon({
+          className: "",
+          html: `<div style="margin-left:-9px;margin-top:-9px;display:flex;align-items:center;gap:4px;"><div style="width:18px;height:18px;transform:rotate(45deg);border:2px solid ${ring};background:${color};box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>${label ? `<span style="transform:translateY(-1px);font-size:10px;font-weight:700;color:#0f172a;background:rgba(255,255,255,0.85);border-radius:4px;padding:0 3px;white-space:nowrap;">${label}</span>` : ""}</div>`,
+          iconSize: [18, 18],
+        }),
+      }).addTo(markersLayer);
+
+      marker.on("click", (event) => {
+        L.DomEvent.stopPropagation(event);
+        onMapPointClickRef.current?.(point.id);
+      });
+    });
+
     if (pendingMapPoint) {
       L.circleMarker([pendingMapPoint.latitude, pendingMapPoint.longitude], {
         radius: 9,
@@ -576,6 +642,9 @@ export function LeafletMapPane({
   }, [
     controlPointDragEnabled,
     controlPoints,
+    mapPoints,
+    selectedMapPointId,
+    linkFromPointId,
     mapReady,
     pendingMapPoint,
     pendingTracePoints,
@@ -601,6 +670,11 @@ export function LeafletMapPane({
       }
 
       mapClickTimerRef.current = window.setTimeout(() => {
+        if (canPlaceMapPoint) {
+          onMapPointPlaceRef.current?.(event.latlng.lat, event.latlng.lng);
+          return;
+        }
+
         if (canPickTracePoint) {
           onTracePointAddRef.current?.(event.latlng.lat, event.latlng.lng);
           return;
@@ -613,7 +687,8 @@ export function LeafletMapPane({
     }
 
     map.on("click", handleClick);
-    const activePickMode = (canPickMapPoint || canPickTracePoint) && pickModifierHeld;
+    const activePickMode =
+      (canPickMapPoint || canPickTracePoint || canPlaceMapPoint) && pickModifierHeld;
     if (containerRef.current) {
       containerRef.current.style.cursor = activePickMode ? "crosshair" : "";
     }
@@ -627,7 +702,7 @@ export function LeafletMapPane({
         containerRef.current.style.cursor = "";
       }
     };
-  }, [canPickMapPoint, canPickTracePoint, pickModifierHeld]);
+  }, [canPickMapPoint, canPickTracePoint, canPlaceMapPoint, pickModifierHeld]);
 
   return (
     <div className="absolute inset-0">
@@ -640,6 +715,11 @@ export function LeafletMapPane({
       {canPickTracePoint ? (
         <div className="pointer-events-none absolute bottom-3 left-3 z-[1000] rounded-box bg-base-100/90 px-2 py-1 text-xs text-base-content/70">
           Ctrl+click to add trail point
+        </div>
+      ) : null}
+      {canPlaceMapPoint ? (
+        <div className="pointer-events-none absolute bottom-3 left-3 z-[1000] rounded-box bg-base-100/90 px-2 py-1 text-xs text-base-content/70">
+          Ctrl+click to drop a marker
         </div>
       ) : null}
     </div>

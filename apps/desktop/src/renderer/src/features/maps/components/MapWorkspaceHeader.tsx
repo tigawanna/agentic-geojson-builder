@@ -3,8 +3,11 @@ import {
   ArrowLeft,
   Download,
   Eye,
+  FileOutput,
   HelpCircle,
   History,
+  Link2,
+  MapPin,
   Pencil,
   RotateCw,
   Settings2,
@@ -52,12 +55,18 @@ export function MapWorkspaceHeader({
   const statusMessage = useMapWorkspaceUiState((state) => state.statusMessage);
   const referenceMode = useMapWorkspaceUiState((state) => state.referenceMode);
   const traceMode = useMapWorkspaceUiState((state) => state.traceMode);
+  const markerMode = useMapWorkspaceUiState((state) => state.markerMode);
+  const linkMode = useMapWorkspaceUiState((state) => state.linkMode);
   const pendingMapPoint = useMapWorkspaceUiState((state) => state.pendingMapPoint);
   const {
     setReferenceMode,
     stopReferenceMode,
     setTraceMode,
     stopTraceMode,
+    setMarkerMode,
+    stopMarkerMode,
+    setLinkMode,
+    stopLinkMode,
     setPendingMapPoint,
     setStatusMessage,
   } = useMapWorkspaceUiActions();
@@ -143,6 +152,58 @@ export function MapWorkspaceHeader({
           {t("maps.workspace.traceTrail")}
         </button>
 
+        <button
+          type="button"
+          className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-40 ${
+            markerMode
+              ? "bg-accent text-accent-content"
+              : "text-base-content/65 hover:bg-base-content/8 hover:text-base-content"
+          }`}
+          disabled={referenceMode || traceMode}
+          onClick={() => {
+            if (markerMode) {
+              stopMarkerMode();
+              setStatusMessage(null);
+              return;
+            }
+            stopReferenceMode();
+            stopTraceMode();
+            stopLinkMode();
+            setMarkerMode(true);
+            setStatusMessage(t("maps.workspace.markerHint"));
+          }}
+          data-test="marker-mode-toggle"
+        >
+          <MapPin className="size-3" />
+          {t("maps.workspace.addMarker")}
+        </button>
+
+        <button
+          type="button"
+          className={`inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-40 ${
+            linkMode
+              ? "bg-info text-info-content"
+              : "text-base-content/65 hover:bg-base-content/8 hover:text-base-content"
+          }`}
+          disabled={referenceMode || traceMode}
+          onClick={() => {
+            if (linkMode) {
+              stopLinkMode();
+              setStatusMessage(null);
+              return;
+            }
+            stopReferenceMode();
+            stopTraceMode();
+            stopMarkerMode();
+            setLinkMode(true);
+            setStatusMessage(t("maps.workspace.linkPickFirst"));
+          }}
+          data-test="link-mode-toggle"
+        >
+          <Link2 className="size-3" />
+          {t("maps.workspace.linkPoints")}
+        </button>
+
         <div className="mx-1 h-4 w-px bg-base-content/10" />
 
         <button
@@ -171,6 +232,17 @@ export function MapWorkspaceHeader({
             {segmentCount}
           </span>
         ) : null}
+
+        <Link
+          to="/maps/$mapId/export"
+          params={{ mapId: String(workspace.id) }}
+          className="inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-xs font-medium text-base-content/65 transition-colors hover:bg-base-content/8 hover:text-base-content"
+          title={t("maps.workspace.openExport")}
+          data-test="open-export-page"
+        >
+          <FileOutput className="size-3.5" />
+          {t("maps.workspace.export")}
+        </Link>
 
         <div className="mx-1 h-4 w-px bg-base-content/10" />
 

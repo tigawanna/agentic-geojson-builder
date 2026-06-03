@@ -1,5 +1,6 @@
 import { ipcInvoke } from "@renderer/hooks/useIpc";
 import {
+  getFeatureKey,
   parsePlaygroundGeoJsonCollection,
   parsePlaygroundGeoJsonText,
 } from "@renderer/features/map-playground/lib/parse-playground-geojson";
@@ -227,6 +228,80 @@ export function useMapPlayground() {
     });
   }
 
+  function setLayerVisible(layerId: string, visible: boolean) {
+    setLayers((current) => {
+      const next = current.map((layer) => (layer.id === layerId ? { ...layer, visible } : layer));
+
+      const updatedLayer = next.find((layer) => layer.id === layerId);
+      if (updatedLayer) {
+        void persistLayerState(updatedLayer).catch((error: unknown) => {
+          showError(error instanceof Error ? error.message : "Failed to update layer.");
+        });
+      }
+
+      return next;
+    });
+
+    if (!visible && selectedFeature?.layerId === layerId) {
+      setSelectedFeature(null);
+    }
+  }
+
+  function setAllLayersVisible(visible: boolean) {
+    setLayers((current) => {
+      const next = current.map((layer) => ({
+        ...layer,
+        visible,
+        hiddenFeatureKeys: visible ? [] : layer.hiddenFeatureKeys,
+      }));
+
+      for (const layer of next) {
+        void persistLayerState(layer).catch((error: unknown) => {
+          showError(error instanceof Error ? error.message : "Failed to update layer.");
+        });
+      }
+
+      return next;
+    });
+
+    if (!visible) {
+      setSelectedFeature(null);
+    }
+  }
+
+  function setLayerFeaturesVisible(layerId: string, visible: boolean) {
+    setLayers((current) => {
+      const next = current.map((layer) => {
+        if (layer.id !== layerId) {
+          return layer;
+        }
+
+        const hiddenFeatureKeys = visible
+          ? []
+          : layer.features.map((feature) => getFeatureKey(feature));
+
+        return {
+          ...layer,
+          visible: true,
+          hiddenFeatureKeys,
+        };
+      });
+
+      const updatedLayer = next.find((layer) => layer.id === layerId);
+      if (updatedLayer) {
+        void persistLayerState(updatedLayer).catch((error: unknown) => {
+          showError(error instanceof Error ? error.message : "Failed to update layer.");
+        });
+      }
+
+      return next;
+    });
+
+    if (!visible && selectedFeature?.layerId === layerId) {
+      setSelectedFeature(null);
+    }
+  }
+
   function setFeatureVisible(layerId: string, featureKey: string, visible: boolean) {
     setLayers((current) => {
       const next = current.map((layer) => {
@@ -375,6 +450,9 @@ export function useMapPlayground() {
     handleDragLeave,
     handleDrop,
     setFeatureVisible,
+    setLayerVisible,
+    setLayerFeaturesVisible,
+    setAllLayersVisible,
     removeLayer,
     selectFeature,
     clearSelection,

@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  desktop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck desktop
+        run: pnpm --filter ./apps/desktop run check-types
+
+      - name: Test desktop
+        run: pnpm --filter ./apps/desktop run test
+
+      - name: Build desktop
+        run: pnpm --filter ./apps/desktop run build
+
+      - name: Package desktop (Linux installers)
+        run: pnpm --filter ./apps/desktop run package:linux
+
+      - name: Collect dist for artifact
+        run: bash scripts/package-desktop.sh
+
+      - name: Upload desktop build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-dist
+          path: dist/
+          retention-days: 14

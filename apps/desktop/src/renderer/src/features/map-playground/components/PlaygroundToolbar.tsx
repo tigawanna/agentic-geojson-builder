@@ -1,4 +1,7 @@
-import { BaseMapStylePicker } from "@renderer/features/maps/components/BaseMapStylePicker";
+import {
+  BaseMapStyleDialogTrigger,
+  MAP_PLAYGROUND_FILLED_BTN,
+} from "@renderer/features/maps/components/BaseMapStyleDialog";
 import { PlaygroundLayersPanel } from "@renderer/features/map-playground/components/PlaygroundLayersPanel";
 import { useSidebar } from "@renderer/components/sidebar/SidebarProvider";
 import type {
@@ -17,12 +20,15 @@ type PlaygroundToolbarProps = {
   elevationMode: boolean;
   hasElevationData: boolean;
   onToggleElevationMode: () => void;
-  onBaseMapStyleChange: (style: MapBaseMapStyle) => void;
+  onOpenBaseMapDialog: () => void;
   onOpenFilePicker: () => void;
   onCreateGeoJson: () => void;
   onOpenGuide: () => void;
   onSelectFeature: (layerId: string, featureKey: string) => void;
   onSetFeatureVisible: (layerId: string, featureKey: string, visible: boolean) => void;
+  onSetLayerVisible: (layerId: string, visible: boolean) => void;
+  onSetLayerFeaturesVisible: (layerId: string, visible: boolean) => void;
+  onSetAllLayersVisible: (visible: boolean) => void;
   onRemoveLayer: (layerId: string) => void;
 };
 
@@ -33,12 +39,15 @@ export function PlaygroundToolbar({
   elevationMode,
   hasElevationData,
   onToggleElevationMode,
-  onBaseMapStyleChange,
+  onOpenBaseMapDialog,
   onOpenFilePicker,
   onCreateGeoJson,
   onOpenGuide,
   onSelectFeature,
   onSetFeatureVisible,
+  onSetLayerVisible,
+  onSetLayerFeaturesVisible,
+  onSetAllLayersVisible,
   onRemoveLayer,
 }: PlaygroundToolbarProps) {
   const { t } = useTranslation();
@@ -47,9 +56,9 @@ export function PlaygroundToolbar({
   return (
     <div
       data-test="playground-toolbar"
-      className="pointer-events-none absolute inset-x-0 top-0 z-20 flex min-w-0 flex-wrap items-start gap-2 p-3"
+      className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-2 p-3"
     >
-      <div className="pointer-events-auto flex max-w-full min-w-0 flex-wrap items-center gap-1.5 rounded-2xl border border-base-300 bg-base-100/95 px-2 py-2 shadow-lg backdrop-blur-sm sm:gap-2 sm:px-3">
+      <div className="pointer-events-auto flex max-w-[calc(100%-12rem)] shrink-0 flex-nowrap items-center gap-1.5 overflow-x-auto rounded-2xl border border-base-300 bg-base-100/95 px-2 py-2 shadow-lg backdrop-blur-sm sm:max-w-none sm:gap-2 sm:px-3">
         <button
           type="button"
           className="btn btn-square shrink-0 btn-ghost btn-sm"
@@ -101,12 +110,12 @@ export function PlaygroundToolbar({
         </button>
       </div>
 
-      <div className="pointer-events-auto ml-auto flex max-w-full min-w-0 flex-wrap items-center justify-end gap-1.5 rounded-2xl border border-base-300 bg-base-100/95 px-2 py-2 shadow-lg backdrop-blur-sm sm:gap-2 sm:px-3">
-        <BaseMapStylePicker value={baseMapStyle} onChange={onBaseMapStyleChange} />
+      <div className="pointer-events-auto flex shrink-0 flex-nowrap items-center gap-1.5 rounded-2xl border border-base-300 bg-base-100/95 px-2 py-2 shadow-lg backdrop-blur-sm sm:gap-2 sm:px-3">
+        <BaseMapStyleDialogTrigger value={baseMapStyle} onClick={onOpenBaseMapDialog} />
 
         <button
           type="button"
-          className={`btn shrink-0 btn-sm ${elevationMode ? "btn-primary" : "btn-outline"}`}
+          className={`shrink-0 ${elevationMode ? "btn btn-sm btn-primary" : MAP_PLAYGROUND_FILLED_BTN}`}
           onClick={onToggleElevationMode}
           disabled={!hasElevationData}
           aria-pressed={elevationMode}
@@ -124,6 +133,9 @@ export function PlaygroundToolbar({
           selectedFeature={selectedFeature}
           onSelectFeature={onSelectFeature}
           onSetFeatureVisible={onSetFeatureVisible}
+          onSetLayerVisible={onSetLayerVisible}
+          onSetLayerFeaturesVisible={onSetLayerFeaturesVisible}
+          onSetAllLayersVisible={onSetAllLayersVisible}
           onRemoveLayer={onRemoveLayer}
         />
       </div>

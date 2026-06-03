@@ -24,7 +24,7 @@ extraResources:
 publish:
   provider: github
   owner: "tigawanna"
-  repo: "desktop"
+  repo: "agentic-geojson-builder"
   releaseType: release
 
 # --- macOS -------------------------------------------------------------------

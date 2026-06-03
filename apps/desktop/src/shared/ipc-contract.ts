@@ -108,6 +108,27 @@ import type {
   WorkspaceSourceDocumentWindowClosedEvent,
   WorkspaceUiSyncState,
 } from "./workspace-layout.types.js";
+import type {
+  CreateMapPointInput,
+  DeleteMapPointInput,
+  MapPointRecord,
+  MapPointsChangedEvent,
+  UpdateMapPointInput,
+} from "./map-points.types.js";
+import type {
+  CreateMapLinkFromPointsInput,
+  CreateMapLinkInput,
+  DeleteMapLinkInput,
+  MapLinkRecord,
+  MapLinksChangedEvent,
+  UpdateMapLinkInput,
+} from "./map-links.types.js";
+import type {
+  BuildBundleInput,
+  BuildBundleResult,
+  ExportBundleToFileInput,
+  ExportBundleToFileResult,
+} from "./map-bundle.types.js";
 
 /**
  * Single source of truth for every IPC channel in the app.
@@ -317,6 +338,23 @@ export interface IpcContract {
     res: { deleted: true; segmentId: number } | { segment: GeoSegmentRecord };
   };
 
+  // --- Map points (labeled markers for routing / landmarks) ------------------
+  "mapPoints:list": { req: { mapId: number }; res: { points: MapPointRecord[] } };
+  "mapPoints:create": { req: CreateMapPointInput; res: { point: MapPointRecord } };
+  "mapPoints:update": { req: UpdateMapPointInput; res: { point: MapPointRecord } };
+  "mapPoints:delete": { req: DeleteMapPointInput; res: { ok: true } };
+
+  // --- Map links (edges between points along a path) -------------------------
+  "mapLinks:list": { req: { mapId: number }; res: { links: MapLinkRecord[] } };
+  "mapLinks:create": { req: CreateMapLinkInput; res: { link: MapLinkRecord } };
+  "mapLinks:createFromPoints": { req: CreateMapLinkFromPointsInput; res: { link: MapLinkRecord } };
+  "mapLinks:update": { req: UpdateMapLinkInput; res: { link: MapLinkRecord } };
+  "mapLinks:delete": { req: DeleteMapLinkInput; res: { ok: true } };
+
+  // --- Routing bundle export -------------------------------------------------
+  "bundle:build": { req: BuildBundleInput; res: BuildBundleResult };
+  "bundle:exportToFile": { req: ExportBundleToFileInput; res: ExportBundleToFileResult };
+
   // --- Reference snapping & intersections ------------------------------------
   "referenceSnap:computeIntersections": {
     req: ComputeIntersectionsInput;
@@ -391,6 +429,8 @@ export interface IpcEventMap {
   "controlPoints:changed": ControlPointsChangedEvent;
   "referenceGeoJson:changed": ReferenceGeoJsonChangedEvent;
   "geoSegments:changed": GeoSegmentsChangedEvent;
+  "mapPoints:changed": MapPointsChangedEvent;
+  "mapLinks:changed": MapLinksChangedEvent;
   "workspace:setMapViewport": SetMapViewportEvent;
   "updater:status": {
     state: "checking" | "available" | "not-available" | "downloading" | "downloaded" | "error";

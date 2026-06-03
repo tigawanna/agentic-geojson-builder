@@ -15,6 +15,8 @@ import { ipcInvoke, useIpcMutation } from "@renderer/hooks/useIpc";
 import { useIpcEvent } from "@renderer/hooks/useIpcEvent";
 import { useControlPointsQuery } from "@renderer/features/maps/hooks/useControlPointsQuery";
 import { useGeoSegmentsQuery } from "@renderer/features/maps/hooks/useGeoSegmentsQuery";
+import { useMapPointsQuery } from "@renderer/features/maps/hooks/useMapPointsQuery";
+import { MapPointDetailPanel } from "@renderer/features/maps/components/MapPointDetailPanel";
 import { useReferenceGeoJsonQuery } from "@renderer/features/maps/hooks/useReferenceGeoJsonQuery";
 import { useTileCacheStatusQuery } from "@renderer/features/maps/hooks/useTileCacheStatusQuery";
 import { resolveLocalTileUrl } from "@renderer/features/maps/hooks/tile-cache-api";
@@ -150,6 +152,8 @@ export function MapWorkspaceSplitView() {
     setTraceMode,
     stopReferenceMode,
     stopTraceMode,
+    setDetailPanelMapPointId,
+    setLinkFromPointId,
   } = useMapWorkspaceUiActions();
   const homeViewport = useMapWorkspaceUiState((state) => state.homeViewport);
   const referenceMode = useMapWorkspaceUiState((state) => state.referenceMode);
@@ -172,9 +176,17 @@ export function MapWorkspaceSplitView() {
   const detailPanelControlPointId = useMapWorkspaceUiState(
     (state) => state.detailPanelControlPointId,
   );
+  const markerMode = useMapWorkspaceUiState((state) => state.markerMode);
+  const linkMode = useMapWorkspaceUiState((state) => state.linkMode);
+  const selectedMapPointId = useMapWorkspaceUiState((state) => state.selectedMapPointId);
+  const detailPanelMapPointId = useMapWorkspaceUiState((state) => state.detailPanelMapPointId);
+  const linkFromPointId = useMapWorkspaceUiState((state) => state.linkFromPointId);
   const { queueSave } = useWorkspacePersistence();
   const controlPointsQuery = useControlPointsQuery(workspace?.id ?? null);
   const geoSegmentsQuery = useGeoSegmentsQuery(workspace?.id ?? null);
+  const mapPointsQuery = useMapPointsQuery(workspace?.id ?? null);
+  const createMapPoint = useIpcMutation("mapPoints:create");
+  const createMapLinkFromPoints = useIpcMutation("mapLinks:createFromPoints");
   const referenceGeoJsonQuery = useReferenceGeoJsonQuery(workspace?.id ?? null);
   const updateControlPoint = useIpcMutation("controlPoints:update");
   const deleteGeoSegment = useIpcMutation("geoSegments:delete");
@@ -213,9 +225,16 @@ export function MapWorkspaceSplitView() {
   const geoSegments = geoSegmentsQuery.data?.segments ?? [];
   controlPointsRef.current = controlPoints;
 
+  const mapPoints = mapPointsQuery.data?.points ?? [];
+
   const detailPanelControlPoint =
     detailPanelControlPointId !== null
       ? (controlPoints.find((point) => point.id === detailPanelControlPointId) ?? null)
+      : null;
+
+  const detailPanelMapPoint =
+    detailPanelMapPointId !== null
+      ? (mapPoints.find((point) => point.id === detailPanelMapPointId) ?? null)
       : null;
 
   useMapWorkspaceControlsShortcut(workspace != null);
@@ -647,6 +666,66 @@ export function MapWorkspaceSplitView() {
     [setPendingTracePoints],
   );
 
+  const handleMapPointPlace = useCallback(
+    (latitude: number, longitude: number) => {
+      if (!workspace) {
+        return;
+      }
+      void createMapPoint
+        .mutateAsync({ mapId: workspace.id, latitude, longitude, category: "custom" })
+        .then((result) => {
+          setDetailPanelMapPointId(result.point.id);
+        });
+    },
+    [createMapPoint, setDetailPanelMapPointId, workspace],
+  );
+
+  const handleMapPointClick = useCallback(
+    (pointId: number) => {
+      if (!workspace) {
+        return;
+      }
+
+      if (linkMode) {
+        if (linkFromPointId === null) {
+          setLinkFromPointId(pointId);
+          setStatusMessage(t("maps.workspace.linkPickSecond"));
+          return;
+        }
+        if (linkFromPointId === pointId) {
+          setLinkFromPointId(null);
+          return;
+        }
+
+        const fromPointId = linkFromPointId;
+        setLinkFromPointId(null);
+        void createMapLinkFromPoints
+          .mutateAsync({ mapId: workspace.id, fromPointId, toPointId: pointId })
+          .then(() => {
+            setStatusMessage(t("maps.workspace.linkCreated"));
+          })
+          .catch((error: unknown) => {
+            setStatusMessage(
+              error instanceof Error ? error.message : t("maps.workspace.linkError"),
+            );
+          });
+        return;
+      }
+
+      setDetailPanelMapPointId(pointId);
+    },
+    [
+      createMapLinkFromPoints,
+      linkFromPointId,
+      linkMode,
+      setDetailPanelMapPointId,
+      setLinkFromPointId,
+      setStatusMessage,
+      t,
+      workspace,
+    ],
+  );
+
   const handlePendingTracePointMove = useCallback(
     (index: number, latitude: number, longitude: number) => {
       setPendingTracePoints((current) =>
@@ -969,10 +1048,14 @@ export function MapWorkspaceSplitView() {
                 showReferenceInspectTooltip={showReferenceInspectTooltip}
                 controlPoints={controlPoints}
                 geoSegments={geoSegments}
+                mapPoints={mapPoints}
+                selectedMapPointId={selectedMapPointId}
+                linkFromPointId={linkFromPointId}
                 pendingMapPoint={pendingMapPoint}
                 pendingTracePoints={pendingTracePoints}
                 canPickMapPoint={referenceMode && pendingMapPoint === null}
                 canPickTracePoint={traceMode}
+                canPlaceMapPoint={markerMode}
                 controlPointDragEnabled={allowControlPointDrag}
                 editingSegmentId={editingSegmentId}
                 selectedControlPointId={selectedControlPointId}
@@ -985,6 +1068,8 @@ export function MapWorkspaceSplitView() {
                 }}
                 onMapLocationPick={handleMapLocationPick}
                 onTracePointAdd={handleTracePointAdd}
+                onMapPointPlace={handleMapPointPlace}
+                onMapPointClick={handleMapPointClick}
                 onPendingTracePointMove={handlePendingTracePointMove}
                 onControlPointMapMove={handleControlPointMapMove}
                 onControlPointClick={(id) => setDetailPanelControlPointId(id)}
@@ -1055,6 +1140,16 @@ export function MapWorkspaceSplitView() {
             onClose={() => setDetailPanelControlPointId(null)}
             onUpdated={() => void controlPointsQuery.refetch()}
             onInheritFromTrail={handleInheritFromTrail}
+          />
+        </div>
+      ) : null}
+
+      {detailPanelMapPoint ? (
+        <div className="absolute inset-y-0 right-0 z-1100 w-80 shadow-xl">
+          <MapPointDetailPanel
+            point={detailPanelMapPoint}
+            mapId={workspace.id}
+            onClose={() => setDetailPanelMapPointId(null)}
           />
         </div>
       ) : null}

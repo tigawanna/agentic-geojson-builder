@@ -43,6 +43,13 @@
       "when": 1779902300000,
       "tag": "0005_control_point_enrichment",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1779902400000,
+      "tag": "0006_map_points_and_links",
+      "breakpoints": true
     }
   ]
 }

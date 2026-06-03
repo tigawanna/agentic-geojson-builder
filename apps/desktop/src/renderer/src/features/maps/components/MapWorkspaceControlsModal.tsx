@@ -3,7 +3,8 @@ import { History } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { ControlPointRecord } from "@shared/control-points.types";
 import type { GeoSegmentRecord } from "@shared/geo-segments.types";
-import type { MapBaseMapStyle } from "@shared/maps.types";
+import { MAPBOX_BASE_MAP_STYLES, type MapBaseMapStyle } from "@shared/maps.types";
+import { useMapboxTokenQuery } from "@renderer/features/maps/hooks/useMapboxToken";
 import { useIpcMutation } from "@renderer/hooks/useIpc";
 import { useReplaceMapSourceMutation } from "@renderer/features/maps/hooks/useReplaceMapSourceMutation";
 import { generateSourceThumbnail } from "@renderer/features/maps/lib/generate-source-thumbnail";
@@ -18,6 +19,7 @@ import {
 import type { MapHandle } from "@renderer/features/maps/lib/map-handle";
 import { BaseMapStylePicker } from "@renderer/features/maps/components/BaseMapStylePicker";
 import { MapGeoSegmentsSection } from "@renderer/features/maps/components/MapGeoSegmentsSection";
+import { MapMarkersSection } from "@renderer/features/maps/components/MapMarkersSection";
 import { MapReferenceGeoJsonSection } from "@renderer/features/maps/components/MapReferenceGeoJsonSection";
 
 const acceptedTypes = "application/pdf,image/png,image/jpeg,image/webp";
@@ -82,6 +84,7 @@ export function MapWorkspaceControlsModal({
   const replaceSource = useReplaceMapSourceMutation();
   const deleteControlPoint = useIpcMutation("controlPoints:delete");
   const tileCache = useTileCacheStatusQuery(mapId);
+  const mapboxToken = useMapboxTokenQuery().data ?? null;
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -273,7 +276,12 @@ export function MapWorkspaceControlsModal({
               <span className="text-xs font-medium tracking-wide text-base-content/50 uppercase">
                 Base map
               </span>
-              <BaseMapStylePicker value={baseMapStyle} onChange={applyBaseMapStyle} />
+              <BaseMapStylePicker
+                value={baseMapStyle}
+                onChange={applyBaseMapStyle}
+                disabledStyles={mapboxToken ? [] : MAPBOX_BASE_MAP_STYLES}
+                disabledHint={t("maps.workspace.baseMap.mapboxTokenNeeded")}
+              />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -417,6 +425,8 @@ export function MapWorkspaceControlsModal({
           </ControlsSection>
 
           <MapGeoSegmentsSection mapId={mapId} segments={geoSegments} />
+
+          <MapMarkersSection mapId={mapId} />
 
           <MapReferenceGeoJsonSection mapId={mapId} />
 

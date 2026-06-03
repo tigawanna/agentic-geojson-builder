@@ -1,3 +1,4 @@
+import { MAP_PLAYGROUND_FILLED_BTN } from "@renderer/features/maps/components/BaseMapStyleDialog";
 import {
   analyzeTrailFeature,
   formatDistance,
@@ -17,6 +18,9 @@ type PlaygroundLayersPanelProps = {
   selectedFeature: PlaygroundSelectedFeature | null;
   onSelectFeature: (layerId: string, featureKey: string) => void;
   onSetFeatureVisible: (layerId: string, featureKey: string, visible: boolean) => void;
+  onSetLayerVisible: (layerId: string, visible: boolean) => void;
+  onSetLayerFeaturesVisible: (layerId: string, visible: boolean) => void;
+  onSetAllLayersVisible: (visible: boolean) => void;
   onRemoveLayer: (layerId: string) => void;
 };
 
@@ -24,11 +28,23 @@ function isFeatureVisible(layer: PlaygroundLayer, featureKey: string) {
   return layer.visible && !layer.hiddenFeatureKeys.includes(featureKey);
 }
 
+function layerHasVisibleTrails(layer: PlaygroundLayer) {
+  if (!layer.visible) {
+    return false;
+  }
+  return layer.features.some(
+    (feature) => !layer.hiddenFeatureKeys.includes(getFeatureKey(feature)),
+  );
+}
+
 export function PlaygroundLayersPanel({
   layers,
   selectedFeature,
   onSelectFeature,
   onSetFeatureVisible,
+  onSetLayerVisible,
+  onSetLayerFeaturesVisible,
+  onSetAllLayersVisible,
   onRemoveLayer,
 }: PlaygroundLayersPanelProps) {
   const { t } = useTranslation();
@@ -74,7 +90,7 @@ export function PlaygroundLayersPanel({
     <div ref={panelRef} className="relative">
       <button
         type="button"
-        className={`btn btn-sm ${open ? "btn-primary" : "btn-outline"}`}
+        className={open ? "btn btn-sm btn-primary" : MAP_PLAYGROUND_FILLED_BTN}
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-haspopup="dialog"
@@ -82,7 +98,9 @@ export function PlaygroundLayersPanel({
         <Layers3 className="size-4" />
         {t("home.playground.layers")}
         {layers.length > 0 ? (
-          <span className="ml-0.5 badge badge-ghost badge-sm">{visibleTrailCount}</span>
+          <span className="ml-0.5 rounded-md bg-base-200/80 px-1.5 py-0.5 text-xs font-medium tabular-nums">
+            {visibleTrailCount}
+          </span>
         ) : null}
       </button>
 
@@ -92,8 +110,32 @@ export function PlaygroundLayersPanel({
           className="absolute top-[calc(100%+0.5rem)] right-0 z-40 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-base-300 bg-base-100/95 shadow-2xl backdrop-blur-md"
         >
           <div className="border-b border-base-300 px-4 py-3">
-            <p className="text-sm font-semibold">{t("home.playground.layersPanelTitle")}</p>
-            <p className="text-xs text-base-content/60">{t("home.playground.layersPanelHint")}</p>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold">{t("home.playground.layersPanelTitle")}</p>
+                <p className="text-xs text-base-content/60">
+                  {t("home.playground.layersPanelHint")}
+                </p>
+              </div>
+              {layers.length > 0 ? (
+                <div className="flex shrink-0 gap-1">
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-xs"
+                    onClick={() => onSetAllLayersVisible(false)}
+                  >
+                    {t("home.playground.hideAllLayers")}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-xs"
+                    onClick={() => onSetAllLayersVisible(true)}
+                  >
+                    {t("home.playground.showAllLayers")}
+                  </button>
+                </div>
+              ) : null}
+            </div>
           </div>
 
           <div className="max-h-[min(24rem,50vh)] overflow-y-auto p-2">
@@ -108,14 +150,36 @@ export function PlaygroundLayersPanel({
                     <p className="truncate text-[11px] font-semibold tracking-wide text-base-content/50 uppercase">
                       {layer.name}
                     </p>
-                    <button
-                      type="button"
-                      className="btn text-error btn-ghost btn-xs"
-                      onClick={() => onRemoveLayer(layer.id)}
-                      aria-label={t("home.playground.removeLayer", { name: layer.name })}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      {layerHasVisibleTrails(layer) ? (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-xs"
+                          onClick={() => onSetLayerFeaturesVisible(layer.id, false)}
+                        >
+                          {t("home.playground.hideLayerTrails")}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-ghost btn-xs"
+                          onClick={() => {
+                            onSetLayerVisible(layer.id, true);
+                            onSetLayerFeaturesVisible(layer.id, true);
+                          }}
+                        >
+                          {t("home.playground.showLayerTrails")}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="btn text-error btn-ghost btn-xs"
+                        onClick={() => onRemoveLayer(layer.id)}
+                        aria-label={t("home.playground.removeLayer", { name: layer.name })}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
                   </div>
 
                   <ul className="space-y-1">

@@ -1,11 +1,14 @@
 import { PlaygroundElevationLegend } from "@renderer/features/map-playground/components/PlaygroundElevationLegend";
 import { PlaygroundMapPane } from "@renderer/features/map-playground/components/PlaygroundMapPane";
 import { PlaygroundOnboardingModal } from "@renderer/features/map-playground/components/PlaygroundOnboardingModal";
+import { BaseMapStyleDialog } from "@renderer/features/maps/components/BaseMapStyleDialog";
+import { useMapboxTokenQuery } from "@renderer/features/maps/hooks/useMapboxToken";
 import {
   PlaygroundDropHint,
   PlaygroundNotice,
   PlaygroundToolbar,
 } from "@renderer/features/map-playground/components/PlaygroundToolbar";
+import { MAPBOX_BASE_MAP_STYLES } from "@shared/maps.types";
 import { TrailDetailPanel } from "@renderer/features/map-playground/components/TrailDetailPanel";
 import { useMapPlayground } from "@renderer/features/map-playground/hooks/useMapPlayground";
 import { ipcInvoke } from "@renderer/hooks/useIpc";
@@ -19,7 +22,9 @@ export function MapPlayground() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const playground = useMapPlayground();
+  const mapboxToken = useMapboxTokenQuery().data ?? null;
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [baseMapDialogOpen, setBaseMapDialogOpen] = useState(false);
   const checkedOnboardingRef = useRef(false);
   const detailOpen = playground.activeFeature !== null;
 
@@ -75,7 +80,7 @@ export function MapPlayground() {
           layers={playground.layers}
           selectedFeature={playground.selectedFeature}
           baseMapStyle={playground.baseMapStyle}
-          onBaseMapStyleChange={playground.setBaseMapStyle}
+          onOpenBaseMapDialog={() => setBaseMapDialogOpen(true)}
           elevationMode={playground.elevationMode}
           hasElevationData={playground.hasElevationData}
           onToggleElevationMode={playground.toggleElevationMode}
@@ -84,6 +89,9 @@ export function MapPlayground() {
           onOpenGuide={() => setOnboardingOpen(true)}
           onSelectFeature={playground.selectFeature}
           onSetFeatureVisible={playground.setFeatureVisible}
+          onSetLayerVisible={playground.setLayerVisible}
+          onSetLayerFeaturesVisible={playground.setLayerFeaturesVisible}
+          onSetAllLayersVisible={playground.setAllLayersVisible}
           onRemoveLayer={playground.removeLayer}
         />
 
@@ -113,6 +121,15 @@ export function MapPlayground() {
         open={onboardingOpen}
         onClose={dismissOnboarding}
         onCreateGeoJson={handleCreateGeoJson}
+      />
+
+      <BaseMapStyleDialog
+        open={baseMapDialogOpen}
+        value={playground.baseMapStyle}
+        onChange={playground.setBaseMapStyle}
+        onClose={() => setBaseMapDialogOpen(false)}
+        disabledStyles={mapboxToken ? [] : MAPBOX_BASE_MAP_STYLES}
+        disabledHint={t("maps.workspace.baseMap.mapboxTokenNeeded")}
       />
     </div>
   );

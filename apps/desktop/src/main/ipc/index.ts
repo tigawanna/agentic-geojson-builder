@@ -7,6 +7,9 @@ import { mapsHandlers } from "@main/ipc/maps.js";
 import { tileCacheHandlers } from "@main/ipc/tile-cache.js";
 import { controlPointsHandlers } from "@main/ipc/control-points.js";
 import { geoSegmentsHandlers } from "@main/ipc/geo-segments.js";
+import { mapPointsHandlers } from "@main/ipc/map-points.js";
+import { mapLinksHandlers } from "@main/ipc/map-links.js";
+import { mapBundleHandlers } from "@main/ipc/map-bundle.js";
 import { referenceGeoJsonHandlers } from "@main/ipc/reference-geojson.js";
 import { mcpSettingsHandlers } from "@main/ipc/mcp-settings.js";
 import { workspaceSnapshotHandlers } from "@main/ipc/workspace-snapshot.js";
@@ -111,6 +114,9 @@ export function registerIpcHandlers(): void {
     ...workspaceSnapshotHandlers,
     ...controlPointsHandlers,
     ...geoSegmentsHandlers,
+    ...mapPointsHandlers,
+    ...mapLinksHandlers,
+    ...mapBundleHandlers,
     ...mcpSettingsHandlers,
     ...referenceSnapHandlers,
     ...workspaceLayoutHandlers,

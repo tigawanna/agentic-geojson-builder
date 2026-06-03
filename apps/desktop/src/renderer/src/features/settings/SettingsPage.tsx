@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { PageShell } from "@renderer/components/common/PageShell";
 import { DataBackupSection } from "@renderer/features/settings/DataBackupSection";
+import { MapboxSettingsSection } from "@renderer/features/settings/MapboxSettingsSection";
 import { McpSettingsSection } from "@renderer/features/settings/McpSettingsSection";
 import { ThemeModeSelector } from "@renderer/features/settings/ThemeSelector";
 import { ThemeGallery } from "@renderer/features/settings/ThemeGallery";
@@ -32,6 +33,8 @@ export function SettingsPage() {
           </div>
           <ViewTransitionSelector />
         </article>
+
+        <MapboxSettingsSection />
 
         <McpSettingsSection />
 

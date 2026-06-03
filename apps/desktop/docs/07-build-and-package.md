@@ -45,8 +45,23 @@ Set these env vars before `npm run release`:
 
 electron-builder will automatically sign + notarize when all five are set.
 
-The [release workflow](../.github/workflows/release.yml) reads them from
+The [release workflow](../../../.github/workflows/release.yml) reads them from
 GitHub Secrets of the same names.
+
+## GitHub releases
+
+See the monorepo guide: [`docs/desktop-release.md`](../../../docs/desktop-release.md).
+
+**Ship a version** (tag + CI build + GitHub Release):
+
+```bash
+# from monorepo root
+bash scripts/ship-release.sh 0.2.0
+# or: pnpm run release:ship -- 0.2.0
+```
+
+**CI only** (no publish): push to `main` runs [ci.yml](../../../.github/workflows/ci.yml).
+**Publish**: push tag `v0.2.0` or run the **Release** workflow manually.
 
 ## Windows code signing
 

@@ -139,7 +139,7 @@ export async function buildMapTileCache(
   const result = await buildTileCache({
     baseDir: getTileCacheBaseDir(),
     mapId,
-    style: config.style,
+    style: toTileStyle(config.style),
     bounds: config.bounds,
     minZoom: config.minZoom,
     maxZoom: config.maxZoom,
@@ -185,7 +185,7 @@ export async function readCachedTileForMap(
   }
 
   try {
-    return await readCachedTile(getTileCacheBaseDir(), mapId, style, z, x, y);
+    return await readCachedTile(getTileCacheBaseDir(), mapId, toTileStyle(style), z, x, y);
   } catch {
     return null;
   }
@@ -201,7 +201,7 @@ export async function getMapSectorView(input: GetMapSectorViewInput): Promise<Ma
     throw new Error("Requested coordinates are outside the cached bounds.");
   }
 
-  const style = input.style ?? config.style;
+  const style = toTileStyle(input.style ?? config.style);
   const sector = await renderMapSectorFromCache({
     baseDir: getTileCacheBaseDir(),
     mapId: input.mapId,

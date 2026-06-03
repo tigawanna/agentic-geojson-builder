@@ -36,10 +36,16 @@ export const DEFAULT_MAP_VIEWPORT: MapViewport = {
   zoom: 13,
 };
 
-export const BASE_MAP_CONFIG: Record<
-  MapBaseMapStyle,
-  { url: string; attribution: string; maxZoom: number }
-> = {
+export type BaseMapConfigEntry = {
+  url: string;
+  attribution: string;
+  maxZoom: number;
+  tileSize?: number;
+  zoomOffset?: number;
+  requiresMapboxToken?: boolean;
+};
+
+export const BASE_MAP_CONFIG: Record<MapBaseMapStyle, BaseMapConfigEntry> = {
   outline: {
     url: "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png",
     attribution: "&copy; OpenStreetMap &copy; CARTO",
@@ -54,6 +60,22 @@ export const BASE_MAP_CONFIG: Record<
     url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
     attribution: "Tiles &copy; Esri",
     maxZoom: 19,
+  },
+  "mapbox-outdoors": {
+    url: "https://api.mapbox.com/styles/v1/mapbox/outdoors-v12/tiles/512/{z}/{x}/{y}@2x?access_token={token}",
+    attribution: "&copy; Mapbox &copy; OpenStreetMap",
+    maxZoom: 22,
+    tileSize: 512,
+    zoomOffset: -1,
+    requiresMapboxToken: true,
+  },
+  "mapbox-satellite": {
+    url: "https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v12/tiles/512/{z}/{x}/{y}@2x?access_token={token}",
+    attribution: "&copy; Mapbox &copy; Maxar",
+    maxZoom: 22,
+    tileSize: 512,
+    zoomOffset: -1,
+    requiresMapboxToken: true,
   },
 };
 
@@ -147,25 +169,46 @@ function attachRemoteTileFallback(layer: import("leaflet").TileLayer, style: Map
   });
 }
 
+function resolveBaseMapUrl(config: BaseMapConfigEntry, mapboxToken?: string | null): string | null {
+  if (!config.requiresMapboxToken) {
+    return config.url;
+  }
+
+  const token = mapboxToken?.trim();
+  if (!token) {
+    return null;
+  }
+
+  return config.url.replace("{token}", encodeURIComponent(token));
+}
+
 export function createBaseLayer(
   L: typeof import("leaflet"),
   style: MapBaseMapStyle,
   tileUrlOverride?: string | null,
+  mapboxToken?: string | null,
 ) {
   const config = BASE_MAP_CONFIG[style];
+  const resolvedUrl = resolveBaseMapUrl(config, mapboxToken);
   const layerOptions = {
     maxZoom: config.maxZoom,
     attribution: config.attribution,
     crossOrigin: "anonymous" as const,
+    ...(config.tileSize ? { tileSize: config.tileSize } : {}),
+    ...(typeof config.zoomOffset === "number" ? { zoomOffset: config.zoomOffset } : {}),
   };
 
+  if (!resolvedUrl) {
+    return L.layerGroup();
+  }
+
   if (!tileUrlOverride) {
-    const remote = L.tileLayer(config.url, layerOptions);
+    const remote = L.tileLayer(resolvedUrl, layerOptions);
     attachRemoteTileFallback(remote, style);
     return remote;
   }
 
-  const remote = L.tileLayer(config.url, layerOptions);
+  const remote = L.tileLayer(resolvedUrl, layerOptions);
   attachRemoteTileFallback(remote, style);
   const local = L.tileLayer(tileUrlOverride, {
     maxZoom: config.maxZoom,

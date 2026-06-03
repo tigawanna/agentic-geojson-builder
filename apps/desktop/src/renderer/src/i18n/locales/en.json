@@ -28,6 +28,10 @@
       "trailCount": "{{count}} trails",
       "trailCount_one": "{{count}} trail",
       "noLayers": "No layers loaded",
+      "hideAllLayers": "Hide all",
+      "showAllLayers": "Show all",
+      "hideLayerTrails": "Hide all",
+      "showLayerTrails": "Show all",
       "removeLayer": "Remove {{name}}",
       "dropHintTitle": "Drop GeoJSON to preview trails",
       "dropHintBody": "Drop one or more GeoJSON files. LineStrings with elevation, names, and Trailfork metadata are fully supported.",
@@ -166,7 +170,13 @@
       "baseMap": {
         "satellite": "Satellite",
         "outline": "Outline",
-        "standard": "Standard"
+        "standard": "Standard",
+        "mapbox-outdoors": "Mapbox Outdoors",
+        "mapbox-satellite": "Mapbox Satellite",
+        "mapboxTokenNeeded": "Add a Mapbox access token in Settings to enable this style.",
+        "dialogTitle": "Base map",
+        "dialogHint": "Choose the background map for trails and alignment.",
+        "dialogClose": "Close"
       }
     },
     "workspace": {
@@ -175,6 +185,15 @@
       "controlsShortcut": "Ctrl+,",
       "openControlsShortcut": "Open project controls (Ctrl+, or Esc to close)",
       "showGuide": "Guide",
+      "export": "Export",
+      "openExport": "Open export screen",
+      "addMarker": "Marker",
+      "markerHint": "Ctrl+click the map to drop a marker.",
+      "linkPoints": "Link",
+      "linkPickFirst": "Click the first marker to start a link.",
+      "linkPickSecond": "Click the second marker to create the link.",
+      "linkCreated": "Link created.",
+      "linkError": "Could not create link.",
       "history": "History",
       "openHistoryShortcut": "Open change history (Ctrl+Shift+H)",
       "auditLogTitle": "Change history",
@@ -336,7 +355,13 @@
       "baseMap": {
         "satellite": "Satellite",
         "outline": "Outline",
-        "standard": "Standard"
+        "standard": "Standard",
+        "mapbox-outdoors": "Mapbox Outdoors",
+        "mapbox-satellite": "Mapbox Satellite",
+        "mapboxTokenNeeded": "Add a Mapbox access token in Settings to enable this style.",
+        "dialogTitle": "Base map",
+        "dialogHint": "Choose the background map for trails and alignment.",
+        "dialogClose": "Close"
       }
     }
   },
@@ -383,6 +408,16 @@
         "incomplete": "Incomplete",
         "corrupt": "Corrupt"
       }
+    },
+    "mapbox": {
+      "heading": "Mapbox",
+      "description": "Add your Mapbox access token to enable Mapbox Outdoors and Satellite base maps. The token is stored locally on this machine.",
+      "tokenLabel": "Access token",
+      "reveal": "Show token",
+      "hide": "Hide token",
+      "save": "Save token",
+      "saved": "Saved",
+      "clear": "Clear"
     },
     "mcp": {
       "heading": "Local MCP server",

@@ -5,7 +5,10 @@ import type { MapBaseMapStyle } from "@shared/maps.types";
 import type { TileCacheCorner } from "@shared/tile-cache.types";
 import { TILE_CACHE_ZOOM_MAX, TILE_CACHE_ZOOM_MIN } from "@shared/tile-cache.types";
 import { BoundsPickerMap } from "@renderer/features/maps/components/BoundsPickerMap";
-import { BaseMapStylePicker } from "@renderer/features/maps/components/BaseMapStylePicker";
+import {
+  BaseMapStylePicker,
+  CACHEABLE_BASE_MAP_STYLES,
+} from "@renderer/features/maps/components/BaseMapStylePicker";
 
 type TileCacheBoundsPanelProps = {
   corners: TileCacheCorner[];
@@ -96,7 +99,11 @@ export function TileCacheBoundsPanel({
       </div>
       <p className="text-xs text-base-content/50">{t("maps.create.cacheZoomHint")}</p>
 
-      <BaseMapStylePicker value={cacheStyle} onChange={onStyleChange} />
+      <BaseMapStylePicker
+        value={cacheStyle}
+        onChange={onStyleChange}
+        styles={CACHEABLE_BASE_MAP_STYLES}
+      />
 
       <BoundsPickerMap
         corners={corners}

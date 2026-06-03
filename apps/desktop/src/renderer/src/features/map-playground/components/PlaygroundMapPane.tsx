@@ -13,6 +13,7 @@ import {
 } from "@renderer/features/map-playground/lib/elevation-colors";
 import { trailFeatureColor } from "@renderer/features/map-playground/lib/trail-colors";
 import { createBaseLayer } from "@renderer/features/maps/lib/map-handle";
+import { useMapboxTokenQuery } from "@renderer/features/maps/hooks/useMapboxToken";
 import type {
   PlaygroundBaseMapStyle,
   PlaygroundLayer,
@@ -147,9 +148,12 @@ export function PlaygroundMapPane({
   const previousLayerCountRef = useRef(0);
   const previousSelectionRef = useRef<PlaygroundSelectedFeature | null>(null);
   const [mapReady, setMapReady] = useState(false);
+  const mapboxToken = useMapboxTokenQuery().data ?? null;
+  const mapboxTokenRef = useRef(mapboxToken);
 
   onFeatureSelectRef.current = onFeatureSelect;
   initialViewportRef.current = initialViewport;
+  mapboxTokenRef.current = mapboxToken;
 
   useEffect(() => {
     let cancelled = false;
@@ -170,7 +174,9 @@ export function PlaygroundMapPane({
         zoomControl: true,
       });
 
-      baseLayerRef.current = createBaseLayer(L, baseMapStyle).addTo(map);
+      baseLayerRef.current = createBaseLayer(L, baseMapStyle, null, mapboxTokenRef.current).addTo(
+        map,
+      );
       highlightLayerRef.current = L.layerGroup().addTo(map);
       trailsLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
@@ -220,14 +226,14 @@ export function PlaygroundMapPane({
     }
 
     map.removeLayer(currentLayer);
-    const nextLayer = createBaseLayer(L, baseMapStyle).addTo(map);
+    const nextLayer = createBaseLayer(L, baseMapStyle, null, mapboxToken).addTo(map);
     baseLayerRef.current = nextLayer;
     if ("bringToBack" in nextLayer && typeof nextLayer.bringToBack === "function") {
       nextLayer.bringToBack();
     }
     highlightLayerRef.current?.addTo(map);
     trailsLayerRef.current?.addTo(map);
-  }, [baseMapStyle]);
+  }, [baseMapStyle, mapboxToken]);
 
   useEffect(() => {
     if (!mapReady) {

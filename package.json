@@ -14,7 +14,10 @@
     "check-types": "turbo run check-types",
     "quality": "turbo run //#lint //#format",
     "quality:fix": "turbo run //#lint:fix //#format:fix",
-    "prepare": "vp config"
+    "prepare": "vp config",
+    "release:ship": "bash scripts/ship-release.sh",
+    "release:package": "bash scripts/release.sh --package-only",
+    "release:publish": "bash scripts/release.sh"
   },
   "devDependencies": {
     "@typescript/native-preview": "catalog:",
