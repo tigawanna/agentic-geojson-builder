@@ -14,3 +14,8 @@ export function setMapWorkspaceMenuState(next: MapWorkspaceMenuSyncState): void 
   mapWorkspaceMenuState = next;
   createApplicationMenu();
 }
+
+export function patchMapWorkspaceMenuState(patch: Partial<MapWorkspaceMenuSyncState>): void {
+  mapWorkspaceMenuState = { ...mapWorkspaceMenuState, ...patch };
+  createApplicationMenu();
+}

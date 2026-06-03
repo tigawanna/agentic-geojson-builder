@@ -20,7 +20,11 @@ import { TrailDetailPanel } from "@renderer/features/map-playground/components/T
 import { useMapPlayground } from "@renderer/features/map-playground/hooks/useMapPlayground";
 import { ipcInvoke } from "@renderer/hooks/useIpc";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  DEFAULT_PLAYGROUND_VIEWPORT,
+  type PlaygroundViewport,
+} from "@renderer/features/map-playground/lib/playground-viewport";
 import { useTranslation } from "react-i18next";
 
 const ONBOARDING_STORE_KEY = "playground.onboardingSeen";
@@ -33,6 +37,10 @@ export function MapPlayground() {
   const baseRenderer = useMapBaseRendererQuery().data ?? "leaflet";
   const setBaseRenderer = useSetMapBaseRendererMutation();
   const mapboxGlActive = baseRenderer === "mapbox-gl";
+  const sharedViewportRef = useRef<PlaygroundViewport>(DEFAULT_PLAYGROUND_VIEWPORT);
+  const handlePlaygroundViewportChange = useCallback((viewport: PlaygroundViewport) => {
+    sharedViewportRef.current = viewport;
+  }, []);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [baseMapDialogOpen, setBaseMapDialogOpen] = useState(false);
   const checkedOnboardingRef = useRef(false);
@@ -78,7 +86,8 @@ export function MapPlayground() {
               layers={playground.layers}
               selectedFeature={playground.selectedFeature}
               baseMapStyle={playground.baseMapStyle}
-              initialViewport={playground.defaultViewport}
+              sharedViewportRef={sharedViewportRef}
+              onViewportChange={handlePlaygroundViewportChange}
               elevationMode={playground.elevationMode}
               elevationRange={playground.elevationRange}
               onFeatureSelect={playground.selectFeature}
@@ -89,7 +98,8 @@ export function MapPlayground() {
               layers={playground.layers}
               selectedFeature={playground.selectedFeature}
               baseMapStyle={playground.baseMapStyle}
-              initialViewport={playground.defaultViewport}
+              sharedViewportRef={sharedViewportRef}
+              onViewportChange={handlePlaygroundViewportChange}
               onFeatureSelect={playground.selectFeature}
             />
           </Activity>

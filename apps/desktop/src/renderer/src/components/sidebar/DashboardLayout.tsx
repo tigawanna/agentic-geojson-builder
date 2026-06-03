@@ -4,6 +4,7 @@ import { DetachedSourceLayout } from "@renderer/components/DetachedSourceLayout"
 import { usePageTitle } from "@renderer/hooks/usePageTitle";
 import { AppConfig } from "@renderer/utils/system";
 import { AppMenuBridge } from "@renderer/components/AppMenuBridge";
+import { MapBaseRendererGlobalBridge } from "@renderer/features/maps/components/MapBaseRendererGlobalBridge";
 import { ViewportCommandBridge } from "@renderer/components/ViewportCommandBridge";
 import { WorkspaceCaptureBridge } from "@renderer/components/WorkspaceCaptureBridge";
 import { UpdateToast } from "@renderer/components/UpdateToast";
@@ -70,6 +71,7 @@ function DashboardShell() {
 
         <UpdateToast />
         <AppMenuBridge />
+        <MapBaseRendererGlobalBridge />
         <WorkspaceCaptureBridge />
         <ViewportCommandBridge />
       </div>

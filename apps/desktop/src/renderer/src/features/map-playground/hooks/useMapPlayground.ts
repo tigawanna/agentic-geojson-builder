@@ -13,11 +13,7 @@ import type {
 import { computeVisibleElevationRange } from "@renderer/features/map-playground/lib/elevation-colors";
 import { useEffect, useRef, useState } from "react";
 
-const DEFAULT_VIEWPORT = {
-  latitude: 0,
-  longitude: 20,
-  zoom: 2,
-};
+import { DEFAULT_PLAYGROUND_VIEWPORT } from "@renderer/features/map-playground/lib/playground-viewport";
 
 function createLayerId(name: string) {
   return `${name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -444,7 +440,7 @@ export function useMapPlayground() {
     isDragOver,
     notice,
     errorNotice,
-    defaultViewport: DEFAULT_VIEWPORT,
+    defaultViewport: DEFAULT_PLAYGROUND_VIEWPORT,
     openFilePicker,
     handleDragOver,
     handleDragLeave,

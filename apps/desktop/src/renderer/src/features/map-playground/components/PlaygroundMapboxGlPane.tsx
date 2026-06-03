@@ -1,10 +1,15 @@
 import { useEffect, useRef, useState } from "react";
+import type { MutableRefObject } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import {
   coordinatesToLatLngs,
   getFeatureKey,
 } from "@renderer/features/map-playground/lib/parse-playground-geojson";
+import {
+  collectPlaygroundTrailBounds,
+  type PlaygroundViewport,
+} from "@renderer/features/map-playground/lib/playground-viewport";
 import { trailFeatureColor } from "@renderer/features/map-playground/lib/trail-colors";
 import { useMapboxTokenQuery } from "@renderer/features/maps/hooks/useMapboxToken";
 import {
@@ -25,11 +30,8 @@ type PlaygroundMapboxGlPaneProps = {
   layers: PlaygroundLayer[];
   selectedFeature: PlaygroundSelectedFeature | null;
   baseMapStyle: PlaygroundBaseMapStyle;
-  initialViewport: {
-    latitude: number;
-    longitude: number;
-    zoom: number;
-  };
+  sharedViewportRef: MutableRefObject<PlaygroundViewport>;
+  onViewportChange: (viewport: PlaygroundViewport) => void;
   onFeatureSelect: (layerId: string, featureKey: string) => void;
 };
 
@@ -37,29 +39,168 @@ function isFeatureVisible(layer: PlaygroundLayer, featureKey: string): boolean {
   return layer.visible && !layer.hiddenFeatureKeys.includes(featureKey);
 }
 
+function buildTrailFeatures(
+  layers: PlaygroundLayer[],
+  selectedFeature: PlaygroundSelectedFeature | null,
+) {
+  const hasActiveSelection = selectedFeature !== null;
+  return layers.flatMap((layer) =>
+    layer.features.flatMap((feature) => {
+      const featureKey = getFeatureKey(feature);
+      if (!isFeatureVisible(layer, featureKey)) {
+        return [];
+      }
+      const latlngs = coordinatesToLatLngs(feature.geometry.coordinates);
+      if (latlngs.length < 2) {
+        return [];
+      }
+      const isSelected =
+        selectedFeature?.layerId === layer.id && selectedFeature.featureKey === featureKey;
+      return [
+        {
+          type: "Feature" as const,
+          geometry: {
+            type: "LineString" as const,
+            coordinates: latlngs.map((point) => [point.lng, point.lat]),
+          },
+          properties: {
+            layerId: layer.id,
+            featureKey,
+            color: trailFeatureColor(featureKey),
+            width: isSelected ? 6 : 4,
+            opacity: hasActiveSelection && !isSelected ? 0.45 : isSelected ? 1 : 0.88,
+          },
+        },
+      ];
+    }),
+  );
+}
+
+function fitMapToPoints(
+  map: mapboxgl.Map,
+  points: Array<{ latitude: number; longitude: number }>,
+  options: { padding: number; maxZoom: number },
+) {
+  if (points.length === 0) {
+    return;
+  }
+
+  const bounds = new mapboxgl.LngLatBounds();
+  for (const point of points) {
+    bounds.extend([point.longitude, point.latitude]);
+  }
+  map.fitBounds(bounds, {
+    padding: options.padding,
+    maxZoom: options.maxZoom,
+    duration: 0,
+  });
+}
+
 export function PlaygroundMapboxGlPane({
   layers,
   selectedFeature,
   baseMapStyle,
-  initialViewport,
+  sharedViewportRef,
+  onViewportChange,
   onFeatureSelect,
 }: PlaygroundMapboxGlPaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const onFeatureSelectRef = useRef(onFeatureSelect);
+  const onViewportChangeRef = useRef(onViewportChange);
+  const sharedViewportRefRef = useRef(sharedViewportRef);
   const dataRef = useRef({ layers, selectedFeature });
+  const previousLayerCountRef = useRef(0);
+  const previousSelectionRef = useRef<PlaygroundSelectedFeature | null>(null);
+  const appliedStyleIdRef = useRef<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
 
   const token = useMapboxTokenQuery().data ?? null;
   const styleId = resolveMapboxGlStyleId(null, baseMapStyle);
 
   onFeatureSelectRef.current = onFeatureSelect;
+  onViewportChangeRef.current = onViewportChange;
+  sharedViewportRefRef.current = sharedViewportRef;
   dataRef.current = { layers, selectedFeature };
+
+  function emitViewportFromMap(map: mapboxgl.Map) {
+    const center = map.getCenter();
+    const viewport: PlaygroundViewport = {
+      latitude: center.lat,
+      longitude: center.lng,
+      zoom: map.getZoom(),
+    };
+    sharedViewportRefRef.current.current = viewport;
+    onViewportChangeRef.current(viewport);
+  }
+
+  function applySharedViewport(map: mapboxgl.Map) {
+    const viewport = sharedViewportRefRef.current.current;
+    map.jumpTo({
+      center: [viewport.longitude, viewport.latitude],
+      zoom: viewport.zoom,
+    });
+  }
+
+  function syncTrails(map: mapboxgl.Map) {
+    if (!map.isStyleLoaded()) {
+      return;
+    }
+
+    const { layers: currentLayers, selectedFeature: selection } = dataRef.current;
+    const features = buildTrailFeatures(currentLayers, selection);
+    const collection: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features,
+    };
+
+    const existing = map.getSource(TRAILS_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
+    if (existing) {
+      existing.setData(collection);
+    } else {
+      map.addSource(TRAILS_SOURCE_ID, { type: "geojson", data: collection });
+    }
+
+    if (!map.getLayer(TRAILS_LAYER_ID)) {
+      map.addLayer({
+        id: TRAILS_LAYER_ID,
+        type: "line",
+        source: TRAILS_SOURCE_ID,
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": ["get", "color"],
+          "line-width": ["get", "width"],
+          "line-opacity": ["get", "opacity"],
+        },
+      });
+    }
+
+    const { allPoints, selectedPoints } = collectPlaygroundTrailBounds(currentLayers, selection);
+    const selectionChanged =
+      previousSelectionRef.current?.layerId !== selection?.layerId ||
+      previousSelectionRef.current?.featureKey !== selection?.featureKey;
+
+    if (selectionChanged && selectedPoints && selectedPoints.length >= 2) {
+      fitMapToPoints(map, selectedPoints, { padding: 72, maxZoom: 17 });
+      emitViewportFromMap(map);
+    } else if (
+      currentLayers.length > previousLayerCountRef.current &&
+      allPoints.length > 0 &&
+      sharedViewportRefRef.current.current.zoom <= 3
+    ) {
+      fitMapToPoints(map, allPoints, { padding: 48, maxZoom: 16 });
+      emitViewportFromMap(map);
+    }
+
+    previousLayerCountRef.current = currentLayers.length;
+    previousSelectionRef.current = selection;
+  }
 
   useEffect(() => {
     return () => {
       mapRef.current?.remove();
       mapRef.current = null;
+      appliedStyleIdRef.current = null;
       setMapReady(false);
     };
   }, []);
@@ -71,90 +212,38 @@ export function PlaygroundMapboxGlPane({
     }
 
     if (mapRef.current) {
+      applySharedViewport(mapRef.current);
       mapRef.current.resize();
+      syncTrails(mapRef.current);
       return;
     }
 
     mapboxgl.accessToken = token;
+    const viewport = sharedViewportRefRef.current.current;
     const map = new mapboxgl.Map({
       container,
       style: MAPBOX_GL_STYLES[styleId],
-      center: [initialViewport.longitude, initialViewport.latitude],
-      zoom: initialViewport.zoom,
+      center: [viewport.longitude, viewport.latitude],
+      zoom: viewport.zoom,
       attributionControl: true,
       preserveDrawingBuffer: true,
     });
     map.addControl(new mapboxgl.NavigationControl(), "top-right");
     mapRef.current = map;
+    appliedStyleIdRef.current = styleId;
 
-    function syncTrails() {
-      if (!map.isStyleLoaded()) {
-        return;
-      }
-      const { layers: currentLayers, selectedFeature: selection } = dataRef.current;
-      const hasActiveSelection = selection !== null;
-      const features = currentLayers.flatMap((layer) =>
-        layer.features.flatMap((feature) => {
-          const featureKey = getFeatureKey(feature);
-          if (!isFeatureVisible(layer, featureKey)) {
-            return [];
-          }
-          const latlngs = coordinatesToLatLngs(feature.geometry.coordinates);
-          if (latlngs.length < 2) {
-            return [];
-          }
-          const isSelected = selection?.layerId === layer.id && selection.featureKey === featureKey;
-          return [
-            {
-              type: "Feature" as const,
-              geometry: {
-                type: "LineString" as const,
-                coordinates: latlngs.map((point) => [point.lng, point.lat]),
-              },
-              properties: {
-                layerId: layer.id,
-                featureKey,
-                color: trailFeatureColor(featureKey),
-                width: isSelected ? 6 : 4,
-                opacity: hasActiveSelection && !isSelected ? 0.45 : isSelected ? 1 : 0.88,
-              },
-            },
-          ];
-        }),
-      );
-
-      const collection: GeoJSON.FeatureCollection = {
-        type: "FeatureCollection",
-        features,
-      };
-
-      const existing = map.getSource(TRAILS_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
-      if (existing) {
-        existing.setData(collection);
-      } else {
-        map.addSource(TRAILS_SOURCE_ID, { type: "geojson", data: collection });
-      }
-
-      if (!map.getLayer(TRAILS_LAYER_ID)) {
-        map.addLayer({
-          id: TRAILS_LAYER_ID,
-          type: "line",
-          source: TRAILS_SOURCE_ID,
-          layout: { "line-cap": "round", "line-join": "round" },
-          paint: {
-            "line-color": ["get", "color"],
-            "line-width": ["get", "width"],
-            "line-opacity": ["get", "opacity"],
-          },
-        });
-      }
+    function handleStyleReady() {
+      syncTrails(map);
     }
 
-    map.on("style.load", syncTrails);
+    map.on("style.load", handleStyleReady);
     map.on("load", () => {
       setMapReady(true);
-      syncTrails();
+      handleStyleReady();
     });
+
+    map.on("moveend", () => emitViewportFromMap(map));
+    map.on("zoomend", () => emitViewportFromMap(map));
 
     map.on("click", TRAILS_LAYER_ID, (event) => {
       const feature = event.features?.[0];
@@ -178,59 +267,42 @@ export function PlaygroundMapboxGlPane({
     observer.observe(container);
 
     return () => {
+      emitViewportFromMap(map);
       observer.disconnect();
     };
-  }, [initialViewport.latitude, initialViewport.longitude, initialViewport.zoom, styleId, token]);
+  }, [styleId, token]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady || appliedStyleIdRef.current === styleId) {
+      return;
+    }
+
+    appliedStyleIdRef.current = styleId;
+
+    function handleStyleReady() {
+      const activeMap = mapRef.current;
+      if (!activeMap) {
+        return;
+      }
+      applySharedViewport(activeMap);
+      syncTrails(activeMap);
+    }
+
+    map.once("style.load", handleStyleReady);
+    map.setStyle(MAPBOX_GL_STYLES[styleId]);
+
+    return () => {
+      map.off("style.load", handleStyleReady);
+    };
+  }, [mapReady, styleId]);
 
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) {
       return;
     }
-    const nextStyle = MAPBOX_GL_STYLES[styleId];
-    if (map.isStyleLoaded()) {
-      map.setStyle(nextStyle);
-    }
-  }, [mapReady, styleId]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !map.isStyleLoaded()) {
-      return;
-    }
-    const { layers: currentLayers, selectedFeature: selection } = dataRef.current;
-    const hasActiveSelection = selection !== null;
-    const features = currentLayers.flatMap((layer) =>
-      layer.features.flatMap((feature) => {
-        const featureKey = getFeatureKey(feature);
-        if (!isFeatureVisible(layer, featureKey)) {
-          return [];
-        }
-        const latlngs = coordinatesToLatLngs(feature.geometry.coordinates);
-        if (latlngs.length < 2) {
-          return [];
-        }
-        const isSelected = selection?.layerId === layer.id && selection.featureKey === featureKey;
-        return [
-          {
-            type: "Feature" as const,
-            geometry: {
-              type: "LineString" as const,
-              coordinates: latlngs.map((point) => [point.lng, point.lat]),
-            },
-            properties: {
-              layerId: layer.id,
-              featureKey,
-              color: trailFeatureColor(featureKey),
-              width: isSelected ? 6 : 4,
-              opacity: hasActiveSelection && !isSelected ? 0.45 : isSelected ? 1 : 0.88,
-            },
-          },
-        ];
-      }),
-    );
-    const source = map.getSource(TRAILS_SOURCE_ID) as mapboxgl.GeoJSONSource | undefined;
-    source?.setData({ type: "FeatureCollection", features });
+    syncTrails(map);
   }, [layers, mapReady, selectedFeature]);
 
   if (!token) {

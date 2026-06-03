@@ -159,6 +159,10 @@ export interface IpcContract {
   };
   "app:showNativeMenu": { req: ShowNativeMenuInput; res: { ok: true } | { ok: false } };
   "mapWorkspaceMenu:syncState": { req: MapWorkspaceMenuSyncState; res: { ok: true } };
+  "mapWorkspaceMenu:patchState": {
+    req: Partial<MapWorkspaceMenuSyncState>;
+    res: { ok: true };
+  };
   "app:popupApplicationSubmenu": {
     req: PopupApplicationSubmenuInput;
     res: { ok: boolean };

@@ -5,7 +5,6 @@ import { useMapWorkspaceUiStore } from "@renderer/features/maps/store/MapWorkspa
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useRef } from "react";
-import type { MapBaseRenderer } from "@shared/maps.types";
 import {
   MAPBOX_GL_STYLE_ORDER,
   type MapboxGlStyleId,
@@ -22,7 +21,6 @@ type MapWorkspaceMenuHandlers = {
   onOpenHistory: () => void;
   onOpenGuide: () => void;
   onHardReload: () => void;
-  onSetBaseRenderer: (renderer: MapBaseRenderer) => void;
   onSetMapboxGlStyle: (styleId: MapboxGlStyleId) => void;
 };
 
@@ -120,16 +118,6 @@ export function useMapWorkspaceMenuActions(handlers: MapWorkspaceMenuHandlers) {
       const next = !state.controlPointDragEnabled;
       state.setControlPointDragEnabled(next);
       void ipcInvoke("store:set", { key: CONTROL_POINT_DRAG_STORE_KEY, value: next });
-      return;
-    }
-
-    if (action.id === "base-renderer:leaflet") {
-      currentHandlers.onSetBaseRenderer("leaflet");
-      return;
-    }
-
-    if (action.id === "base-renderer:mapbox-gl") {
-      currentHandlers.onSetBaseRenderer("mapbox-gl");
       return;
     }
 

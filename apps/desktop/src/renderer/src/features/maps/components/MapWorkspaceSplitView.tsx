@@ -924,13 +924,6 @@ export function MapWorkspaceSplitView() {
       });
   }, [exportGeoJson, setStatusMessage, t, workspace]);
 
-  const handleSetBaseRenderer = useCallback(
-    (renderer: MapBaseRenderer) => {
-      void setBaseRenderer.mutateAsync(renderer);
-    },
-    [setBaseRenderer],
-  );
-
   const handleSetMapboxGlStyle = useCallback(
     (styleId: MapboxGlStyleId) => {
       queueSave({ mapboxGlStyle: styleId });
@@ -958,7 +951,6 @@ export function MapWorkspaceSplitView() {
     onOpenHistory: () => setAuditLogOpen(true),
     onOpenGuide: () => setOnboardingOpen(true),
     onHardReload: () => void window.api.invoke("app:hardReload", undefined),
-    onSetBaseRenderer: handleSetBaseRenderer,
     onSetMapboxGlStyle: handleSetMapboxGlStyle,
   });
 

@@ -20,8 +20,12 @@ import type {
   PlaygroundSelectedFeature,
 } from "@renderer/types/map-playground.types";
 import type { PlaygroundFeature } from "@renderer/types/map-playground.types";
+import {
+  collectPlaygroundTrailBounds,
+  type PlaygroundViewport,
+} from "@renderer/features/map-playground/lib/playground-viewport";
 import { useEffect, useRef, useState } from "react";
-import type { RefObject } from "react";
+import type { MutableRefObject, RefObject } from "react";
 import type * as Leaflet from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -31,11 +35,8 @@ type PlaygroundMapPaneProps = {
   baseMapStyle: PlaygroundBaseMapStyle;
   elevationMode: boolean;
   elevationRange: ElevationRange | null;
-  initialViewport: {
-    latitude: number;
-    longitude: number;
-    zoom: number;
-  };
+  sharedViewportRef: MutableRefObject<PlaygroundViewport>;
+  onViewportChange: (viewport: PlaygroundViewport) => void;
   onFeatureSelect: (layerId: string, featureKey: string) => void;
 };
 
@@ -133,7 +134,8 @@ export function PlaygroundMapPane({
   baseMapStyle,
   elevationMode,
   elevationRange,
-  initialViewport,
+  sharedViewportRef,
+  onViewportChange,
   onFeatureSelect,
 }: PlaygroundMapPaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -143,7 +145,8 @@ export function PlaygroundMapPane({
   const trailsLayerRef = useRef<Leaflet.LayerGroup | null>(null);
   const highlightLayerRef = useRef<Leaflet.LayerGroup | null>(null);
   const onFeatureSelectRef = useRef(onFeatureSelect);
-  const initialViewportRef = useRef(initialViewport);
+  const onViewportChangeRef = useRef(onViewportChange);
+  const sharedViewportRefRef = useRef(sharedViewportRef);
   const hasAppliedInitialStyleRef = useRef(false);
   const previousLayerCountRef = useRef(0);
   const previousSelectionRef = useRef<PlaygroundSelectedFeature | null>(null);
@@ -152,8 +155,25 @@ export function PlaygroundMapPane({
   const mapboxTokenRef = useRef(mapboxToken);
 
   onFeatureSelectRef.current = onFeatureSelect;
-  initialViewportRef.current = initialViewport;
+  onViewportChangeRef.current = onViewportChange;
+  sharedViewportRefRef.current = sharedViewportRef;
   mapboxTokenRef.current = mapboxToken;
+
+  function emitViewportFromMap(map: Leaflet.Map) {
+    const center = map.getCenter();
+    const viewport: PlaygroundViewport = {
+      latitude: center.lat,
+      longitude: center.lng,
+      zoom: map.getZoom(),
+    };
+    sharedViewportRefRef.current.current = viewport;
+    onViewportChangeRef.current(viewport);
+  }
+
+  function applySharedViewport(map: Leaflet.Map) {
+    const viewport = sharedViewportRefRef.current.current;
+    map.setView([viewport.latitude, viewport.longitude], viewport.zoom, { animate: false });
+  }
 
   useEffect(() => {
     return () => {
@@ -174,6 +194,7 @@ export function PlaygroundMapPane({
     let resizeObserver: ResizeObserver | undefined;
 
     if (mapRef.current) {
+      applySharedViewport(mapRef.current);
       mapRef.current.invalidateSize({ animate: false });
       return;
     }
@@ -185,12 +206,15 @@ export function PlaygroundMapPane({
       }
 
       leafletRef.current = L;
-      const startingViewport = initialViewportRef.current;
+      const startingViewport = sharedViewportRefRef.current.current;
       const map = L.map(containerRef.current, {
         center: [startingViewport.latitude, startingViewport.longitude],
         zoom: startingViewport.zoom,
         zoomControl: true,
       });
+
+      map.on("moveend", () => emitViewportFromMap(map));
+      map.on("zoomend", () => emitViewportFromMap(map));
 
       baseLayerRef.current = createBaseLayer(L, baseMapStyle, null, mapboxTokenRef.current).addTo(
         map,
@@ -215,6 +239,9 @@ export function PlaygroundMapPane({
 
     return () => {
       cancelled = true;
+      if (mapRef.current) {
+        emitViewportFromMap(mapRef.current);
+      }
       resizeObserver?.disconnect();
       if (resizeTimer !== undefined) {
         window.clearTimeout(resizeTimer);
@@ -261,8 +288,14 @@ export function PlaygroundMapPane({
 
     trailsLayer.clearLayers();
     highlightLayer.clearLayers();
-    const boundsPoints: Leaflet.LatLngExpression[] = [];
-    let selectedLatLngs: Array<[number, number]> | undefined;
+    const { allPoints, selectedPoints } = collectPlaygroundTrailBounds(layers, selectedFeature);
+    const boundsPoints: Leaflet.LatLngExpression[] = allPoints.map((point) => [
+      point.latitude,
+      point.longitude,
+    ]);
+    const selectedLatLngs = selectedPoints?.map(
+      (point) => [point.latitude, point.longitude] as [number, number],
+    );
 
     const hasActiveSelection = selectedFeature !== null;
 
@@ -275,14 +308,6 @@ export function PlaygroundMapPane({
 
         const isSelected =
           selectedFeature?.layerId === layer.id && selectedFeature.featureKey === featureKey;
-        const latlngs = coordinatesToLatLngs(feature.geometry.coordinates);
-        for (const point of latlngs) {
-          boundsPoints.push([point.lat, point.lng]);
-        }
-
-        if (isSelected) {
-          selectedLatLngs = latlngs.map((point) => [point.lat, point.lng]);
-        }
 
         addTrailToLayer(
           L,
@@ -305,8 +330,10 @@ export function PlaygroundMapPane({
 
     if (selectionChanged && selectedLatLngs && selectedLatLngs.length >= 2) {
       map.fitBounds(L.latLngBounds(selectedLatLngs), { padding: [72, 72], maxZoom: 17 });
+      emitViewportFromMap(map);
     } else if (layers.length > previousLayerCountRef.current && boundsPoints.length > 0) {
       map.fitBounds(L.latLngBounds(boundsPoints), { padding: [48, 48], maxZoom: 16 });
+      emitViewportFromMap(map);
     }
 
     previousLayerCountRef.current = layers.length;
