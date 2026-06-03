@@ -6,7 +6,6 @@
   "nav": {
     "home": "Home",
     "maps": "Maps",
-    "mapbox": "Mapbox",
     "history": "History",
     "settings": "Settings",
     "about": "About"
@@ -246,6 +245,10 @@
       "openExport": "Open export screen",
       "addMarker": "Marker",
       "markerHint": "Ctrl+click the map to drop a marker.",
+      "engineLabel": "Map engine",
+      "engineLeaflet": "Leaflet",
+      "engineMapboxGl": "Mapbox GL",
+      "captureSaved": "Saved capture to collection.",
       "linkPoints": "Link",
       "linkPickFirst": "Click the first marker to start a link.",
       "linkPickSecond": "Click the second marker to create the link.",

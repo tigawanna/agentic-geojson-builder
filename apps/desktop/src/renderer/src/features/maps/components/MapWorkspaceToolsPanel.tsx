@@ -12,6 +12,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { MapTraceTrailBar } from "@renderer/features/maps/components/MapTraceTrailBar";
 import { MapWorkspaceViewOptionsSection } from "@renderer/features/maps/components/MapWorkspaceViewOptionsSection";
+import { MapWorkspaceCapturesSection } from "@renderer/features/maps/components/MapWorkspaceCapturesSection";
 import {
   useMapWorkspaceState,
   useMapWorkspaceUiActions,
@@ -97,6 +98,8 @@ export function MapWorkspaceToolsPanel({
         ) : null}
 
         <MapWorkspaceViewOptionsSection />
+
+        {workspace.baseRenderer === "mapbox-gl" ? <MapWorkspaceCapturesSection /> : null}
 
         <section className="mt-4 space-y-2">
           <h3 className="text-xs font-semibold tracking-wide text-base-content/50 uppercase">

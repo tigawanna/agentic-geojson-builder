@@ -23,6 +23,7 @@ type MapWorkspaceUiState = {
   showReferenceOverlay: boolean;
   showReferenceInspectTooltip: boolean;
   controlPointDragEnabled: boolean;
+  mapboxInspectMode: boolean;
   sourcePanelPresentation: SourcePanelPresentation;
   mapPanelCollapsed: boolean;
   pendingMapPoint: MapCoordinates | null;
@@ -57,6 +58,8 @@ type MapWorkspaceUiActions = {
   setShowReferenceOverlay: (visible: boolean) => void;
   setShowReferenceInspectTooltip: (visible: boolean) => void;
   setControlPointDragEnabled: (enabled: boolean) => void;
+  setMapboxInspectMode: (enabled: boolean) => void;
+  toggleMapboxInspectMode: () => void;
   setSourcePanelPresentation: (presentation: SourcePanelPresentation) => void;
   setMapPanelCollapsed: (collapsed: boolean) => void;
   setPendingMapPoint: (point: MapCoordinates | null) => void;
@@ -96,6 +99,7 @@ const initialState: MapWorkspaceUiState = {
   showReferenceOverlay: true,
   showReferenceInspectTooltip: false,
   controlPointDragEnabled: false,
+  mapboxInspectMode: false,
   sourcePanelPresentation: "docked",
   mapPanelCollapsed: false,
   pendingMapPoint: null,
@@ -137,6 +141,9 @@ export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
     setShowReferenceInspectTooltip: (showReferenceInspectTooltip) =>
       set({ showReferenceInspectTooltip }),
     setControlPointDragEnabled: (controlPointDragEnabled) => set({ controlPointDragEnabled }),
+    setMapboxInspectMode: (mapboxInspectMode) => set({ mapboxInspectMode }),
+    toggleMapboxInspectMode: () =>
+      set((state) => ({ mapboxInspectMode: !state.mapboxInspectMode })),
     setSourcePanelPresentation: (sourcePanelPresentation) => set({ sourcePanelPresentation }),
     setMapPanelCollapsed: (mapPanelCollapsed) => set({ mapPanelCollapsed }),
     setPendingMapPoint: (pendingMapPoint) => set({ pendingMapPoint }),

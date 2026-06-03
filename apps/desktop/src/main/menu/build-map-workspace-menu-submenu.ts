@@ -1,6 +1,7 @@
 import type { MenuItemConstructorOptions } from "electron";
 import { getMapWorkspaceMenuState } from "@main/lib/map-workspace-menu-state.js";
 import { sendAppMenuAction } from "@main/menu/menu-actions.js";
+import { MAPBOX_GL_STYLE_MENU_LABELS, MAPBOX_GL_STYLE_ORDER } from "@shared/mapbox-menu.types.js";
 
 function menuClick(id: string): MenuItemConstructorOptions["click"] {
   return () => {
@@ -66,6 +67,49 @@ export function buildMapWorkspaceMenuSubmenu(): MenuItemConstructorOptions[] {
       checked: state.controlPointDragEnabled,
       click: menuClick("control-point-drag"),
     },
+    { type: "separator" },
+    {
+      label: "Base Map Renderer",
+      submenu: [
+        {
+          label: "Leaflet (raster)",
+          type: "radio",
+          checked: state.baseRenderer === "leaflet",
+          click: menuClick("base-renderer:leaflet"),
+        },
+        {
+          label: "Mapbox GL (vector)",
+          type: "radio",
+          checked: state.baseRenderer === "mapbox-gl",
+          enabled: state.mapboxTokenAvailable,
+          click: menuClick("base-renderer:mapbox-gl"),
+        },
+      ],
+    },
+  );
+
+  if (state.baseRenderer === "mapbox-gl") {
+    items.push(
+      {
+        label: "Mapbox Style",
+        submenu: MAPBOX_GL_STYLE_ORDER.map((styleId) => ({
+          label: MAPBOX_GL_STYLE_MENU_LABELS[styleId],
+          type: "radio",
+          checked: state.mapboxGlStyle === styleId,
+          click: menuClick(`mapbox-style:${styleId}`),
+        })),
+      },
+      {
+        label: "Inspect Mode",
+        type: "checkbox",
+        checked: state.mapboxInspectMode,
+        accelerator: "CmdOrCtrl+Shift+I",
+        click: menuClick("mapbox-inspect"),
+      },
+    );
+  }
+
+  items.push(
     { type: "separator" },
     {
       label: "Preview GeoJSON",

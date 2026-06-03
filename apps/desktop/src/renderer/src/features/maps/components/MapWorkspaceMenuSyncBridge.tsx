@@ -1,5 +1,7 @@
 import type { MapWorkspaceMenuSyncState } from "@shared/map-workspace-menu.types";
 import { useReferenceGeoJsonQuery } from "@renderer/features/maps/hooks/useReferenceGeoJsonQuery";
+import { useMapboxTokenQuery } from "@renderer/features/maps/hooks/useMapboxToken";
+import { resolveMapboxGlStyleId } from "@renderer/features/maps/lib/mapbox-gl-styles";
 import {
   useMapWorkspaceState,
   useMapWorkspaceUiState,
@@ -33,8 +35,16 @@ export function MapWorkspaceMenuSyncBridge({
     (state) => state.showReferenceInspectTooltip,
   );
   const controlPointDragEnabled = useMapWorkspaceUiState((state) => state.controlPointDragEnabled);
+  const mapboxInspectMode = useMapWorkspaceUiState((state) => state.mapboxInspectMode);
   const referenceGeoJsonQuery = useReferenceGeoJsonQuery(workspace?.id ?? null);
   const hasReferenceGeoJson = (referenceGeoJsonQuery.data?.layers.length ?? 0) > 0;
+  const mapboxTokenAvailable = (useMapboxTokenQuery().data ?? null) !== null;
+
+  const baseRenderer = workspace?.baseRenderer ?? "leaflet";
+  const mapboxGlStyle = resolveMapboxGlStyleId(
+    workspace?.mapboxGlStyle ?? null,
+    workspace?.baseMapStyle ?? "standard",
+  );
 
   useEffect(() => {
     const payload: MapWorkspaceMenuSyncState = {
@@ -48,6 +58,10 @@ export function MapWorkspaceMenuSyncBridge({
       showReferenceOverlay,
       showReferenceInspectTooltip,
       controlPointDragEnabled,
+      baseRenderer,
+      mapboxGlStyle,
+      mapboxInspectMode,
+      mapboxTokenAvailable,
       segmentCount,
       exportPending,
     };
@@ -64,6 +78,10 @@ export function MapWorkspaceMenuSyncBridge({
     showReferenceOverlay,
     showReferenceInspectTooltip,
     controlPointDragEnabled,
+    baseRenderer,
+    mapboxGlStyle,
+    mapboxInspectMode,
+    mapboxTokenAvailable,
     segmentCount,
     exportPending,
   ]);

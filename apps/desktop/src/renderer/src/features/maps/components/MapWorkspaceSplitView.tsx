@@ -42,6 +42,11 @@ import {
   useMapWorkspaceUiState,
 } from "@renderer/features/maps/store/MapWorkspaceProvider";
 import { LeafletMapPane } from "@renderer/features/maps/components/LeafletMapPane";
+import { MapboxGlWorkspacePane } from "@renderer/features/maps/components/MapboxGlWorkspacePane";
+import { useMapboxTokenQuery } from "@renderer/features/maps/hooks/useMapboxToken";
+import type { MapBaseRenderer } from "@shared/maps.types";
+import type { MapboxGlStyleId } from "@renderer/features/maps/lib/mapbox-gl-styles";
+import type { CreateMapboxGroundCaptureInput } from "@shared/mapbox-capture.types";
 import { MapTileCacheBoundsModal } from "@renderer/features/maps/components/MapTileCacheBoundsModal";
 import { MapWorkspaceControlsModal } from "@renderer/features/maps/components/MapWorkspaceControlsModal";
 import { MapWorkspaceHeader } from "@renderer/features/maps/components/MapWorkspaceHeader";
@@ -180,6 +185,7 @@ export function MapWorkspaceSplitView() {
   );
   const markerMode = useMapWorkspaceUiState((state) => state.markerMode);
   const linkMode = useMapWorkspaceUiState((state) => state.linkMode);
+  const mapboxInspectMode = useMapWorkspaceUiState((state) => state.mapboxInspectMode);
   const selectedMapPointId = useMapWorkspaceUiState((state) => state.selectedMapPointId);
   const detailPanelMapPointId = useMapWorkspaceUiState((state) => state.detailPanelMapPointId);
   const linkFromPointId = useMapWorkspaceUiState((state) => state.linkFromPointId);
@@ -195,6 +201,8 @@ export function MapWorkspaceSplitView() {
   const createGeoSegment = useIpcMutation("geoSegments:create");
   const updateGeoSegment = useIpcMutation("geoSegments:update");
   const exportGeoJson = useIpcMutation("geoSegments:exportToFile");
+  const createCapture = useIpcMutation("mapboxCaptures:create");
+  const mapboxToken = useMapboxTokenQuery().data ?? null;
 
   const { handleControlPointMapMove } = useControlPointMove();
   usePersistedControlPointDragPreference();
@@ -895,6 +903,31 @@ export function MapWorkspaceSplitView() {
       });
   }, [exportGeoJson, setStatusMessage, t, workspace]);
 
+  const handleSetBaseRenderer = useCallback(
+    (renderer: MapBaseRenderer) => {
+      queueSave({ baseRenderer: renderer });
+    },
+    [queueSave],
+  );
+
+  const handleSetMapboxGlStyle = useCallback(
+    (styleId: MapboxGlStyleId) => {
+      queueSave({ mapboxGlStyle: styleId });
+    },
+    [queueSave],
+  );
+
+  const handleCapture = useCallback(
+    (input: CreateMapboxGroundCaptureInput) => {
+      void createCapture.mutateAsync(input).then(() => {
+        setStatusMessage(t("maps.workspace.captureSaved"));
+        window.clearTimeout(statusTimerRef.current);
+        statusTimerRef.current = window.setTimeout(() => setStatusMessage(null), 2500);
+      });
+    },
+    [createCapture, setStatusMessage, t],
+  );
+
   useMapWorkspaceMenuActions({
     mapId: workspace?.id ?? 0,
     hasSourceFile: Boolean(sourceFile),
@@ -904,13 +937,54 @@ export function MapWorkspaceSplitView() {
     onOpenHistory: () => setAuditLogOpen(true),
     onOpenGuide: () => setOnboardingOpen(true),
     onHardReload: () => void window.api.invoke("app:hardReload", undefined),
+    onSetBaseRenderer: handleSetBaseRenderer,
+    onSetMapboxGlStyle: handleSetMapboxGlStyle,
   });
 
   const allowControlPointDrag = controlPointDragEnabled && !referenceMode && !traceMode;
+  const useMapboxGl = workspace?.baseRenderer === "mapbox-gl" && mapboxToken !== null;
 
   if (!workspace) {
     return null;
   }
+
+  const sharedPaneProps = {
+    workspace,
+    tileCacheOverlay: tileCache.data?.bounds ?? null,
+    referenceOverlay,
+    showReferenceOverlay,
+    showReferenceInspectTooltip,
+    controlPoints,
+    geoSegments,
+    mapPoints,
+    selectedMapPointId,
+    linkFromPointId,
+    pendingMapPoint,
+    pendingTracePoints,
+    canPickMapPoint: referenceMode && pendingMapPoint === null,
+    canPickTracePoint: traceMode,
+    canPlaceMapPoint: markerMode,
+    controlPointDragEnabled: allowControlPointDrag,
+    editingSegmentId,
+    selectedControlPointId,
+    onReady: setMapHandle,
+    onInitialViewportReady: setHomeViewport,
+    onViewportChange: handleViewportChange,
+    onCursorMove: (coordinates: { latitude: number; longitude: number } | null) =>
+      setCursorCoordinates(coordinates),
+    onCoordinateSelect: (coordinates: { latitude: number; longitude: number; zoom: number }) => {
+      void handleCoordinateSelect(coordinates);
+    },
+    onMapLocationPick: handleMapLocationPick,
+    onTracePointAdd: handleTracePointAdd,
+    onMapPointPlace: handleMapPointPlace,
+    onMapPointClick: handleMapPointClick,
+    onPendingTracePointMove: handlePendingTracePointMove,
+    onControlPointMapMove: handleControlPointMapMove,
+    onControlPointClick: (id: number) => setDetailPanelControlPointId(id),
+    onSegmentClick: handleSegmentClick,
+    selectedSegmentId,
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -1031,43 +1105,16 @@ export function MapWorkspaceSplitView() {
               >
                 <LocateFixed className="size-4" />
               </button>
-              <LeafletMapPane
-                workspace={workspace}
-                localTileUrl={localTileUrl}
-                tileCacheOverlay={tileCache.data?.bounds ?? null}
-                referenceOverlay={referenceOverlay}
-                showReferenceOverlay={showReferenceOverlay}
-                showReferenceInspectTooltip={showReferenceInspectTooltip}
-                controlPoints={controlPoints}
-                geoSegments={geoSegments}
-                mapPoints={mapPoints}
-                selectedMapPointId={selectedMapPointId}
-                linkFromPointId={linkFromPointId}
-                pendingMapPoint={pendingMapPoint}
-                pendingTracePoints={pendingTracePoints}
-                canPickMapPoint={referenceMode && pendingMapPoint === null}
-                canPickTracePoint={traceMode}
-                canPlaceMapPoint={markerMode}
-                controlPointDragEnabled={allowControlPointDrag}
-                editingSegmentId={editingSegmentId}
-                selectedControlPointId={selectedControlPointId}
-                onReady={setMapHandle}
-                onInitialViewportReady={setHomeViewport}
-                onViewportChange={handleViewportChange}
-                onCursorMove={(coordinates) => setCursorCoordinates(coordinates)}
-                onCoordinateSelect={(coordinates) => {
-                  void handleCoordinateSelect(coordinates);
-                }}
-                onMapLocationPick={handleMapLocationPick}
-                onTracePointAdd={handleTracePointAdd}
-                onMapPointPlace={handleMapPointPlace}
-                onMapPointClick={handleMapPointClick}
-                onPendingTracePointMove={handlePendingTracePointMove}
-                onControlPointMapMove={handleControlPointMapMove}
-                onControlPointClick={(id) => setDetailPanelControlPointId(id)}
-                onSegmentClick={handleSegmentClick}
-                selectedSegmentId={selectedSegmentId}
-              />
+              {useMapboxGl ? (
+                <MapboxGlWorkspacePane
+                  {...sharedPaneProps}
+                  inspectMode={mapboxInspectMode}
+                  capturePending={createCapture.isPending}
+                  onCapture={handleCapture}
+                />
+              ) : (
+                <LeafletMapPane {...sharedPaneProps} localTileUrl={localTileUrl} />
+              )}
               {selectedSegmentId && !traceMode ? (
                 <div className="absolute right-3 bottom-3 z-[1000] flex items-center gap-1 rounded-box bg-base-100/95 px-2 py-1.5 shadow-lg">
                   <span className="mr-1 text-xs text-base-content/70">

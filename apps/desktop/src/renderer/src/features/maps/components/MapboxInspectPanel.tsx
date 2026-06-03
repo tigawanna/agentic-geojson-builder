@@ -1,6 +1,6 @@
-import { MapboxProbeCoordinatesSection } from "@renderer/features/mapbox-viewer/components/MapboxProbeCoordinatesSection";
-import { featureDisplayName } from "@renderer/features/mapbox-viewer/lib/mapbox-feature-utils";
-import type { MapboxProbeCoordinates } from "@renderer/features/mapbox-viewer/lib/mapbox-probe-coordinates";
+import { MapboxProbeCoordinatesSection } from "@renderer/features/maps/components/MapboxProbeCoordinatesSection";
+import { featureDisplayName } from "@renderer/features/maps/lib/mapbox-feature-utils";
+import type { MapboxProbeCoordinates } from "@renderer/features/maps/lib/mapbox-probe-coordinates";
 import type { MapboxGeoJSONFeature } from "mapbox-gl";
 import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";

@@ -4,8 +4,6 @@ import { DetachedSourceLayout } from "@renderer/components/DetachedSourceLayout"
 import { usePageTitle } from "@renderer/hooks/usePageTitle";
 import { AppConfig } from "@renderer/utils/system";
 import { AppMenuBridge } from "@renderer/components/AppMenuBridge";
-import { MapboxMenuBridge } from "@renderer/features/mapbox-viewer/components/MapboxMenuBridge";
-import { MapboxMenuSyncBridge } from "@renderer/features/mapbox-viewer/components/MapboxMenuSyncBridge";
 import { ViewportCommandBridge } from "@renderer/components/ViewportCommandBridge";
 import { WorkspaceCaptureBridge } from "@renderer/components/WorkspaceCaptureBridge";
 import { UpdateToast } from "@renderer/components/UpdateToast";
@@ -24,10 +22,9 @@ function DashboardShell() {
       const path = state.location.pathname.replace(/\/$/, "") || "/";
       const isMapWorkspace = /^\/maps\/[^/]+$/.test(path) && path !== "/maps/new";
       return {
-        hideDashboardHeader: path === "/" || path === "/mapbox" || isMapWorkspace,
-        isFullWidth:
-          path === "/" || path === "/mapbox" || path.startsWith("/mapbox/") || isMapWorkspace,
-        isFillHeight: path === "/audit-log" || path.startsWith("/mapbox/"),
+        hideDashboardHeader: path === "/" || isMapWorkspace,
+        isFullWidth: path === "/" || isMapWorkspace,
+        isFillHeight: path === "/audit-log",
       };
     },
   });
@@ -73,8 +70,6 @@ function DashboardShell() {
 
         <UpdateToast />
         <AppMenuBridge />
-        <MapboxMenuBridge />
-        <MapboxMenuSyncBridge />
         <WorkspaceCaptureBridge />
         <ViewportCommandBridge />
       </div>

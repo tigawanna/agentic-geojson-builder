@@ -46,7 +46,7 @@ type PendingMapPoint = {
 
 type PendingTracePoint = PendingMapPoint;
 
-type LeafletMapPaneProps = {
+export type LeafletMapPaneProps = {
   workspace: MapWorkspaceState;
   localTileUrl?: string | null;
   tileCacheOverlay?: TileCacheBounds | null;

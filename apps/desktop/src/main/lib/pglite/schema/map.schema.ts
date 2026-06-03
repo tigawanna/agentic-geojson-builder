@@ -11,6 +11,8 @@ export const mapTable = pgTable("map", {
   mapCenterLng: real("map_center_lng"),
   mapZoom: real("map_zoom"),
   baseMapStyle: varchar("base_map_style", { length: 32 }).default("standard").notNull(),
+  baseRenderer: varchar("base_renderer", { length: 16 }).default("leaflet").notNull(),
+  mapboxGlStyle: varchar("mapbox_gl_style", { length: 32 }),
   pdfScale: real("pdf_scale").default(1).notNull(),
   pdfRotation: real("pdf_rotation").default(0).notNull(),
   pdfPanX: real("pdf_pan_x").default(0).notNull(),

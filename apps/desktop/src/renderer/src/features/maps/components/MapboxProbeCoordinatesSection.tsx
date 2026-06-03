@@ -4,7 +4,7 @@ import {
   formatProbeCoordinatesLatLng,
   formatProbeCoordinatesLngLatAlt,
   type MapboxProbeCoordinates,
-} from "@renderer/features/mapbox-viewer/lib/mapbox-probe-coordinates";
+} from "@renderer/features/maps/lib/mapbox-probe-coordinates";
 import { Copy } from "lucide-react";
 import { useTranslation } from "react-i18next";
 

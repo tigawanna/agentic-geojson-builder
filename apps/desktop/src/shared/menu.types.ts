@@ -1,4 +1,4 @@
-export type AppMenuNavigatePath = "/" | "/maps" | "/mapbox" | "/settings" | "/about";
+export type AppMenuNavigatePath = "/" | "/maps" | "/settings" | "/about";
 
 export type MapWorkspaceQuickMenuItemId =
   | "reference-overlay"
@@ -66,7 +66,6 @@ export type AppMenuAction =
   | { type: "check-updates" }
   | { type: "workspace-quick-menu-toggle"; id: MapWorkspaceQuickMenuItemId }
   | { type: "native-menu"; id: string }
-  | { type: "mapbox-menu"; id: string }
   | { type: "map-workspace-menu"; id: string };
 
 export type ShowMapContextMenuInput = {

@@ -2,6 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import type {
   CreateMapInput,
   CreateMapProjectInput,
+  MapBaseMapStyle,
   MapListItem,
   MapSourceFilePayload,
   MapThumbnailPayload,
@@ -9,6 +10,8 @@ import type {
   ReplaceMapSourceInput,
   UpdateMapWorkspaceInput,
 } from "@shared/maps.types.js";
+import { isMapBaseRenderer } from "@shared/maps.types.js";
+import { MAPBOX_GL_STYLE_ORDER, type MapboxGlStyleId } from "@shared/mapbox-menu.types.js";
 import {
   deleteMapAssets,
   readMapSourceFile,
@@ -25,11 +28,33 @@ import { getTileCacheBaseDir } from "@main/lib/tile-cache/paths.js";
 import { rm } from "node:fs/promises";
 import { getMapCacheRoot } from "@repo/tile-cache/paths";
 
+const BASE_MAP_STYLES: MapBaseMapStyle[] = [
+  "outline",
+  "standard",
+  "satellite",
+  "mapbox-outdoors",
+  "mapbox-satellite",
+];
+
 function toBaseMapStyle(value: string | null): MapWorkspaceState["baseMapStyle"] {
-  if (value === "outline" || value === "standard" || value === "satellite") {
-    return value;
+  if (value && BASE_MAP_STYLES.includes(value as MapBaseMapStyle)) {
+    return value as MapBaseMapStyle;
   }
   return "standard";
+}
+
+function toBaseRenderer(value: string | null): MapWorkspaceState["baseRenderer"] {
+  if (value && isMapBaseRenderer(value)) {
+    return value;
+  }
+  return "leaflet";
+}
+
+function toMapboxGlStyle(value: string | null): MapboxGlStyleId | null {
+  if (value && (MAPBOX_GL_STYLE_ORDER as readonly string[]).includes(value)) {
+    return value as MapboxGlStyleId;
+  }
+  return null;
 }
 
 export function toMapWorkspaceState(row: MapRecord): MapWorkspaceState {
@@ -42,6 +67,8 @@ export function toMapWorkspaceState(row: MapRecord): MapWorkspaceState {
     mapCenterLng: row.mapCenterLng,
     mapZoom: row.mapZoom,
     baseMapStyle: toBaseMapStyle(row.baseMapStyle),
+    baseRenderer: toBaseRenderer(row.baseRenderer),
+    mapboxGlStyle: toMapboxGlStyle(row.mapboxGlStyle),
     pdfScale: row.pdfScale,
     pdfRotation: row.pdfRotation,
     pdfPanX: row.pdfPanX,
@@ -145,6 +172,7 @@ export async function createMapProject(input: CreateMapProjectInput): Promise<Ma
       mapCenterLng: input.mapCenterLng ?? null,
       mapZoom: input.mapCenterLat != null && input.mapCenterLng != null ? 13 : null,
       baseMapStyle: input.baseMapStyle ?? "standard",
+      baseRenderer: input.baseRenderer ?? "leaflet",
     })
     .returning();
 
@@ -253,6 +281,12 @@ export async function updateMapWorkspace(
   }
   if (input.baseMapStyle !== undefined) {
     patch.baseMapStyle = input.baseMapStyle;
+  }
+  if (input.baseRenderer !== undefined) {
+    patch.baseRenderer = input.baseRenderer;
+  }
+  if (input.mapboxGlStyle !== undefined) {
+    patch.mapboxGlStyle = input.mapboxGlStyle;
   }
   if (input.pdfScale !== undefined) {
     patch.pdfScale = input.pdfScale;

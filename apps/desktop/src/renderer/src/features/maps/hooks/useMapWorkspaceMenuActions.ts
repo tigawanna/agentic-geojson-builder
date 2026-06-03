@@ -5,6 +5,11 @@ import { useMapWorkspaceUiStore } from "@renderer/features/maps/store/MapWorkspa
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useRef } from "react";
+import type { MapBaseRenderer } from "@shared/maps.types";
+import {
+  MAPBOX_GL_STYLE_ORDER,
+  type MapboxGlStyleId,
+} from "@renderer/features/maps/lib/mapbox-gl-styles";
 
 const REFERENCE_INSPECT_TOOLTIP_STORE_KEY = "maps.referenceInspectTooltip";
 
@@ -17,6 +22,8 @@ type MapWorkspaceMenuHandlers = {
   onOpenHistory: () => void;
   onOpenGuide: () => void;
   onHardReload: () => void;
+  onSetBaseRenderer: (renderer: MapBaseRenderer) => void;
+  onSetMapboxGlStyle: (styleId: MapboxGlStyleId) => void;
 };
 
 export function useMapWorkspaceMenuActions(handlers: MapWorkspaceMenuHandlers) {
@@ -113,6 +120,29 @@ export function useMapWorkspaceMenuActions(handlers: MapWorkspaceMenuHandlers) {
       const next = !state.controlPointDragEnabled;
       state.setControlPointDragEnabled(next);
       void ipcInvoke("store:set", { key: CONTROL_POINT_DRAG_STORE_KEY, value: next });
+      return;
+    }
+
+    if (action.id === "base-renderer:leaflet") {
+      currentHandlers.onSetBaseRenderer("leaflet");
+      return;
+    }
+
+    if (action.id === "base-renderer:mapbox-gl") {
+      currentHandlers.onSetBaseRenderer("mapbox-gl");
+      return;
+    }
+
+    if (action.id.startsWith("mapbox-style:")) {
+      const styleId = action.id.slice("mapbox-style:".length);
+      if ((MAPBOX_GL_STYLE_ORDER as readonly string[]).includes(styleId)) {
+        currentHandlers.onSetMapboxGlStyle(styleId as MapboxGlStyleId);
+      }
+      return;
+    }
+
+    if (action.id === "mapbox-inspect") {
+      state.toggleMapboxInspectMode();
       return;
     }
 

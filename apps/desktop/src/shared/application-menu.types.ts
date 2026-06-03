@@ -1,12 +1,4 @@
-export const APPLICATION_MENU_TOP_LEVELS = [
-  "File",
-  "Edit",
-  "View",
-  "Map",
-  "Mapbox",
-  "Go",
-  "Help",
-] as const;
+export const APPLICATION_MENU_TOP_LEVELS = ["File", "Edit", "View", "Map", "Go", "Help"] as const;
 
 export type ApplicationMenuTopLevelLabel = (typeof APPLICATION_MENU_TOP_LEVELS)[number];
 

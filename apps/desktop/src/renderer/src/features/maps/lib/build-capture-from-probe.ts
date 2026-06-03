@@ -2,9 +2,9 @@ import {
   extractFeatureTags,
   featureDisplayName,
   pickPrimaryFeature,
-} from "@renderer/features/mapbox-viewer/lib/mapbox-feature-utils";
-import type { MapboxGlStyleId } from "@renderer/features/mapbox-viewer/lib/mapbox-styles";
-import type { MapboxFeatureProbe } from "@renderer/features/mapbox-viewer/lib/mapbox-probe.types";
+} from "@renderer/features/maps/lib/mapbox-feature-utils";
+import type { MapboxGlStyleId } from "@renderer/features/maps/lib/mapbox-gl-styles";
+import type { MapboxFeatureProbe } from "@renderer/features/maps/lib/mapbox-probe.types";
 import type { CreateMapboxGroundCaptureInput } from "@shared/mapbox-capture.types";
 
 export function buildCaptureFromProbe(

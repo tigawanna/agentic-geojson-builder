@@ -2,11 +2,11 @@ import {
   featureDetailLines,
   featureDisplayName,
   pickPrimaryFeature,
-} from "@renderer/features/mapbox-viewer/lib/mapbox-feature-utils";
+} from "@renderer/features/maps/lib/mapbox-feature-utils";
 import {
   formatProbeCoordinatesLatLng,
   type MapboxProbeCoordinates,
-} from "@renderer/features/mapbox-viewer/lib/mapbox-probe-coordinates";
+} from "@renderer/features/maps/lib/mapbox-probe-coordinates";
 import type { MapboxGeoJSONFeature } from "mapbox-gl";
 
 type MapboxFeatureHoverTooltipProps = {

@@ -3,7 +3,11 @@ import { History } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { ControlPointRecord } from "@shared/control-points.types";
 import type { GeoSegmentRecord } from "@shared/geo-segments.types";
-import { MAPBOX_BASE_MAP_STYLES, type MapBaseMapStyle } from "@shared/maps.types";
+import {
+  MAPBOX_BASE_MAP_STYLES,
+  type MapBaseMapStyle,
+  type MapBaseRenderer,
+} from "@shared/maps.types";
 import { useMapboxTokenQuery } from "@renderer/features/maps/hooks/useMapboxToken";
 import { useIpcMutation } from "@renderer/hooks/useIpc";
 import { useReplaceMapSourceMutation } from "@renderer/features/maps/hooks/useReplaceMapSourceMutation";
@@ -92,6 +96,7 @@ export function MapWorkspaceControlsModal({
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [baseMapStyle, setBaseMapStyle] = useState<MapBaseMapStyle>("standard");
+  const [baseRenderer, setBaseRenderer] = useState<MapBaseRenderer>("leaflet");
   const [pdfScale, setPdfScale] = useState(1);
   const [pdfRotation, setPdfRotation] = useState(0);
   const [locationError, setLocationError] = useState<string | null>(null);
@@ -109,6 +114,7 @@ export function MapWorkspaceControlsModal({
     setLatitude(workspace.mapCenterLat?.toString() ?? "");
     setLongitude(workspace.mapCenterLng?.toString() ?? "");
     setBaseMapStyle(workspace.baseMapStyle);
+    setBaseRenderer(workspace.baseRenderer);
     setPdfScale(workspace.pdfScale);
     setPdfRotation(workspace.pdfRotation);
     setLocationError(null);
@@ -124,6 +130,11 @@ export function MapWorkspaceControlsModal({
   function applyBaseMapStyle(style: MapBaseMapStyle) {
     setBaseMapStyle(style);
     queueSave({ baseMapStyle: style });
+  }
+
+  function applyBaseRenderer(renderer: MapBaseRenderer) {
+    setBaseRenderer(renderer);
+    queueSave({ baseRenderer: renderer });
   }
 
   function applyPdfTransform(scale: number, rotation: number) {
@@ -271,6 +282,30 @@ export function MapWorkspaceControlsModal({
               </button>
             </form>
             {locationError ? <p className="text-sm text-error">{locationError}</p> : null}
+
+            <div className="flex flex-col gap-2.5">
+              <span className="text-xs font-medium tracking-wide text-base-content/50 uppercase">
+                {t("maps.workspace.engineLabel")}
+              </span>
+              <div className="join">
+                <button
+                  type="button"
+                  className={`btn join-item btn-sm ${baseRenderer === "leaflet" ? "btn-primary" : "btn-outline"}`}
+                  onClick={() => applyBaseRenderer("leaflet")}
+                >
+                  {t("maps.workspace.engineLeaflet")}
+                </button>
+                <button
+                  type="button"
+                  className={`btn join-item btn-sm ${baseRenderer === "mapbox-gl" ? "btn-primary" : "btn-outline"}`}
+                  disabled={!mapboxToken}
+                  title={mapboxToken ? undefined : t("maps.workspace.baseMap.mapboxTokenNeeded")}
+                  onClick={() => applyBaseRenderer("mapbox-gl")}
+                >
+                  {t("maps.workspace.engineMapboxGl")}
+                </button>
+              </div>
+            </div>
 
             <div className="flex flex-col gap-2.5">
               <span className="text-xs font-medium tracking-wide text-base-content/50 uppercase">

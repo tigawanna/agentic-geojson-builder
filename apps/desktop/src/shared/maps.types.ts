@@ -1,3 +1,5 @@
+import type { MapboxGlStyleId } from "./mapbox-menu.types.js";
+
 export type MapBaseMapStyle =
   | "outline"
   | "standard"
@@ -9,6 +11,14 @@ export const MAPBOX_BASE_MAP_STYLES: MapBaseMapStyle[] = ["mapbox-outdoors", "ma
 
 export function isMapboxBaseMapStyle(style: MapBaseMapStyle): boolean {
   return MAPBOX_BASE_MAP_STYLES.includes(style);
+}
+
+export type MapBaseRenderer = "leaflet" | "mapbox-gl";
+
+export const MAP_BASE_RENDERERS: MapBaseRenderer[] = ["leaflet", "mapbox-gl"];
+
+export function isMapBaseRenderer(value: string): value is MapBaseRenderer {
+  return MAP_BASE_RENDERERS.includes(value as MapBaseRenderer);
 }
 
 export type MapListItem = {
@@ -34,6 +44,8 @@ export type MapWorkspaceState = {
   mapCenterLng: number | null;
   mapZoom: number | null;
   baseMapStyle: MapBaseMapStyle;
+  baseRenderer: MapBaseRenderer;
+  mapboxGlStyle: MapboxGlStyleId | null;
   pdfScale: number;
   pdfRotation: number;
   pdfPanX: number;
@@ -55,6 +67,7 @@ export type CreateMapProjectInput = {
   mapCenterLat?: number;
   mapCenterLng?: number;
   baseMapStyle?: MapBaseMapStyle;
+  baseRenderer?: MapBaseRenderer;
   fileName: string;
   mimeType: string;
   fileBase64: string;
@@ -82,6 +95,8 @@ export type UpdateMapWorkspaceInput = {
   mapCenterLng?: number | null;
   mapZoom?: number | null;
   baseMapStyle?: MapBaseMapStyle;
+  baseRenderer?: MapBaseRenderer;
+  mapboxGlStyle?: MapboxGlStyleId | null;
   pdfScale?: number;
   pdfRotation?: number;
   pdfPanX?: number;

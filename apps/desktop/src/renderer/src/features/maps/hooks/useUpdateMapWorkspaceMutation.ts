@@ -31,6 +31,12 @@ function patchFromSavedInput(
   if (input.baseMapStyle !== undefined) {
     patch.baseMapStyle = workspace.baseMapStyle;
   }
+  if (input.baseRenderer !== undefined) {
+    patch.baseRenderer = workspace.baseRenderer;
+  }
+  if (input.mapboxGlStyle !== undefined) {
+    patch.mapboxGlStyle = workspace.mapboxGlStyle;
+  }
   if (input.pdfScale !== undefined) {
     patch.pdfScale = workspace.pdfScale;
   }

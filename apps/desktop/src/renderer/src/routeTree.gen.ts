@@ -12,10 +12,8 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as MapsIndexRouteImport } from './routes/maps/index'
-import { Route as MapboxIndexRouteImport } from './routes/mapbox/index'
 import { Route as AuditLogIndexRouteImport } from './routes/audit-log/index'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
-import { Route as MapboxCapturesRouteImport } from './routes/mapbox/captures'
 import { Route as MapsNewIndexRouteImport } from './routes/maps/new/index'
 import { Route as MapsMapIdIndexRouteImport } from './routes/maps/$mapId/index'
 import { Route as MapsMapIdSourceRouteImport } from './routes/maps/$mapId/source'
@@ -36,11 +34,6 @@ const MapsIndexRoute = MapsIndexRouteImport.update({
   path: '/maps/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MapboxIndexRoute = MapboxIndexRouteImport.update({
-  id: '/mapbox/',
-  path: '/mapbox/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuditLogIndexRoute = AuditLogIndexRouteImport.update({
   id: '/audit-log/',
   path: '/audit-log/',
@@ -49,11 +42,6 @@ const AuditLogIndexRoute = AuditLogIndexRouteImport.update({
 const AboutIndexRoute = AboutIndexRouteImport.update({
   id: '/about/',
   path: '/about/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MapboxCapturesRoute = MapboxCapturesRouteImport.update({
-  id: '/mapbox/captures',
-  path: '/mapbox/captures',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MapsNewIndexRoute = MapsNewIndexRouteImport.update({
@@ -79,10 +67,8 @@ const MapsMapIdExportRoute = MapsMapIdExportRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/mapbox/captures': typeof MapboxCapturesRoute
   '/about/': typeof AboutIndexRoute
   '/audit-log/': typeof AuditLogIndexRoute
-  '/mapbox/': typeof MapboxIndexRoute
   '/maps/': typeof MapsIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/maps/$mapId/export': typeof MapsMapIdExportRoute
@@ -92,10 +78,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/mapbox/captures': typeof MapboxCapturesRoute
   '/about': typeof AboutIndexRoute
   '/audit-log': typeof AuditLogIndexRoute
-  '/mapbox': typeof MapboxIndexRoute
   '/maps': typeof MapsIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/maps/$mapId/export': typeof MapsMapIdExportRoute
@@ -106,10 +90,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/mapbox/captures': typeof MapboxCapturesRoute
   '/about/': typeof AboutIndexRoute
   '/audit-log/': typeof AuditLogIndexRoute
-  '/mapbox/': typeof MapboxIndexRoute
   '/maps/': typeof MapsIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/maps/$mapId/export': typeof MapsMapIdExportRoute
@@ -121,10 +103,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/mapbox/captures'
     | '/about/'
     | '/audit-log/'
-    | '/mapbox/'
     | '/maps/'
     | '/settings/'
     | '/maps/$mapId/export'
@@ -134,10 +114,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/mapbox/captures'
     | '/about'
     | '/audit-log'
-    | '/mapbox'
     | '/maps'
     | '/settings'
     | '/maps/$mapId/export'
@@ -147,10 +125,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
-    | '/mapbox/captures'
     | '/about/'
     | '/audit-log/'
-    | '/mapbox/'
     | '/maps/'
     | '/settings/'
     | '/maps/$mapId/export'
@@ -161,10 +137,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  MapboxCapturesRoute: typeof MapboxCapturesRoute
   AboutIndexRoute: typeof AboutIndexRoute
   AuditLogIndexRoute: typeof AuditLogIndexRoute
-  MapboxIndexRoute: typeof MapboxIndexRoute
   MapsIndexRoute: typeof MapsIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
   MapsMapIdExportRoute: typeof MapsMapIdExportRoute
@@ -196,13 +170,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MapsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/mapbox/': {
-      id: '/mapbox/'
-      path: '/mapbox'
-      fullPath: '/mapbox/'
-      preLoaderRoute: typeof MapboxIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/audit-log/': {
       id: '/audit-log/'
       path: '/audit-log'
@@ -215,13 +182,6 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about/'
       preLoaderRoute: typeof AboutIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mapbox/captures': {
-      id: '/mapbox/captures'
-      path: '/mapbox/captures'
-      fullPath: '/mapbox/captures'
-      preLoaderRoute: typeof MapboxCapturesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/maps/new/': {
@@ -257,10 +217,8 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  MapboxCapturesRoute: MapboxCapturesRoute,
   AboutIndexRoute: AboutIndexRoute,
   AuditLogIndexRoute: AuditLogIndexRoute,
-  MapboxIndexRoute: MapboxIndexRoute,
   MapsIndexRoute: MapsIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
   MapsMapIdExportRoute: MapsMapIdExportRoute,
