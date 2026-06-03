@@ -1,5 +1,6 @@
 import { app, Menu, shell } from "electron";
 import { buildMapboxMenuSubmenu } from "@main/menu/build-mapbox-menu-submenu.js";
+import { buildMapWorkspaceMenuSubmenu } from "@main/menu/build-map-workspace-menu-submenu.js";
 import { sendAppMenuAction } from "@main/menu/menu-actions.js";
 
 function buildAppMenu(): Menu {
@@ -119,6 +120,7 @@ function buildAppMenu(): Menu {
         { label: "File", submenu: fileSubmenu },
         { label: "Edit", submenu: editSubmenu },
         { label: "View", submenu: viewSubmenu },
+        { label: "Map", submenu: buildMapWorkspaceMenuSubmenu() },
         { label: "Mapbox", submenu: buildMapboxMenuSubmenu() },
         { label: "Go", submenu: goSubmenu },
         { label: "Window", role: "windowMenu" },
@@ -128,6 +130,7 @@ function buildAppMenu(): Menu {
         { label: "File", submenu: fileSubmenu },
         { label: "Edit", submenu: editSubmenu },
         { label: "View", submenu: viewSubmenu },
+        { label: "Map", submenu: buildMapWorkspaceMenuSubmenu() },
         { label: "Mapbox", submenu: buildMapboxMenuSubmenu() },
         { label: "Go", submenu: goSubmenu },
         { label: "Help", submenu: helpSubmenu },

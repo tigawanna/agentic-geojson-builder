@@ -2,6 +2,7 @@ export const APPLICATION_MENU_TOP_LEVELS = [
   "File",
   "Edit",
   "View",
+  "Map",
   "Mapbox",
   "Go",
   "Help",

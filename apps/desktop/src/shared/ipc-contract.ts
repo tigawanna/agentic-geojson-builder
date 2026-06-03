@@ -35,6 +35,7 @@ import type {
 } from "./menu.types.js";
 import type { PopupApplicationSubmenuInput } from "./application-menu.types.js";
 import type { MapboxMenuSyncState } from "./mapbox-menu.types.js";
+import type { MapWorkspaceMenuSyncState } from "./map-workspace-menu.types.js";
 import type {
   BuildTileCacheResult,
   GetMapSectorViewInput,
@@ -159,6 +160,7 @@ export interface IpcContract {
   };
   "app:showNativeMenu": { req: ShowNativeMenuInput; res: { ok: true } | { ok: false } };
   "mapboxMenu:syncState": { req: MapboxMenuSyncState; res: { ok: true } };
+  "mapWorkspaceMenu:syncState": { req: MapWorkspaceMenuSyncState; res: { ok: true } };
   "app:popupApplicationSubmenu": {
     req: PopupApplicationSubmenuInput;
     res: { ok: boolean };

@@ -28,10 +28,7 @@ export function MapTraceTrailBar({
     useMapWorkspaceUiActions();
 
   return (
-    <div
-      className="flex shrink-0 flex-col gap-3 border-b border-secondary/20 bg-secondary/10 px-4 py-3 text-sm lg:flex-row lg:items-end lg:justify-between"
-      data-test="trace-mode-hint"
-    >
+    <div className="flex flex-col gap-3 text-sm" data-test="trace-mode-hint">
       <div className="space-y-2">
         <p>
           {editingSegmentId !== null

@@ -43,16 +43,18 @@ import {
 } from "@renderer/features/maps/store/MapWorkspaceProvider";
 import { LeafletMapPane } from "@renderer/features/maps/components/LeafletMapPane";
 import { MapTileCacheBoundsModal } from "@renderer/features/maps/components/MapTileCacheBoundsModal";
-import { MapTraceTrailBar } from "@renderer/features/maps/components/MapTraceTrailBar";
 import { MapWorkspaceControlsModal } from "@renderer/features/maps/components/MapWorkspaceControlsModal";
 import { MapWorkspaceHeader } from "@renderer/features/maps/components/MapWorkspaceHeader";
+import { MapWorkspaceMenuSyncBridge } from "@renderer/features/maps/components/MapWorkspaceMenuSyncBridge";
+import { MapWorkspaceToolsPanel } from "@renderer/features/maps/components/MapWorkspaceToolsPanel";
 import { GeoJsonPreviewModal } from "@renderer/features/maps/components/GeoJsonPreviewModal";
 import { MapAuditLogModal } from "@renderer/features/maps/components/MapAuditLogModal";
 import { MapWorkspaceOnboardingModal } from "@renderer/features/maps/components/MapWorkspaceOnboardingModal";
 import { MapWorkspacePanelToolbar } from "@renderer/features/maps/components/MapWorkspacePanelToolbar";
 import { MapWorkspaceSourceDocumentPane } from "@renderer/features/maps/components/MapWorkspaceSourceDocumentPane";
 import { useWorkspaceMapsChangedRefresh } from "@renderer/features/maps/hooks/useWorkspaceMapsChangedRefresh";
-import { useMapWorkspaceQuickMenuActions } from "@renderer/features/maps/hooks/useMapWorkspaceQuickMenuActions";
+import { useMapWorkspaceMenuActions } from "@renderer/features/maps/hooks/useMapWorkspaceMenuActions";
+import { useMapWorkspaceToolsPanelShortcut } from "@renderer/features/maps/hooks/useMapWorkspaceToolsPanelShortcut";
 import { useWorkspaceUiSyncPublisher } from "@renderer/features/maps/hooks/useWorkspaceUiSync";
 import { usePersistedControlPointDragPreference } from "@renderer/features/maps/hooks/usePersistedControlPointDragPreference";
 import { ControlPointDetailPanel } from "@renderer/features/maps/components/ControlPointDetailPanel";
@@ -241,7 +243,7 @@ export function MapWorkspaceSplitView() {
   useMapWorkspaceAuditLogShortcut(workspace != null, () => setAuditLogOpen(true));
   useWorkspaceUiSyncPublisher(workspace?.id ?? null);
   useWorkspaceMapsChangedRefresh(workspace?.id ?? null);
-  useMapWorkspaceQuickMenuActions();
+  useMapWorkspaceToolsPanelShortcut(workspace != null);
 
   const showSourceDocked = sourcePanelPresentation === "docked";
 
@@ -357,14 +359,6 @@ export function MapWorkspaceSplitView() {
     dismissOnboarding();
     openControls();
   }, [dismissOnboarding, openControls]);
-
-  const handleToggleControls = useCallback(() => {
-    if (controlsOpen) {
-      closeControls();
-    } else {
-      openControls();
-    }
-  }, [closeControls, controlsOpen, openControls]);
 
   const referenceOverlay = useMemo(() => {
     const layers = referenceGeoJsonQuery.data?.layers ?? [];
@@ -901,6 +895,17 @@ export function MapWorkspaceSplitView() {
       });
   }, [exportGeoJson, setStatusMessage, t, workspace]);
 
+  useMapWorkspaceMenuActions({
+    mapId: workspace?.id ?? 0,
+    hasSourceFile: Boolean(sourceFile),
+    onPreviewGeoJson: () => setGeoJsonPreviewOpen(true),
+    onExportGeoJson: handleExportGeoJson,
+    onOpenControls: () => openControls(),
+    onOpenHistory: () => setAuditLogOpen(true),
+    onOpenGuide: () => setOnboardingOpen(true),
+    onHardReload: () => void window.api.invoke("app:hardReload", undefined),
+  });
+
   const allowControlPointDrag = controlPointDragEnabled && !referenceMode && !traceMode;
 
   if (!workspace) {
@@ -909,26 +914,13 @@ export function MapWorkspaceSplitView() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <MapWorkspaceHeader
-        onOpenControls={handleToggleControls}
-        onOpenGuide={() => setOnboardingOpen(true)}
-        onOpenAuditLog={() => setAuditLogOpen(true)}
-        onPreviewGeoJson={() => setGeoJsonPreviewOpen(true)}
+      <MapWorkspaceHeader hasSourceFile={Boolean(sourceFile)} />
+
+      <MapWorkspaceMenuSyncBridge
         hasSourceFile={Boolean(sourceFile)}
         segmentCount={geoSegments.length}
-        exportDisabled={exportGeoJson.isPending}
         exportPending={exportGeoJson.isPending}
-        onExportGeoJson={handleExportGeoJson}
       />
-
-      {traceMode ? (
-        <MapTraceTrailBar
-          onFinish={handleFinishTrace}
-          onUndo={handleUndoTracePoint}
-          finishDisabled={pendingTracePoints.length < 2}
-          finishPending={createGeoSegment.isPending || updateGeoSegment.isPending}
-        />
-      ) : null}
 
       <div className="relative min-h-0 flex-1 overflow-hidden">
         {!showSourceDocked ? (
@@ -1130,6 +1122,22 @@ export function MapWorkspaceSplitView() {
             />
           );
         })()}
+
+        <MapWorkspaceToolsPanel
+          segmentCount={geoSegments.length}
+          exportDisabled={exportGeoJson.isPending}
+          exportPending={exportGeoJson.isPending}
+          onPreviewGeoJson={() => setGeoJsonPreviewOpen(true)}
+          onExportGeoJson={handleExportGeoJson}
+          onOpenControls={() => openControls()}
+          onOpenAuditLog={() => setAuditLogOpen(true)}
+          onOpenGuide={() => setOnboardingOpen(true)}
+          onHardReload={() => void window.api.invoke("app:hardReload", undefined)}
+          onTraceFinish={handleFinishTrace}
+          onTraceUndo={handleUndoTracePoint}
+          traceFinishDisabled={pendingTracePoints.length < 2}
+          traceFinishPending={createGeoSegment.isPending || updateGeoSegment.isPending}
+        />
       </div>
 
       {detailPanelControlPoint ? (

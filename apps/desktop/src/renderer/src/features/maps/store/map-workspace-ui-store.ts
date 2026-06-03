@@ -12,6 +12,7 @@ import type { SourcePanelPresentation } from "@shared/workspace-layout.types";
 
 type MapWorkspaceUiState = {
   controlsOpen: boolean;
+  toolsPanelOpen: boolean;
   tileCacheBoundsOpen: boolean;
   homeViewport: MapViewport | null;
   cursorCoordinates: MapCoordinates | null;
@@ -42,6 +43,9 @@ type MapWorkspaceUiState = {
 type MapWorkspaceUiActions = {
   openControls: () => void;
   closeControls: () => void;
+  openToolsPanel: () => void;
+  closeToolsPanel: () => void;
+  toggleToolsPanel: () => void;
   openTileCacheBounds: () => void;
   closeTileCacheBounds: () => void;
   setHomeViewport: (viewport: MapViewport | null) => void;
@@ -81,6 +85,7 @@ export type MapWorkspaceUiStore = StoreApi<MapWorkspaceUiState & MapWorkspaceUiA
 
 const initialState: MapWorkspaceUiState = {
   controlsOpen: false,
+  toolsPanelOpen: false,
   tileCacheBoundsOpen: false,
   homeViewport: null,
   cursorCoordinates: null,
@@ -113,6 +118,9 @@ export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
     ...initialState,
     openControls: () => set({ controlsOpen: true }),
     closeControls: () => set({ controlsOpen: false }),
+    openToolsPanel: () => set({ toolsPanelOpen: true }),
+    closeToolsPanel: () => set({ toolsPanelOpen: false }),
+    toggleToolsPanel: () => set((state) => ({ toolsPanelOpen: !state.toolsPanelOpen })),
     openTileCacheBounds: () => set({ tileCacheBoundsOpen: true, controlsOpen: false }),
     closeTileCacheBounds: () => set({ tileCacheBoundsOpen: false }),
     setHomeViewport: (homeViewport) => set({ homeViewport }),
@@ -120,7 +128,11 @@ export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
     setSelectedCoordinates: (selectedCoordinates) => set({ selectedCoordinates }),
     setStatusMessage: (statusMessage) => set({ statusMessage }),
     setReferenceMode: (referenceMode) => set({ referenceMode }),
-    setTraceMode: (traceMode) => set({ traceMode }),
+    setTraceMode: (traceMode) =>
+      set((state) => ({
+        traceMode,
+        toolsPanelOpen: traceMode ? true : state.toolsPanelOpen,
+      })),
     setShowReferenceOverlay: (showReferenceOverlay) => set({ showReferenceOverlay }),
     setShowReferenceInspectTooltip: (showReferenceInspectTooltip) =>
       set({ showReferenceInspectTooltip }),

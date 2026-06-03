@@ -1,0 +1,72 @@
+import type { MapWorkspaceMenuSyncState } from "@shared/map-workspace-menu.types";
+import { useReferenceGeoJsonQuery } from "@renderer/features/maps/hooks/useReferenceGeoJsonQuery";
+import {
+  useMapWorkspaceState,
+  useMapWorkspaceUiState,
+} from "@renderer/features/maps/store/MapWorkspaceProvider";
+import { useRouterState } from "@tanstack/react-router";
+import { useEffect } from "react";
+
+type MapWorkspaceMenuSyncBridgeProps = {
+  hasSourceFile: boolean;
+  segmentCount: number;
+  exportPending: boolean;
+};
+
+function isMapWorkspaceRoute(pathname: string): boolean {
+  return /^\/maps\/\d+$/.test(pathname.replace(/\/$/, ""));
+}
+
+export function MapWorkspaceMenuSyncBridge({
+  hasSourceFile,
+  segmentCount,
+  exportPending,
+}: MapWorkspaceMenuSyncBridgeProps) {
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const workspace = useMapWorkspaceState((state) => state.workspace);
+  const referenceMode = useMapWorkspaceUiState((state) => state.referenceMode);
+  const traceMode = useMapWorkspaceUiState((state) => state.traceMode);
+  const markerMode = useMapWorkspaceUiState((state) => state.markerMode);
+  const linkMode = useMapWorkspaceUiState((state) => state.linkMode);
+  const showReferenceOverlay = useMapWorkspaceUiState((state) => state.showReferenceOverlay);
+  const showReferenceInspectTooltip = useMapWorkspaceUiState(
+    (state) => state.showReferenceInspectTooltip,
+  );
+  const controlPointDragEnabled = useMapWorkspaceUiState((state) => state.controlPointDragEnabled);
+  const referenceGeoJsonQuery = useReferenceGeoJsonQuery(workspace?.id ?? null);
+  const hasReferenceGeoJson = (referenceGeoJsonQuery.data?.layers.length ?? 0) > 0;
+
+  useEffect(() => {
+    const payload: MapWorkspaceMenuSyncState = {
+      routeActive: isMapWorkspaceRoute(pathname) && workspace !== null,
+      referenceMode,
+      traceMode,
+      markerMode,
+      linkMode,
+      hasSourceFile,
+      hasReferenceGeoJson,
+      showReferenceOverlay,
+      showReferenceInspectTooltip,
+      controlPointDragEnabled,
+      segmentCount,
+      exportPending,
+    };
+    void window.api.invoke("mapWorkspaceMenu:syncState", payload);
+  }, [
+    pathname,
+    workspace,
+    referenceMode,
+    traceMode,
+    markerMode,
+    linkMode,
+    hasSourceFile,
+    hasReferenceGeoJson,
+    showReferenceOverlay,
+    showReferenceInspectTooltip,
+    controlPointDragEnabled,
+    segmentCount,
+    exportPending,
+  ]);
+
+  return null;
+}

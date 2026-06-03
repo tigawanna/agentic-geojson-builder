@@ -350,6 +350,15 @@
         "collapseMap": "Collapse map",
         "expandMap": "Expand map"
       },
+      "toolsPanel": {
+        "title": "Map tools",
+        "close": "Close tools panel",
+        "toggle": "Toggle tools panel (Ctrl+Shift+P)",
+        "viewHeading": "View",
+        "exportHeading": "Export",
+        "previewGeoJson": "Preview GeoJSON",
+        "exportGeoJson": "Export GeoJSON"
+      },
       "quickMenu": {
         "label": "View",
         "open": "Open view options menu",
