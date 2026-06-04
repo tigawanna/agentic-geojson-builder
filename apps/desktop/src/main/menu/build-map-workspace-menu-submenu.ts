@@ -2,6 +2,7 @@ import type { MenuItemConstructorOptions } from "electron";
 import { getMapWorkspaceMenuState } from "@main/lib/map-workspace-menu-state.js";
 import { sendAppMenuAction } from "@main/menu/menu-actions.js";
 import { MAPBOX_GL_STYLE_MENU_LABELS, MAPBOX_GL_STYLE_ORDER } from "@shared/mapbox-menu.types.js";
+import { getShortcutElectronAccelerator, SHORTCUT_IDS } from "@shared/shortcuts/index.js";
 
 function menuClick(id: string): MenuItemConstructorOptions["click"] {
   return () => {
@@ -102,7 +103,7 @@ export function buildMapWorkspaceMenuSubmenu(): MenuItemConstructorOptions[] {
         label: "Inspect Mode",
         type: "checkbox",
         checked: state.mapboxInspectMode,
-        accelerator: "CmdOrCtrl+Shift+I",
+        accelerator: getShortcutElectronAccelerator(SHORTCUT_IDS.mapboxInspect),
         click: menuClick("mapbox-inspect"),
       },
     );
@@ -127,12 +128,12 @@ export function buildMapWorkspaceMenuSubmenu(): MenuItemConstructorOptions[] {
     { type: "separator" },
     {
       label: "Map Settings…",
-      accelerator: "CmdOrCtrl+,",
+      accelerator: getShortcutElectronAccelerator(SHORTCUT_IDS.mapSettings),
       click: menuClick("open-controls"),
     },
     {
       label: "Change History…",
-      accelerator: "CmdOrCtrl+Shift+H",
+      accelerator: getShortcutElectronAccelerator(SHORTCUT_IDS.openChangeHistory),
       click: menuClick("open-history"),
     },
     {
@@ -147,7 +148,7 @@ export function buildMapWorkspaceMenuSubmenu(): MenuItemConstructorOptions[] {
     { type: "separator" },
     {
       label: "Toggle Tools Panel",
-      accelerator: "CmdOrCtrl+Shift+P",
+      accelerator: getShortcutElectronAccelerator(SHORTCUT_IDS.toggleToolsPanel),
       click: menuClick("toggle-tools-panel"),
     },
   );

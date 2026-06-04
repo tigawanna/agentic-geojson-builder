@@ -1,6 +1,7 @@
 import { app, Menu, shell } from "electron";
 import { buildMapWorkspaceMenuSubmenu } from "@main/menu/build-map-workspace-menu-submenu.js";
 import { sendAppMenuAction } from "@main/menu/menu-actions.js";
+import { getShortcutElectronAccelerator, SHORTCUT_IDS } from "@shared/shortcuts/index.js";
 
 function buildAppMenu(): Menu {
   const isMac = process.platform === "darwin";
@@ -9,7 +10,7 @@ function buildAppMenu(): Menu {
   const fileSubmenu = [
     {
       label: "New Map Project",
-      accelerator: "CmdOrCtrl+N",
+      accelerator: getShortcutElectronAccelerator(SHORTCUT_IDS.newMapProject),
       click: () => {
         sendAppMenuAction({ type: "new-map-project" });
       },
@@ -42,14 +43,14 @@ function buildAppMenu(): Menu {
   const goSubmenu = [
     {
       label: "Home",
-      accelerator: "CmdOrCtrl+1",
+      accelerator: getShortcutElectronAccelerator(SHORTCUT_IDS.navigateHome),
       click: () => {
         sendAppMenuAction({ type: "navigate", path: "/" });
       },
     },
     {
       label: "Maps",
-      accelerator: "CmdOrCtrl+2",
+      accelerator: getShortcutElectronAccelerator(SHORTCUT_IDS.navigateMaps),
       click: () => {
         sendAppMenuAction({ type: "navigate", path: "/maps" });
       },
@@ -57,7 +58,7 @@ function buildAppMenu(): Menu {
     { type: "separator" as const },
     {
       label: "Settings",
-      accelerator: "CmdOrCtrl+,",
+      accelerator: getShortcutElectronAccelerator(SHORTCUT_IDS.openAppSettings),
       click: () => {
         sendAppMenuAction({ type: "navigate", path: "/settings" });
       },
@@ -94,7 +95,7 @@ function buildAppMenu(): Menu {
             { type: "separator" },
             {
               label: "Settings",
-              accelerator: "CmdOrCtrl+,",
+              accelerator: getShortcutElectronAccelerator(SHORTCUT_IDS.openAppSettings),
               click: () => {
                 sendAppMenuAction({ type: "navigate", path: "/settings" });
               },

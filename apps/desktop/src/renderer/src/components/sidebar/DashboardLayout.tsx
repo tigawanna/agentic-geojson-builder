@@ -14,6 +14,7 @@ import {
   DashboardSidebarTrigger,
 } from "@renderer/components/sidebar/DashboardSidebar";
 import { SidebarProvider, useSidebar } from "@renderer/components/sidebar/SidebarProvider";
+import { KeyboardShortcutsProvider } from "@renderer/shortcuts";
 
 function DashboardShell() {
   const { toggleSidebar, isCollapsed } = useSidebar();
@@ -95,8 +96,10 @@ export function DashboardLayout() {
   }
 
   return (
-    <SidebarProvider>
-      <DashboardShell />
-    </SidebarProvider>
+    <KeyboardShortcutsProvider>
+      <SidebarProvider>
+        <DashboardShell />
+      </SidebarProvider>
+    </KeyboardShortcutsProvider>
   );
 }

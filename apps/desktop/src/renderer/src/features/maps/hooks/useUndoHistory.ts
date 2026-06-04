@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useRef } from "react";
+import { SHORTCUT_IDS } from "@shared/shortcuts";
+import { useAppShortcut } from "@renderer/shortcuts/useAppShortcut";
 
 type UndoEntry<T> = {
   label: string;
@@ -56,31 +58,13 @@ export function useUndoHistory<T>(
     redoStackRef.current = [];
   }, []);
 
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (!event.ctrlKey && !event.metaKey) {
-        return;
-      }
-      if (event.key !== "z" && event.key !== "Z") {
-        return;
-      }
+  useAppShortcut(SHORTCUT_IDS.undo, () => {
+    undo();
+  });
 
-      const target = event.target as HTMLElement;
-      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
-        return;
-      }
-
-      event.preventDefault();
-      if (event.shiftKey) {
-        redo();
-      } else {
-        undo();
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [redo, undo]);
+  useAppShortcut(SHORTCUT_IDS.redo, () => {
+    redo();
+  });
 
   return { push, undo, redo, canUndo, canRedo, clear };
 }

@@ -34,8 +34,7 @@ import { lineStringToMapBounds } from "@renderer/features/maps/lib/segment-utils
 import { registerViewportCommand } from "@renderer/features/maps/lib/viewport-command-registry";
 import { registerWorkspaceCapture } from "@renderer/features/maps/lib/workspace-capture-registry";
 import { useWorkspacePersistence } from "@renderer/features/maps/hooks/useWorkspacePersistence";
-import { useMapWorkspaceAuditLogShortcut } from "@renderer/features/maps/hooks/useMapWorkspaceAuditLogShortcut";
-import { useMapWorkspaceControlsShortcut } from "@renderer/features/maps/hooks/useMapWorkspaceControlsShortcut";
+import { useMapWorkspaceHotkeys } from "@renderer/features/maps/hooks/useMapWorkspaceHotkeys";
 import {
   useMapWorkspaceState,
   useMapWorkspaceUiActions,
@@ -62,7 +61,6 @@ import { MapWorkspacePanelToolbar } from "@renderer/features/maps/components/Map
 import { MapWorkspaceSourceDocumentPane } from "@renderer/features/maps/components/MapWorkspaceSourceDocumentPane";
 import { useWorkspaceMapsChangedRefresh } from "@renderer/features/maps/hooks/useWorkspaceMapsChangedRefresh";
 import { useMapWorkspaceMenuActions } from "@renderer/features/maps/hooks/useMapWorkspaceMenuActions";
-import { useMapWorkspaceToolsPanelShortcut } from "@renderer/features/maps/hooks/useMapWorkspaceToolsPanelShortcut";
 import { useReferenceInspectCopyShortcut } from "@renderer/features/maps/hooks/useReferenceInspectCopyShortcut";
 import { useWorkspaceUiSyncPublisher } from "@renderer/features/maps/hooks/useWorkspaceUiSync";
 import { usePersistedControlPointDragPreference } from "@renderer/features/maps/hooks/usePersistedControlPointDragPreference";
@@ -257,11 +255,8 @@ export function MapWorkspaceSplitView() {
       ? (mapPoints.find((point) => point.id === detailPanelMapPointId) ?? null)
       : null;
 
-  useMapWorkspaceControlsShortcut(workspace != null);
-  useMapWorkspaceAuditLogShortcut(workspace != null, () => setAuditLogOpen(true));
   useWorkspaceUiSyncPublisher(workspace?.id ?? null);
   useWorkspaceMapsChangedRefresh(workspace?.id ?? null);
-  useMapWorkspaceToolsPanelShortcut(workspace != null);
 
   const showSourceDocked = sourcePanelPresentation === "docked";
 
@@ -894,26 +889,13 @@ export function MapWorkspaceSplitView() {
     workspace,
   ]);
 
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (!highlightedSegmentId) {
-        return;
-      }
-      if (event.key === "Delete" || event.key === "Backspace") {
-        const target = event.target as HTMLElement;
-        if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
-          return;
-        }
-        event.preventDefault();
-        handleDeleteSelectedSegment();
-      }
-      if (event.key === "Escape" && !controlsOpen) {
-        setHighlightedSegmentId(null);
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [controlsOpen, handleDeleteSelectedSegment, highlightedSegmentId, setHighlightedSegmentId]);
+  useMapWorkspaceHotkeys({
+    enabled: workspace != null,
+    onOpenHistory: () => setAuditLogOpen(true),
+    onDeleteSelectedSegment: handleDeleteSelectedSegment,
+    onClearSegmentSelection: () => setHighlightedSegmentId(null),
+    highlightedSegmentId,
+  });
 
   const handleExportGeoJson = useCallback(() => {
     if (!workspace) {

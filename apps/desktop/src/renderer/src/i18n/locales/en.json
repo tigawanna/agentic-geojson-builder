@@ -11,6 +11,39 @@
     "settings": "Settings",
     "about": "About"
   },
+  "shortcuts": {
+    "title": "Keyboard shortcuts",
+    "subtitle": "Shortcuts available on this screen. Press Shift+? anytime to open this panel.",
+    "close": "Close",
+    "categories": {
+      "global": "General",
+      "navigation": "Navigation",
+      "mapWorkspace": "Map workspace",
+      "dataExplorer": "Data explorer",
+      "system": "Text fields"
+    },
+    "items": {
+      "showKeyboardShortcuts": "Show keyboard shortcuts",
+      "newMapProject": "New map project",
+      "navigateHome": "Go to home",
+      "navigateMaps": "Go to maps",
+      "openAppSettings": "Open settings",
+      "mapSettings": "Map settings",
+      "openChangeHistory": "Change history",
+      "toggleToolsPanel": "Toggle tools panel",
+      "mapboxInspect": "Mapbox inspect mode",
+      "copyInspectCoordinates": "Copy inspect coordinates",
+      "undo": "Undo last edit",
+      "redo": "Redo",
+      "deleteSelectedSegment": "Delete selected segment",
+      "editUndo": "Undo",
+      "editRedo": "Redo",
+      "editCut": "Cut",
+      "editCopy": "Copy",
+      "editPaste": "Paste",
+      "editSelectAll": "Select all"
+    }
+  },
   "mapboxViewer": {
     "tokenRequiredTitle": "Mapbox access token required",
     "tokenRequiredBody": "Add a token in Settings to load the vector Mapbox map in this viewer.",
