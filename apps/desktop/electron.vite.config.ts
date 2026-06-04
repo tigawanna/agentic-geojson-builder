@@ -7,14 +7,17 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   main: {
     build: {
-      externalizeDeps: {
-        exclude: ["@repo/tile-cache"],
-      },
+      externalizeDeps: false,
       rollupOptions: {
         input: {
           index: resolve(__dirname, "src/main/index.ts"),
         },
-        external: ["sharp", /^@img\/sharp-/],
+        external: [
+          "sharp",
+          /^@img\/sharp-/,
+          "@electric-sql/pglite",
+          "@electric-sql/pglite-postgis",
+        ],
       },
     },
     resolve: {

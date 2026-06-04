@@ -845,6 +845,7 @@
     "downloading": "Downloading update... {{percent}}%",
     "downloaded": "Update {{version}} downloaded. Restart to apply.",
     "error": "Update failed: {{error}}",
+    "dismiss": "Dismiss update notification",
     "check": "Check for updates",
     "download": "Download",
     "install": "Restart & install"

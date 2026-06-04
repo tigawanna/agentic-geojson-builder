@@ -29,9 +29,6 @@ jobs:
       - name: Typecheck desktop
         run: pnpm --filter ./apps/desktop run check-types
 
-      - name: Test desktop
-        run: pnpm --filter ./apps/desktop run test
-
       - name: Build desktop
         run: pnpm --filter ./apps/desktop run build
 

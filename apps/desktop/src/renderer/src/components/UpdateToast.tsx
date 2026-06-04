@@ -1,11 +1,30 @@
+import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useUpdater } from "@renderer/hooks/useUpdater";
+
+const ERROR_AUTO_DISMISS_MS = 5_000;
 
 export function UpdateToast() {
   const { status, downloadUpdate, quitAndInstall } = useUpdater();
   const { t } = useTranslation();
+  const [dismissed, setDismissed] = useState(false);
 
-  if (!status || status.state === "not-available") return null;
+  useEffect(() => {
+    setDismissed(false);
+  }, [status?.state, status?.error, status?.version]);
+
+  useEffect(() => {
+    if (status?.state !== "error" || dismissed) {
+      return;
+    }
+    const timeoutId = window.setTimeout(() => setDismissed(true), ERROR_AUTO_DISMISS_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [dismissed, status?.state]);
+
+  if (!status || status.state === "not-available" || dismissed) {
+    return null;
+  }
 
   let body = "";
   let action: { label: string; onClick: () => void } | null = null;
@@ -42,6 +61,14 @@ export function UpdateToast() {
           {action.label}
         </button>
       ) : null}
+      <button
+        type="button"
+        onClick={() => setDismissed(true)}
+        className="btn btn-square btn-ghost btn-xs"
+        aria-label={t("updater.dismiss")}
+      >
+        <X className="size-3.5" />
+      </button>
     </div>
   );
 }

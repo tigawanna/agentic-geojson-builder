@@ -30,6 +30,8 @@ npm run dev
 | `npm run package:linux` | Package for Linux                                            |
 | `npm run release`       | Build + publish installers to GitHub Releases (CI uses this) |
 
+**Build from source (Linux):** see [Build & package — Build from source (Linux)](./docs/07-build-and-package.md#build-from-source-linux).
+
 **Router:** Only one of `react-router-dom` or `@tanstack/react-router` is installed — the CLI removed the other when this app was generated. To use the other stack on a new project: `npx create-era-next my-app --router tanstack-router` or `--router react-router-dom`.
 
 **Formatter:** Either **oxfmt** or **prettier** is configured — the other was removed at scaffold time. Switching later: add the tool + config yourself, or scaffold a new app with `--formatter prettier` / `--formatter oxfmt`.

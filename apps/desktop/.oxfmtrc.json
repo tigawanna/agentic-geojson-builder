@@ -4,6 +4,7 @@
     "out/**",
     "dist/**",
     "release/**",
+    ".packaging-deps/**",
     "coverage/**",
     "playwright-report/**",
     "**/routeTree.gen.ts"

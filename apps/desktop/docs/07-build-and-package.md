@@ -17,6 +17,48 @@ npm run package:linux   # AppImage + .deb
 
 Output lands in `release/<version>/`.
 
+## Build from source (Linux)
+
+From the monorepo root:
+
+```bash
+pnpm install
+pnpm --filter ./apps/desktop run package:linux
+```
+
+Installers are written to `apps/desktop/release/<version>/`:
+
+- `agentic-geojson-builder_<version>_amd64.deb`
+- `Agentic GeoJSON Builder-<version>-x86_64.AppImage`
+
+Install or uninstall with the helper scripts:
+
+```bash
+bash scripts/install-desktop-linux.sh
+bash scripts/uninstall-desktop-linux.sh
+```
+
+Pass a version to install a specific build:
+
+```bash
+bash scripts/install-desktop-linux.sh 0.1.0
+```
+
+Remove the app and delete its config directory:
+
+```bash
+bash scripts/uninstall-desktop-linux.sh --purge
+```
+
+Manual install:
+
+```bash
+sudo dpkg -i apps/desktop/release/0.1.0/agentic-geojson-builder_0.1.0_amd64.deb
+sudo dpkg -r agentic-geojson-builder
+```
+
+App icons and store screenshots live in [`build/`](../build/) — see [Icons](#icons) below.
+
 ## Icons
 
 Place these files in [`build/`](../build/):

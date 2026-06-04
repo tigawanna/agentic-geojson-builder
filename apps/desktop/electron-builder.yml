@@ -10,11 +10,25 @@ files:
   - out/**/*
   - package.json
   - "!node_modules/**/*"
+  - from: .packaging-deps/node_modules/@electric-sql
+    to: node_modules/@electric-sql
+  - from: .packaging-deps/node_modules/sharp
+    to: node_modules/sharp
+  - from: .packaging-deps/node_modules/detect-libc
+    to: node_modules/detect-libc
+  - from: .packaging-deps/node_modules/semver
+    to: node_modules/semver
+  - from: .packaging-deps/node_modules/@img
+    to: node_modules/@img
 
 asar: true
 asarUnpack:
-  - node_modules/@electric-sql/pglite/**/*
-  - node_modules/@electric-sql/pglite-postgis/**/*
+  - "**/*.node"
+  - "**/*.so"
+  - "**/*.so.*"
+  - node_modules/@electric-sql/**/*
+  - node_modules/@img/**/*
+  - node_modules/sharp/**/*
 
 extraResources:
   - from: drizzle-pglite/migrations
@@ -77,3 +91,8 @@ linux:
 
 appImage:
   artifactName: "${productName}-${version}-${arch}.${ext}"
+
+deb:
+  fpm:
+    - "build/com.tigawanna.agentic-geojson-builder.metainfo.xml=/usr/share/metainfo/com.tigawanna.agentic-geojson-builder.metainfo.xml"
+    - "build/screenshots/=/usr/share/metainfo/screenshots/"

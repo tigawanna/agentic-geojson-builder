@@ -30,6 +30,17 @@ function emit(payload: IpcEventPayload<"updater:status">): void {
   mainWindow?.webContents.send("updater:status", payload);
 }
 
+function isBenignUpdateError(message: string): boolean {
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes("no published versions") ||
+    normalized.includes("cannot find latest") ||
+    normalized.includes("net::err_failed") ||
+    normalized.includes("404") ||
+    normalized.includes("405")
+  );
+}
+
 export function initUpdater(window: BrowserWindow): void {
   mainWindow = window;
 
@@ -50,9 +61,14 @@ export function initUpdater(window: BrowserWindow): void {
   autoUpdater.on("update-downloaded", (info) =>
     emit({ state: "downloaded", version: info.version }),
   );
-  autoUpdater.on("error", (err) =>
-    emit({ state: "error", error: err instanceof Error ? err.message : String(err) }),
-  );
+  autoUpdater.on("error", (err) => {
+    const error = err instanceof Error ? err.message : String(err);
+    if (isBenignUpdateError(error)) {
+      log.debug({ action: "updater", message: "update check unavailable", error });
+      return;
+    }
+    emit({ state: "error", error });
+  });
 
   // Automatically check for updates 5s after boot in production builds.
   if (app.isPackaged) {
