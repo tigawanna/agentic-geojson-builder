@@ -48,6 +48,7 @@ import {
   useSetMapBaseRendererMutation,
 } from "@renderer/features/maps/hooks/useMapBaseRenderer";
 import type { MapboxGlStyleId } from "@renderer/features/maps/lib/mapbox-gl-styles";
+import { MapboxCaptureDraftDialog } from "@renderer/features/maps/components/MapboxCaptureDraftDialog";
 import type { CreateMapboxGroundCaptureInput } from "@shared/mapbox-capture.types";
 import { MapTileCacheBoundsModal } from "@renderer/features/maps/components/MapTileCacheBoundsModal";
 import { MapWorkspaceControlsModal } from "@renderer/features/maps/components/MapWorkspaceControlsModal";
@@ -216,6 +217,7 @@ export function MapWorkspaceSplitView() {
   const highlightedPathGroupId = useMapWorkspaceUiState((state) => state.highlightedPathGroupId);
   const { setHighlightedSegmentId } = useMapWorkspaceUiActions();
   const [auditLogOpen, setAuditLogOpen] = useState(false);
+  const [captureDraft, setCaptureDraft] = useState<CreateMapboxGroundCaptureInput | null>(null);
   const [geoJsonPreviewOpen, setGeoJsonPreviewOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const checkedOnboardingRef = useRef(false);
@@ -691,12 +693,19 @@ export function MapWorkspaceSplitView() {
   );
 
   const handleMapPointPlace = useCallback(
-    (latitude: number, longitude: number) => {
+    (latitude: number, longitude: number, elevationMeters?: number | null) => {
       if (!workspace) {
         return;
       }
       void createMapPoint
-        .mutateAsync({ mapId: workspace.id, latitude, longitude, category: "custom" })
+        .mutateAsync({
+          mapId: workspace.id,
+          latitude,
+          longitude,
+          category: "custom",
+          elevation: elevationMeters ?? null,
+          elevationSource: elevationMeters != null ? "inferred_from_path" : null,
+        })
         .then((result) => {
           setDetailPanelMapPointId(result.point.id);
         });
@@ -889,14 +898,6 @@ export function MapWorkspaceSplitView() {
     workspace,
   ]);
 
-  useMapWorkspaceHotkeys({
-    enabled: workspace != null,
-    onOpenHistory: () => setAuditLogOpen(true),
-    onDeleteSelectedSegment: handleDeleteSelectedSegment,
-    onClearSegmentSelection: () => setHighlightedSegmentId(null),
-    highlightedSegmentId,
-  });
-
   const handleExportGeoJson = useCallback(() => {
     if (!workspace) {
       return;
@@ -925,10 +926,15 @@ export function MapWorkspaceSplitView() {
     [queueSave],
   );
 
-  const handleCapture = useCallback(
+  const handleCapture = useCallback((input: CreateMapboxGroundCaptureInput) => {
+    setCaptureDraft(input);
+  }, []);
+
+  const handleCaptureSave = useCallback(
     (input: CreateMapboxGroundCaptureInput) => {
       void createCapture.mutateAsync(input).then(() => {
-        setStatusMessage(t("maps.workspace.captureSaved"));
+        setCaptureDraft(null);
+        setStatusMessage(t("mapboxViewer.captureSaved", { title: input.title }));
         window.clearTimeout(statusTimerRef.current);
         statusTimerRef.current = window.setTimeout(() => setStatusMessage(null), 2500);
       });
@@ -950,6 +956,16 @@ export function MapWorkspaceSplitView() {
 
   const allowControlPointDrag = controlPointDragEnabled && !referenceMode && !traceMode;
   const mapboxGlActive = baseRenderer === "mapbox-gl";
+
+  useMapWorkspaceHotkeys({
+    enabled: workspace != null,
+    mapboxGlActive,
+    onOpenHistory: () => setAuditLogOpen(true),
+    onDeleteSelectedSegment: handleDeleteSelectedSegment,
+    onClearSegmentSelection: () => setHighlightedSegmentId(null),
+    highlightedSegmentId,
+  });
+
   const activeBaseRendererRef = useRef<MapBaseRenderer>(baseRenderer);
   activeBaseRendererRef.current = baseRenderer;
 
@@ -1274,6 +1290,12 @@ export function MapWorkspaceSplitView() {
         onAddReference={handleOnboardingAddReference}
         onOpenControls={handleOnboardingOpenControls}
         hasSourceFile={Boolean(sourceFile)}
+      />
+      <MapboxCaptureDraftDialog
+        draft={captureDraft}
+        savePending={createCapture.isPending}
+        onClose={() => setCaptureDraft(null)}
+        onSave={handleCaptureSave}
       />
     </div>
   );

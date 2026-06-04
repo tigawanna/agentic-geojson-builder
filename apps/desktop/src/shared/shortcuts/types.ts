@@ -8,7 +8,7 @@ export const SHORTCUT_CATEGORIES = [
 
 export type ShortcutCategory = (typeof SHORTCUT_CATEGORIES)[number];
 
-export type ShortcutScope = "renderer" | "electronMenu" | "both";
+export type ShortcutScope = "renderer" | "electronMenu" | "both" | "help";
 
 export type ShortcutDefinition = {
   id: string;

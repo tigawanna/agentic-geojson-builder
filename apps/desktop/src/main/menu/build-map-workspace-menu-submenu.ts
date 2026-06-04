@@ -60,6 +60,7 @@ export function buildMapWorkspaceMenuSubmenu(): MenuItemConstructorOptions[] {
       label: "Trail Inspect Tooltip",
       type: "checkbox",
       checked: state.showReferenceInspectTooltip,
+      accelerator: getShortcutElectronAccelerator(SHORTCUT_IDS.toggleTrailInspect),
       click: menuClick("reference-inspect-tooltip"),
     },
     {

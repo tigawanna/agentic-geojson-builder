@@ -34,7 +34,13 @@ export function MapWorkspaceCapturesSection() {
               </div>
               <p className="mt-0.5 truncate pl-4 font-mono text-[11px] text-base-content/55">
                 {capture.latitude.toFixed(5)}, {capture.longitude.toFixed(5)}
+                {capture.elevation != null ? ` · ${Math.round(capture.elevation)} m` : ""}
               </p>
+              {capture.description ? (
+                <p className="mt-0.5 line-clamp-2 pl-4 text-[11px] text-base-content/55">
+                  {capture.description}
+                </p>
+              ) : null}
               <div className="mt-1.5 flex gap-1 pl-4">
                 {!capture.approved ? (
                   <button

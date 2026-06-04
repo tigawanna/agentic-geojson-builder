@@ -1,14 +1,19 @@
 import { useEffect, useRef, useState } from "react";
-import mapboxgl from "mapbox-gl";
+import mapboxgl, { type MapboxGeoJSONFeature } from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import type { LineGuide } from "@repo/isomorphic/nearest-line-point";
 import { findNearestPointOnGuides } from "@repo/isomorphic/nearest-line-point";
 import type { CreateMapboxGroundCaptureInput } from "@shared/mapbox-capture.types";
 import {
   buildReferenceInspectCopyTarget,
-  buildReferenceInspectTooltipContent,
   REFERENCE_INSPECT_MAX_DISTANCE_METERS,
+  type ReferenceInspectHover,
 } from "@renderer/features/maps/lib/reference-inspect-tooltip";
+import {
+  resolveInspectElevation,
+  toNearbyElevationPointsFromControlPoints,
+  toNearbyElevationPointsFromMapPoints,
+} from "@renderer/features/maps/lib/resolve-inspect-elevation";
 import { setReferenceInspectCopyTarget } from "@renderer/features/maps/lib/reference-inspect-copy-registry";
 import { referenceGeoJsonColor } from "@renderer/features/maps/lib/reference-geojson-color";
 import { DEFAULT_MAP_VIEWPORT } from "@renderer/features/maps/lib/map-handle";
@@ -20,8 +25,9 @@ import {
 } from "@renderer/features/maps/lib/mapbox-gl-styles";
 import { buildCaptureFromProbe } from "@renderer/features/maps/lib/build-capture-from-probe";
 import type { MapboxFeatureProbe } from "@renderer/features/maps/lib/mapbox-probe.types";
-import { MapboxFeatureHoverTooltip } from "@renderer/features/maps/components/MapboxFeatureHoverTooltip";
+import { MapInspectCombinedHoverTooltip } from "@renderer/features/maps/components/MapInspectCombinedHoverTooltip";
 import { MapboxInspectPanel } from "@renderer/features/maps/components/MapboxInspectPanel";
+import { ReferenceInspectTooltipBody } from "@renderer/features/maps/components/ReferenceInspectTooltipBody";
 import { MapboxTokenRequiredModal } from "@renderer/features/maps/components/MapboxTokenRequiredModal";
 import { isPickModifierEvent } from "@renderer/features/maps/lib/pick-modifier";
 import { useMapboxTokenQuery } from "@renderer/features/maps/hooks/useMapboxToken";
@@ -55,10 +61,10 @@ const CACHE_BOUNDS_SOURCE_ID = "workspace-cache-bounds";
 const CACHE_BOUNDS_FILL_ID = "workspace-cache-bounds-fill";
 const CACHE_BOUNDS_LINE_ID = "workspace-cache-bounds-line";
 
-type ReferenceInspectState = {
-  html: string;
-  x: number;
-  y: number;
+type ReferenceInspectPointer = {
+  hover: ReferenceInspectHover;
+  clientX: number;
+  clientY: number;
 };
 
 export type MapboxGlWorkspacePaneProps = LeafletMapPaneProps & {
@@ -113,12 +119,13 @@ export function MapboxGlWorkspacePane({
   const initialViewportCapturedRef = useRef(false);
   const mapClickTimerRef = useRef<number | undefined>(undefined);
   const referenceGuidesRef = useRef<LineGuide[]>([]);
+  const referenceInspectHoverRef = useRef<ReferenceInspectHover | null>(null);
   const syncSourcesRef = useRef<() => void>(() => {});
   const syncMarkersRef = useRef<() => void>(() => {});
   const [mapReady, setMapReady] = useState(false);
   const [hoverProbe, setHoverProbe] = useState<MapboxFeatureProbe | null>(null);
   const [pinnedProbe, setPinnedProbe] = useState<MapboxFeatureProbe | null>(null);
-  const [referenceInspect, setReferenceInspect] = useState<ReferenceInspectState | null>(null);
+  const [referenceInspect, setReferenceInspect] = useState<ReferenceInspectPointer | null>(null);
 
   const token = useMapboxTokenQuery().data ?? null;
   const tokenInvalid = useMapboxTokenInvalid();
@@ -532,12 +539,36 @@ export function MapboxGlWorkspacePane({
       }
     }
 
-    function buildProbe(event: mapboxgl.MapMouseEvent): MapboxFeatureProbe {
-      return {
-        features: map.queryRenderedFeatures(event.point),
+    function resolveElevationForEvent(
+      event: mapboxgl.MapMouseEvent,
+      referenceHover: ReferenceInspectHover | null,
+      features: MapboxGeoJSONFeature[],
+    ) {
+      const data = dataRef.current;
+      return resolveInspectElevation({
         latitude: event.lngLat.lat,
         longitude: event.lngLat.lng,
-        elevationMeters: readElevationMeters(event.lngLat),
+        referenceHover,
+        terrainElevationMeters: readElevationMeters(event.lngLat),
+        controlPoints: toNearbyElevationPointsFromControlPoints(data.controlPoints),
+        mapPoints: toNearbyElevationPointsFromMapPoints(data.mapPoints),
+        features,
+      });
+    }
+
+    function buildProbe(
+      event: mapboxgl.MapMouseEvent,
+      referenceHover: ReferenceInspectHover | null,
+    ): MapboxFeatureProbe {
+      const features = map.queryRenderedFeatures(event.point);
+      const resolved = resolveElevationForEvent(event, referenceHover, features);
+
+      return {
+        features,
+        latitude: event.lngLat.lat,
+        longitude: event.lngLat.lng,
+        elevationMeters: resolved?.elevationMeters ?? null,
+        elevationSource: resolved?.source ?? null,
         clientX: event.originalEvent.clientX,
         clientY: event.originalEvent.clientY,
       };
@@ -547,12 +578,14 @@ export function MapboxGlWorkspacePane({
       const data = dataRef.current;
       const guides = referenceGuidesRef.current;
       if (!data.showReferenceOverlay || !data.showReferenceInspectTooltip || guides.length === 0) {
+        referenceInspectHoverRef.current = null;
         setReferenceInspect(null);
         setReferenceInspectCopyTarget(null);
         return;
       }
       const nearest = findNearestPointOnGuides(event.lngLat.lat, event.lngLat.lng, guides);
       if (!nearest || nearest.distanceMeters > REFERENCE_INSPECT_MAX_DISTANCE_METERS) {
+        referenceInspectHoverRef.current = null;
         setReferenceInspect(null);
         setReferenceInspectCopyTarget(null);
         return;
@@ -562,11 +595,18 @@ export function MapboxGlWorkspacePane({
         cursorLongitude: event.lngLat.lng,
         nearest,
       };
-      setReferenceInspectCopyTarget(buildReferenceInspectCopyTarget(hover));
+      referenceInspectHoverRef.current = hover;
+      setReferenceInspectCopyTarget(
+        buildReferenceInspectCopyTarget(hover, {
+          controlPoints: data.controlPoints,
+          mapPoints: data.mapPoints,
+          terrainElevationMeters: readElevationMeters(event.lngLat),
+        }),
+      );
       setReferenceInspect({
-        html: buildReferenceInspectTooltipContent(hover),
-        x: event.originalEvent.clientX,
-        y: event.originalEvent.clientY,
+        hover,
+        clientX: event.originalEvent.clientX,
+        clientY: event.originalEvent.clientY,
       });
     }
 
@@ -574,16 +614,28 @@ export function MapboxGlWorkspacePane({
       onCursorMoveRef.current({ latitude: event.lngLat.lat, longitude: event.lngLat.lng });
 
       const data = dataRef.current;
-      if (data.inspectMode && !data.pinnedProbe) {
-        map.getCanvas().style.cursor = "crosshair";
-        setHoverProbe(buildProbe(event));
-      } else if (!isPickMode(data)) {
+      if (!isPickMode(data) && data.showReferenceInspectTooltip) {
         handleReferenceInspect(event);
+      } else {
+        referenceInspectHoverRef.current = null;
+        setReferenceInspect(null);
+        setReferenceInspectCopyTarget(null);
+      }
+
+      if (data.inspectMode) {
+        map.getCanvas().style.cursor = "crosshair";
+        const probe = buildProbe(event, referenceInspectHoverRef.current);
+        if (data.pinnedProbe) {
+          setPinnedProbe(probe);
+        } else {
+          setHoverProbe(probe);
+        }
       }
     });
 
     map.on("mouseout", () => {
       onCursorMoveRef.current(null);
+      referenceInspectHoverRef.current = null;
       setReferenceInspect(null);
       setReferenceInspectCopyTarget(null);
       if (!dataRef.current.pinnedProbe) {
@@ -607,7 +659,13 @@ export function MapboxGlWorkspacePane({
         mapClickTimerRef.current = window.setTimeout(() => {
           const current = dataRef.current;
           if (current.canPlaceMapPoint) {
-            onMapPointPlaceRef.current?.(lat, lng);
+            const features = map.queryRenderedFeatures(event.point);
+            const resolved = resolveElevationForEvent(
+              event,
+              referenceInspectHoverRef.current,
+              features,
+            );
+            onMapPointPlaceRef.current?.(lat, lng, resolved?.elevationMeters ?? null);
             return;
           }
           if (current.canPickTracePoint) {
@@ -622,7 +680,7 @@ export function MapboxGlWorkspacePane({
       }
 
       if (data.inspectMode) {
-        const probe = buildProbe(event);
+        const probe = buildProbe(event, referenceInspectHoverRef.current);
         if (modifier) {
           onCaptureRef.current?.(buildCaptureFromProbe(probe, styleIdRef.current));
           return;
@@ -839,6 +897,7 @@ export function MapboxGlWorkspacePane({
   }
 
   const activeProbe = pinnedProbe ?? hoverProbe;
+  const referenceHover = referenceInspect?.hover ?? null;
 
   return (
     <div className="absolute inset-0">
@@ -858,21 +917,23 @@ export function MapboxGlWorkspacePane({
           Ctrl+click to drop a marker
         </div>
       ) : null}
-      {referenceInspect ? (
+      {!inspectMode && referenceInspect ? (
         <div
           className="pointer-events-none fixed z-50 max-w-[18rem] rounded-lg border border-base-300 bg-base-100/95 px-3 py-2 text-xs shadow-lg backdrop-blur-sm"
-          style={{ left: referenceInspect.x + 14, top: referenceInspect.y + 14 }}
-          dangerouslySetInnerHTML={{ __html: referenceInspect.html }}
-        />
+          style={{ left: referenceInspect.clientX + 14, top: referenceInspect.clientY + 14 }}
+        >
+          <ReferenceInspectTooltipBody hover={referenceInspect.hover} />
+        </div>
       ) : null}
       {inspectMode && activeProbe && !pinnedProbe ? (
-        <MapboxFeatureHoverTooltip
+        <MapInspectCombinedHoverTooltip
           coordinates={{
             latitude: activeProbe.latitude,
             longitude: activeProbe.longitude,
             elevationMeters: activeProbe.elevationMeters,
           }}
           features={activeProbe.features}
+          referenceHover={referenceHover}
           clientX={activeProbe.clientX}
           clientY={activeProbe.clientY}
         />
@@ -885,6 +946,7 @@ export function MapboxGlWorkspacePane({
             elevationMeters: pinnedProbe.elevationMeters,
           }}
           features={pinnedProbe.features}
+          referenceHover={referenceHover}
           pinned
           capturePending={capturePending}
           onClose={() => setPinnedProbe(null)}

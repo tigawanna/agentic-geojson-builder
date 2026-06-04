@@ -1,5 +1,27 @@
 import type { MapboxGeoJSONFeature } from "mapbox-gl";
 
+export const WORKSPACE_MAP_LAYER_PREFIX = "workspace-";
+
+export function isWorkspaceMapLayerId(layerId: string | undefined): boolean {
+  return layerId?.startsWith(WORKSPACE_MAP_LAYER_PREFIX) === true;
+}
+
+export function partitionMapboxFeatures(features: MapboxGeoJSONFeature[]): {
+  basemap: MapboxGeoJSONFeature[];
+  workspace: MapboxGeoJSONFeature[];
+} {
+  const basemap: MapboxGeoJSONFeature[] = [];
+  const workspace: MapboxGeoJSONFeature[] = [];
+  for (const feature of features) {
+    if (isWorkspaceMapLayerId(feature.layer?.id)) {
+      workspace.push(feature);
+    } else {
+      basemap.push(feature);
+    }
+  }
+  return { basemap, workspace };
+}
+
 const LABEL_PROPERTY_KEYS = [
   "name",
   "ref",
@@ -69,14 +91,16 @@ export function extractFeatureTags(feature: MapboxGeoJSONFeature | null): Record
 }
 
 export function pickPrimaryFeature(features: MapboxGeoJSONFeature[]): MapboxGeoJSONFeature | null {
-  if (features.length === 0) {
+  const { basemap } = partitionMapboxFeatures(features);
+  const candidates = basemap.length > 0 ? basemap : features;
+  if (candidates.length === 0) {
     return null;
   }
 
-  const symbolOrLabel = features.find((feature) => {
+  const symbolOrLabel = candidates.find((feature) => {
     const type = feature.layer?.type;
     return type === "symbol" || type === "circle";
   });
 
-  return symbolOrLabel ?? features[0] ?? null;
+  return symbolOrLabel ?? candidates[0] ?? null;
 }

@@ -15,7 +15,10 @@ export const SHORTCUT_IDS = {
   openChangeHistory: "open-change-history",
   toggleToolsPanel: "toggle-tools-panel",
   mapboxInspect: "mapbox-inspect",
+  toggleTrailInspect: "toggle-trail-inspect",
   copyInspectCoordinates: "copy-inspect-coordinates",
+  mapboxPinInspect: "mapbox-pin-inspect",
+  mapboxSaveToCollection: "mapbox-save-to-collection",
   undo: "undo",
   redo: "redo",
   deleteSelectedSegment: "delete-selected-segment",
@@ -37,7 +40,7 @@ function defineShortcut(
   scope: ShortcutScope,
 ): ShortcutDefinition {
   const electronAccelerator =
-    scope === "renderer" ? undefined : hotkeyToElectronAccelerator(hotkey);
+    scope === "electronMenu" || scope === "both" ? hotkeyToElectronAccelerator(hotkey) : undefined;
   return {
     id,
     hotkey,
@@ -107,9 +110,16 @@ export const SHORTCUT_CATALOG: readonly ShortcutDefinition[] = [
   ),
   defineShortcut(
     SHORTCUT_IDS.mapboxInspect,
-    "Mod+Shift+I",
+    "Mod+Shift+M",
     "shortcuts.items.mapboxInspect",
-    ["mapWorkspace"],
+    ["mapWorkspace", "dataExplorer"],
+    "both",
+  ),
+  defineShortcut(
+    SHORTCUT_IDS.toggleTrailInspect,
+    "Mod+Shift+T",
+    "shortcuts.items.toggleTrailInspect",
+    ["mapWorkspace", "dataExplorer"],
     "both",
   ),
   defineShortcut(
@@ -118,6 +128,20 @@ export const SHORTCUT_CATALOG: readonly ShortcutDefinition[] = [
     "shortcuts.items.copyInspectCoordinates",
     ["mapWorkspace", "dataExplorer"],
     "renderer",
+  ),
+  defineShortcut(
+    SHORTCUT_IDS.mapboxPinInspect,
+    "Click",
+    "shortcuts.items.mapboxPinInspect",
+    ["mapWorkspace"],
+    "help",
+  ),
+  defineShortcut(
+    SHORTCUT_IDS.mapboxSaveToCollection,
+    "Mod+Click",
+    "shortcuts.items.mapboxSaveToCollection",
+    ["mapWorkspace"],
+    "help",
   ),
   defineShortcut(SHORTCUT_IDS.undo, "Mod+Z", "shortcuts.items.undo", ["mapWorkspace"], "renderer"),
   defineShortcut(

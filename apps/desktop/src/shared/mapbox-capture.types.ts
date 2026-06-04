@@ -1,8 +1,11 @@
 export type MapboxCaptureTags = Record<string, string>;
 
+export const MAPBOX_CAPTURE_DESCRIPTION_TAG = "description";
+
 export type MapboxGroundCaptureRecord = {
   id: number;
   title: string;
+  description: string | null;
   tags: MapboxCaptureTags;
   latitude: number;
   longitude: number;
@@ -17,6 +20,7 @@ export type MapboxGroundCaptureRecord = {
 
 export type CreateMapboxGroundCaptureInput = {
   title: string;
+  description?: string | null;
   tags?: MapboxCaptureTags;
   latitude: number;
   longitude: number;
@@ -29,7 +33,9 @@ export type CreateMapboxGroundCaptureInput = {
 export type UpdateMapboxGroundCaptureInput = {
   captureId: number;
   title?: string;
+  description?: string | null;
   tags?: MapboxCaptureTags;
+  elevation?: number | null;
   approved?: boolean;
 };
 

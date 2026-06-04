@@ -7,15 +7,24 @@ import type {
 } from "@shared/mapbox-capture.types.js";
 import { getPgliteDb } from "@main/lib/pglite/client.js";
 import {
+  mergeMapboxCaptureTags,
+  splitMapboxCaptureTags,
+} from "@main/lib/pglite/mapbox-capture-tags.js";
+import {
   mapboxGroundCaptureTable,
   type MapboxGroundCaptureRow,
 } from "@main/lib/pglite/schema/mapbox-ground-capture.schema.js";
 
 function toRecord(row: MapboxGroundCaptureRow): MapboxGroundCaptureRecord {
+  const { description, featureTags } = splitMapboxCaptureTags(
+    (row.tags as MapboxCaptureTags) ?? {},
+  );
+
   return {
     id: row.id,
     title: row.title,
-    tags: (row.tags as MapboxCaptureTags) ?? {},
+    description,
+    tags: featureTags,
     latitude: row.location.y,
     longitude: row.location.x,
     elevation: row.elevation,
@@ -46,7 +55,7 @@ export async function createMapboxGroundCapture(
     .insert(mapboxGroundCaptureTable)
     .values({
       title: input.title.trim() || "Untitled",
-      tags: input.tags ?? {},
+      tags: mergeMapboxCaptureTags(input.tags ?? {}, input.description),
       location: { x: input.longitude, y: input.latitude },
       elevation: input.elevation ?? null,
       layerId: input.layerId?.trim() || null,
@@ -75,8 +84,24 @@ export async function updateMapboxGroundCapture(
   if (input.title !== undefined) {
     patch.title = input.title.trim() || "Untitled";
   }
-  if (input.tags !== undefined) {
-    patch.tags = input.tags;
+  if (input.tags !== undefined || input.description !== undefined) {
+    const existing = await db
+      .select({ tags: mapboxGroundCaptureTable.tags })
+      .from(mapboxGroundCaptureTable)
+      .where(eq(mapboxGroundCaptureTable.id, input.captureId))
+      .limit(1);
+    const row = existing[0];
+    if (!row) {
+      throw new Error("Capture not found.");
+    }
+    const split = splitMapboxCaptureTags((row.tags as MapboxCaptureTags) ?? {});
+    patch.tags = mergeMapboxCaptureTags(
+      input.tags ?? split.featureTags,
+      input.description !== undefined ? input.description : split.description,
+    );
+  }
+  if (input.elevation !== undefined) {
+    patch.elevation = input.elevation;
   }
   if (input.approved !== undefined) {
     patch.approved = input.approved;

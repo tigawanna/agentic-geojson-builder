@@ -14,6 +14,7 @@ import { MapDataExplorerEditDialog } from "@renderer/features/maps/components/Ma
 import { MapDataExplorerMapPanel } from "@renderer/features/maps/components/MapDataExplorerMapPanel";
 import { MapDataExplorerTables } from "@renderer/features/maps/components/MapDataExplorerTables";
 import { useDataExplorerInspectCopyShortcut } from "@renderer/features/maps/hooks/useDataExplorerInspectCopyShortcut";
+import { useDataExplorerInspectViewHotkeys } from "@renderer/features/maps/hooks/useDataExplorerInspectViewHotkeys";
 import { useControlPointsQuery } from "@renderer/features/maps/hooks/useControlPointsQuery";
 import { useGeoSegmentsQuery } from "@renderer/features/maps/hooks/useGeoSegmentsQuery";
 import { useMapDataExplorerFocus } from "@renderer/features/maps/hooks/useMapDataExplorerFocus";
@@ -65,6 +66,7 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
   }, [setStatusMessage, statusMessage]);
 
   useDataExplorerInspectCopyShortcut();
+  useDataExplorerInspectViewHotkeys();
 
   const controlPointsQuery = useControlPointsQuery(mapId);
   const mapPointsQuery = useMapPointsQuery(mapId);
