@@ -24,6 +24,7 @@ export const mapPointTable = pgTable(
     ref: varchar({ length: 64 }),
     name: varchar({ length: 255 }),
     category: varchar({ length: 32 }).notNull().default("custom"),
+    nodeRole: varchar("node_role", { length: 16 }),
     location: geometry("location", { type: "point", mode: "xy", srid: 4326 }).notNull(),
     elevation: real("elevation"),
     elevationSource: varchar("elevation_source", { length: 32 }),

@@ -4,6 +4,7 @@ import type {
   DeleteMapPointInput,
   MapPointCategory,
   MapPointElevationSource,
+  MapPointNodeRole,
   MapPointRecord,
   UpdateMapPointInput,
 } from "@shared/map-points.types.js";
@@ -17,6 +18,7 @@ function toRecord(row: MapPointRow): MapPointRecord {
     ref: row.ref,
     name: row.name,
     category: row.category as MapPointCategory,
+    nodeRole: (row.nodeRole as MapPointNodeRole | null) ?? null,
     longitude: row.location.x,
     latitude: row.location.y,
     elevation: row.elevation,
@@ -82,6 +84,7 @@ export async function createMapPoint(input: CreateMapPointInput): Promise<MapPoi
       ref,
       name: input.name?.trim() || null,
       category: input.category ?? "custom",
+      nodeRole: input.nodeRole ?? null,
       location: { x: input.longitude, y: input.latitude },
       elevation: input.elevation ?? null,
       elevationSource: input.elevationSource ?? null,
@@ -120,6 +123,9 @@ export async function updateMapPoint(input: UpdateMapPointInput): Promise<MapPoi
   }
   if (input.category !== undefined) {
     patch.category = input.category;
+  }
+  if (input.nodeRole !== undefined) {
+    patch.nodeRole = input.nodeRole;
   }
   if (input.elevation !== undefined) {
     patch.elevation = input.elevation;

@@ -12,8 +12,12 @@ type Handler<K extends IpcChannel> = (
   req: IpcRequest<K>,
 ) => IpcResponse<K> | Promise<IpcResponse<K>>;
 
-function notifyChanged(mapId: number, reason: "created" | "updated" | "deleted", linkId?: number) {
-  broadcastToRenderers("mapLinks:changed", { mapId, reason, linkId });
+function notifyChanged(
+  mapId: number,
+  reason: "created" | "updated" | "deleted",
+  segmentId?: number,
+) {
+  broadcastToRenderers("mapLinks:changed", { mapId, reason, segmentId });
 }
 
 export const mapLinksHandlers: { [K in IpcChannel]?: Handler<K> } = {
@@ -29,12 +33,13 @@ export const mapLinksHandlers: { [K in IpcChannel]?: Handler<K> } = {
     return { link };
   },
   "mapLinks:update": async (input) => {
-    const link = await updateMapLink(input);
+    const { linkId, ...rest } = input;
+    const link = await updateMapLink({ ...rest, segmentId: linkId });
     notifyChanged(input.mapId, "updated", link.id);
     return { link };
   },
   "mapLinks:delete": async (input) => {
-    await deleteMapLink(input);
+    await deleteMapLink({ mapId: input.mapId, segmentId: input.linkId });
     notifyChanged(input.mapId, "deleted", input.linkId);
     return { ok: true as const };
   },

@@ -2,16 +2,19 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   pgTable,
   real,
   timestamp,
   uniqueIndex,
   varchar,
 } from "drizzle-orm/pg-core";
+import type { StoredLineStringGeometry } from "@shared/geo-segments.types.js";
+import type { SegmentEdgeMetadata } from "@shared/segments.types.js";
 import { mapTable } from "@main/lib/pglite/schema/map.schema";
 
-export const mapLinkTable = pgTable(
-  "map_link",
+export const segmentEdgeTable = pgTable(
+  "segment_edge",
   {
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
     mapId: integer("map_id")
@@ -22,14 +25,24 @@ export const mapLinkTable = pgTable(
     pathSlug: varchar("path_slug", { length: 128 }).notNull(),
     startFraction: real("start_fraction"),
     endFraction: real("end_fraction"),
+    geometryJson: jsonb("geometry_json").$type<StoredLineStringGeometry>(),
+    lengthM: real("length_m"),
+    kind: varchar({ length: 32 }).notNull().default("unknown"),
     bidirectional: boolean("bidirectional").notNull().default(true),
+    status: varchar({ length: 32 }).notNull().default("draft"),
+    metadata: jsonb("metadata").$type<SegmentEdgeMetadata>().default({}),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
   (table) => [
-    index("map_link_map_id_idx").on(table.mapId),
-    uniqueIndex("map_link_edge_idx").on(table.mapId, table.fromRef, table.toRef, table.pathSlug),
+    index("segment_edge_map_id_idx").on(table.mapId),
+    uniqueIndex("segment_edge_edge_idx").on(
+      table.mapId,
+      table.fromRef,
+      table.toRef,
+      table.pathSlug,
+    ),
   ],
 );
 
-export type MapLinkRow = typeof mapLinkTable.$inferSelect;
+export type SegmentEdgeRow = typeof segmentEdgeTable.$inferSelect;

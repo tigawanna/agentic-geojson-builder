@@ -64,6 +64,13 @@
       "when": 1779902600000,
       "tag": "0008_map_base_renderer",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1779902700000,
+      "tag": "0009_segments_and_trails",
+      "breakpoints": true
     }
   ]
 }

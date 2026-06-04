@@ -10,6 +10,9 @@ import { geoSegmentsHandlers } from "@main/ipc/geo-segments.js";
 import { mapPointsHandlers } from "@main/ipc/map-points.js";
 import { mapboxCapturesHandlers } from "@main/ipc/mapbox-captures.js";
 import { mapLinksHandlers } from "@main/ipc/map-links.js";
+import { segmentsHandlers } from "@main/ipc/segments.js";
+import { trailsHandlers } from "@main/ipc/trails.js";
+import { routingHandlers } from "@main/ipc/routing.js";
 import { mapBundleHandlers } from "@main/ipc/map-bundle.js";
 import { referenceGeoJsonHandlers } from "@main/ipc/reference-geojson.js";
 import { mcpSettingsHandlers } from "@main/ipc/mcp-settings.js";
@@ -118,6 +121,9 @@ export function registerIpcHandlers(): void {
     ...mapPointsHandlers,
     ...mapboxCapturesHandlers,
     ...mapLinksHandlers,
+    ...segmentsHandlers,
+    ...trailsHandlers,
+    ...routingHandlers,
     ...mapBundleHandlers,
     ...mcpSettingsHandlers,
     ...referenceSnapHandlers,

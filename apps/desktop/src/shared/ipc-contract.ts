@@ -134,6 +134,31 @@ import type {
   UpdateMapLinkInput,
 } from "./map-links.types.js";
 import type {
+  BuildSegmentsFromPathInput,
+  BuildSegmentsFromPathPreview,
+  BuildSegmentsFromPathResult,
+  CreateSegmentEdgeFromPointsInput,
+  CreateSegmentEdgeInput,
+  DeleteSegmentEdgeInput,
+  SegmentEdgeRecord,
+  SegmentsChangedEvent,
+  UpdateSegmentEdgeInput,
+} from "./segments.types.js";
+import type {
+  CreateTrailInput,
+  DeleteTrailInput,
+  SetTrailMembersInput,
+  TrailRecord,
+  TrailsChangedEvent,
+  UpdateTrailInput,
+} from "./trails.types.js";
+import type {
+  FindRouteInput,
+  FindRouteResult,
+  ReachableFromInput,
+  ReachableFromResult,
+} from "./routing.types.js";
+import type {
   BuildBundleInput,
   BuildBundleResult,
   ExportBundleToFileInput,
@@ -383,6 +408,32 @@ export interface IpcContract {
   "mapLinks:update": { req: UpdateMapLinkInput; res: { link: MapLinkRecord } };
   "mapLinks:delete": { req: DeleteMapLinkInput; res: { ok: true } };
 
+  // --- Segment edges (marker-to-marker path spans) ---------------------------
+  "segments:list": { req: { mapId: number }; res: { segments: SegmentEdgeRecord[] } };
+  "segments:create": { req: CreateSegmentEdgeInput; res: { segment: SegmentEdgeRecord } };
+  "segments:createFromPoints": {
+    req: CreateSegmentEdgeFromPointsInput;
+    res: { segment: SegmentEdgeRecord };
+  };
+  "segments:update": { req: UpdateSegmentEdgeInput; res: { segment: SegmentEdgeRecord } };
+  "segments:delete": { req: DeleteSegmentEdgeInput; res: { ok: true } };
+  "segments:previewBuildFromPath": {
+    req: BuildSegmentsFromPathInput;
+    res: BuildSegmentsFromPathPreview;
+  };
+  "segments:buildFromPath": { req: BuildSegmentsFromPathInput; res: BuildSegmentsFromPathResult };
+
+  // --- Trails (ordered segment composition) ----------------------------------
+  "trails:list": { req: { mapId: number }; res: { trails: TrailRecord[] } };
+  "trails:create": { req: CreateTrailInput; res: { trail: TrailRecord } };
+  "trails:update": { req: UpdateTrailInput; res: { trail: TrailRecord } };
+  "trails:delete": { req: DeleteTrailInput; res: { ok: true } };
+  "trails:setMembers": { req: SetTrailMembersInput; res: { trail: TrailRecord } };
+
+  // --- Graph routing ---------------------------------------------------------
+  "routing:findRoute": { req: FindRouteInput; res: FindRouteResult };
+  "routing:reachableFrom": { req: ReachableFromInput; res: ReachableFromResult };
+
   // --- Routing bundle export -------------------------------------------------
   "bundle:build": { req: BuildBundleInput; res: BuildBundleResult };
   "bundle:exportToFile": { req: ExportBundleToFileInput; res: ExportBundleToFileResult };
@@ -464,6 +515,8 @@ export interface IpcEventMap {
   "mapPoints:changed": MapPointsChangedEvent;
   "mapboxCaptures:changed": MapboxCapturesChangedEvent;
   "mapLinks:changed": MapLinksChangedEvent;
+  "segments:changed": SegmentsChangedEvent;
+  "trails:changed": TrailsChangedEvent;
   "workspace:setMapViewport": SetMapViewportEvent;
   "updater:status": {
     state: "checking" | "available" | "not-available" | "downloading" | "downloaded" | "error";

@@ -23,6 +23,10 @@ export const MAP_POINT_CATEGORIES: MapPointCategory[] = [
 
 export const ROUTING_POINT_CATEGORIES: MapPointCategory[] = ["junction", "gate"];
 
+export type MapPointNodeRole = "junction" | "endpoint" | "waypoint";
+
+export const MAP_POINT_NODE_ROLES: MapPointNodeRole[] = ["junction", "endpoint", "waypoint"];
+
 export type MapPointElevationSource = "manual" | "inferred_from_path";
 
 export type MapPointRecord = {
@@ -31,6 +35,7 @@ export type MapPointRecord = {
   ref: string | null;
   name: string | null;
   category: MapPointCategory;
+  nodeRole: MapPointNodeRole | null;
   longitude: number;
   latitude: number;
   elevation: number | null;
@@ -52,6 +57,7 @@ export type CreateMapPointInput = {
   ref?: string | null;
   name?: string | null;
   category?: MapPointCategory;
+  nodeRole?: MapPointNodeRole | null;
   elevation?: number | null;
   elevationSource?: MapPointElevationSource | null;
   description?: string | null;
@@ -70,6 +76,7 @@ export type UpdateMapPointInput = {
   ref?: string | null;
   name?: string | null;
   category?: MapPointCategory;
+  nodeRole?: MapPointNodeRole | null;
   elevation?: number | null;
   elevationSource?: MapPointElevationSource | null;
   description?: string | null;

@@ -99,6 +99,118 @@ export function projectPointFractionOnLine(
   return best;
 }
 
+function buildCumulativeLengths(coordinates: [number, number][]): number[] {
+  const cumulativeLengths: number[] = [0];
+  for (let i = 1; i < coordinates.length; i += 1) {
+    const previous = coordinates[i - 1];
+    const current = coordinates[i];
+    if (!previous || !current) {
+      continue;
+    }
+    const segmentLength = haversineDistanceMeters(previous[1], previous[0], current[1], current[0]);
+    cumulativeLengths.push((cumulativeLengths[i - 1] ?? 0) + segmentLength);
+  }
+  return cumulativeLengths;
+}
+
+export function pathLengthMeters(coordinates: [number, number][]): number {
+  const cumulative = buildCumulativeLengths(coordinates);
+  return cumulative.at(-1) ?? 0;
+}
+
+export function coordinateAtFraction(
+  coordinates: [number, number][],
+  fraction: number,
+): [number, number] | null {
+  if (coordinates.length < 2) {
+    return null;
+  }
+
+  const clamped = Math.max(0, Math.min(1, fraction));
+  const cumulativeLengths = buildCumulativeLengths(coordinates);
+  const totalLength = cumulativeLengths.at(-1) ?? 0;
+  if (totalLength <= 0) {
+    return coordinates[0] ?? null;
+  }
+
+  const targetLength = clamped * totalLength;
+
+  for (let i = 0; i < coordinates.length - 1; i += 1) {
+    const start = coordinates[i];
+    const end = coordinates[i + 1];
+    if (!start || !end) {
+      continue;
+    }
+
+    const segmentStart = cumulativeLengths[i] ?? 0;
+    const segmentEnd = cumulativeLengths[i + 1] ?? segmentStart;
+    if (targetLength > segmentEnd) {
+      continue;
+    }
+
+    const segmentLength = segmentEnd - segmentStart;
+    const t = segmentLength <= 0 ? 0 : (targetLength - segmentStart) / segmentLength;
+    return [start[0] + t * (end[0] - start[0]), start[1] + t * (end[1] - start[1])];
+  }
+
+  return coordinates.at(-1) ?? null;
+}
+
+export function sliceLineBetweenFractions(
+  coordinates: [number, number][],
+  startFraction: number,
+  endFraction: number,
+): [number, number][] {
+  if (coordinates.length < 2) {
+    return [];
+  }
+
+  const start = Math.max(0, Math.min(1, Math.min(startFraction, endFraction)));
+  const end = Math.max(0, Math.min(1, Math.max(startFraction, endFraction)));
+  const startCoord = coordinateAtFraction(coordinates, start);
+  const endCoord = coordinateAtFraction(coordinates, end);
+
+  if (!startCoord || !endCoord) {
+    return [];
+  }
+
+  const cumulativeLengths = buildCumulativeLengths(coordinates);
+  const totalLength = cumulativeLengths.at(-1) ?? 0;
+  if (totalLength <= 0) {
+    return [startCoord, endCoord];
+  }
+
+  const startLength = start * totalLength;
+  const endLength = end * totalLength;
+  const sliced: [number, number][] = [startCoord];
+
+  for (let i = 0; i < coordinates.length - 1; i += 1) {
+    const segmentStart = cumulativeLengths[i] ?? 0;
+    const segmentEnd = cumulativeLengths[i + 1] ?? segmentStart;
+    if (segmentEnd <= startLength || segmentStart >= endLength) {
+      continue;
+    }
+
+    const vertex = coordinates[i + 1];
+    if (!vertex) {
+      continue;
+    }
+
+    const last = sliced.at(-1);
+    if (last && last[0] === vertex[0] && last[1] === vertex[1]) {
+      continue;
+    }
+    sliced.push(vertex);
+  }
+
+  const last = sliced.at(-1);
+  if (!last || last[0] !== endCoord[0] || last[1] !== endCoord[1]) {
+    sliced.push(endCoord);
+  }
+
+  return sliced.length >= 2 ? sliced : [startCoord, endCoord];
+}
+
 export function combineGroupCoordinates(
   segments: Array<{ segmentIndex: number; geometry: { coordinates: [number, number][] } }>,
 ): [number, number][] {

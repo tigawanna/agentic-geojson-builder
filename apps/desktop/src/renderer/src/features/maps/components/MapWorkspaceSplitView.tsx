@@ -723,6 +723,13 @@ export function MapWorkspaceSplitView() {
       }
 
       if (linkMode) {
+        const clicked = mapPoints.find((point) => point.id === pointId);
+        if (!clicked?.ref?.trim()) {
+          setStatusMessage(t("maps.workspace.linkNeedsRef"));
+          setDetailPanelMapPointId(pointId);
+          return;
+        }
+
         if (linkFromPointId === null) {
           setLinkFromPointId(pointId);
           setStatusMessage(t("maps.workspace.linkPickSecond"));
@@ -730,6 +737,14 @@ export function MapWorkspaceSplitView() {
         }
         if (linkFromPointId === pointId) {
           setLinkFromPointId(null);
+          setStatusMessage(t("maps.workspace.linkPickFirst"));
+          return;
+        }
+
+        const fromPoint = mapPoints.find((point) => point.id === linkFromPointId);
+        if (!fromPoint?.ref?.trim()) {
+          setLinkFromPointId(null);
+          setStatusMessage(t("maps.workspace.linkNeedsRef"));
           return;
         }
 
@@ -754,12 +769,24 @@ export function MapWorkspaceSplitView() {
       createMapLinkFromPoints,
       linkFromPointId,
       linkMode,
+      mapPoints,
       setDetailPanelMapPointId,
       setLinkFromPointId,
       setStatusMessage,
       t,
       workspace,
     ],
+  );
+
+  const handleControlPointClick = useCallback(
+    (controlPointId: number) => {
+      if (linkMode) {
+        setStatusMessage(t("maps.workspace.linkReferencePoint"));
+        return;
+      }
+      setDetailPanelControlPointId(controlPointId);
+    },
+    [linkMode, setDetailPanelControlPointId, setStatusMessage, t],
   );
 
   const handlePendingTracePointMove = useCallback(
@@ -1034,7 +1061,7 @@ export function MapWorkspaceSplitView() {
     onMapPointClick: handleMapPointClick,
     onPendingTracePointMove: handlePendingTracePointMove,
     onControlPointMapMove: handleControlPointMapMove,
-    onControlPointClick: (id: number) => setDetailPanelControlPointId(id),
+    onControlPointClick: handleControlPointClick,
     onSegmentClick: handleSegmentClick,
     selectedSegmentId: highlightedSegmentId,
     highlightedPathGroupId,

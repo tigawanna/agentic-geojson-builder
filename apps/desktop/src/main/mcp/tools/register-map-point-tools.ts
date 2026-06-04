@@ -165,7 +165,7 @@ export function registerMapPointTools(server: McpServer) {
         broadcastToRenderers("mapLinks:changed", {
           mapId: input.mapId,
           reason: "created",
-          linkId: link.id,
+          segmentId: link.id,
         });
         return jsonToolResult({ link });
       }),
@@ -192,7 +192,7 @@ export function registerMapPointTools(server: McpServer) {
         broadcastToRenderers("mapLinks:changed", {
           mapId: input.mapId,
           reason: "created",
-          linkId: link.id,
+          segmentId: link.id,
         });
         return jsonToolResult({ link });
       }),
@@ -210,11 +210,11 @@ export function registerMapPointTools(server: McpServer) {
     },
     async (input) =>
       runLoggedMcpTool("delete_map_link", input, async () => {
-        await deleteMapLink(input);
+        await deleteMapLink({ mapId: input.mapId, segmentId: input.linkId });
         broadcastToRenderers("mapLinks:changed", {
           mapId: input.mapId,
           reason: "deleted",
-          linkId: input.linkId,
+          segmentId: input.linkId,
         });
         return jsonToolResult({ ok: true });
       }),
