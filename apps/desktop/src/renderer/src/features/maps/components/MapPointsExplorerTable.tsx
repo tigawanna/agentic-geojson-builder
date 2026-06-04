@@ -3,7 +3,10 @@ import { Download, Pencil, Trash2, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@renderer/lib/utils";
 import { useIpcMutation } from "@renderer/hooks/useIpc";
-import { exportMapPointsFile } from "@renderer/features/maps/lib/export-map-points";
+import {
+  exportMapPointsFile,
+  type MapPointsExportFormat,
+} from "@renderer/features/maps/lib/export-map-points";
 import { parseMapPointsImportJson } from "@renderer/features/maps/lib/import-map-points";
 import { filterMapPointsBySearch } from "@renderer/features/maps/lib/map-points-list-filter";
 import { isMapDataExplorerSelectionEqual } from "@renderer/features/maps/hooks/useMapDataExplorerFocus";
@@ -34,12 +37,14 @@ export function MapPointsExplorerTable({
   const { t } = useTranslation();
   const setEditTarget = useMapDataExplorerPageStore((state) => state.setEditTarget);
   const setStatusMessage = useMapDataExplorerPageStore((state) => state.setStatusMessage);
+  const setCheckedMapPointIds = useMapDataExplorerPageStore((state) => state.setCheckedMapPointIds);
   const deleteMapPoint = useIpcMutation("mapPoints:delete");
   const createMapPoint = useIpcMutation("mapPoints:create");
   const importInputRef = useRef<HTMLInputElement>(null);
   const [checkedIds, setCheckedIds] = useState<Set<number>>(() => new Set());
   const [isBulkWorking, setIsBulkWorking] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [exportFormat, setExportFormat] = useState<MapPointsExportFormat>("json");
 
   const displayedMapPoints = useMemo(
     () => filterMapPointsBySearch(mapPoints, searchQuery),
@@ -62,6 +67,10 @@ export function MapPointsExplorerTable({
       return next.size === previous.size ? previous : next;
     });
   }, [mapPointIds]);
+
+  useEffect(() => {
+    setCheckedMapPointIds(Array.from(checkedIds));
+  }, [checkedIds, setCheckedMapPointIds]);
 
   const checkedCount = checkedIds.size;
   const allChecked = displayedMapPoints.length > 0 && checkedCount === displayedMapPoints.length;
@@ -235,36 +244,38 @@ export function MapPointsExplorerTable({
           <span className="text-xs font-medium text-base-content/70">
             {t("maps.workspace.dataExplorer.markers.bulk.selected", { count: checkedCount })}
           </span>
-          <div className="ml-auto flex flex-wrap gap-1.5">
+          <div className="ml-auto flex flex-wrap items-center gap-1.5">
+            <label className="flex items-center gap-1.5">
+              <span className="sr-only">
+                {t("maps.workspace.dataExplorer.markers.bulk.exportFormat")}
+              </span>
+              <select
+                className="select-bordered select select-xs"
+                value={exportFormat}
+                disabled={isBulkWorking}
+                onChange={(event) => setExportFormat(event.target.value as MapPointsExportFormat)}
+                data-test="map-points-export-format"
+              >
+                <option value="json">
+                  {t("maps.workspace.dataExplorer.markers.bulk.exportJson")}
+                </option>
+                <option value="csv">
+                  {t("maps.workspace.dataExplorer.markers.bulk.exportCsv")}
+                </option>
+                <option value="geojson">
+                  {t("maps.workspace.dataExplorer.markers.bulk.exportGeoJson")}
+                </option>
+              </select>
+            </label>
             <button
               type="button"
               className="btn gap-1 btn-ghost btn-xs"
               disabled={isBulkWorking}
-              onClick={() => exportSelected("json")}
-              data-test="map-points-export-json"
+              onClick={() => exportSelected(exportFormat)}
+              data-test="map-points-export"
             >
               <Download className="size-3" />
-              {t("maps.workspace.dataExplorer.markers.bulk.exportJson")}
-            </button>
-            <button
-              type="button"
-              className="btn gap-1 btn-ghost btn-xs"
-              disabled={isBulkWorking}
-              onClick={() => exportSelected("csv")}
-              data-test="map-points-export-csv"
-            >
-              <Download className="size-3" />
-              {t("maps.workspace.dataExplorer.markers.bulk.exportCsv")}
-            </button>
-            <button
-              type="button"
-              className="btn gap-1 btn-ghost btn-xs"
-              disabled={isBulkWorking}
-              onClick={() => exportSelected("geojson")}
-              data-test="map-points-export-geojson"
-            >
-              <Download className="size-3" />
-              {t("maps.workspace.dataExplorer.markers.bulk.exportGeoJson")}
+              {t("maps.workspace.dataExplorer.markers.bulk.export")}
             </button>
             <button
               type="button"

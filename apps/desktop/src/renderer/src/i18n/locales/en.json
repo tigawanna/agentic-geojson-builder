@@ -445,9 +445,11 @@
             "selectAll": "Select all markers",
             "selectRow": "Select marker {{id}}",
             "selected": "{{count}} selected",
-            "exportJson": "Export JSON",
-            "exportCsv": "Export CSV",
-            "exportGeoJson": "Export GeoJSON",
+            "export": "Export",
+            "exportFormat": "Format",
+            "exportJson": "JSON",
+            "exportCsv": "CSV",
+            "exportGeoJson": "GeoJSON",
             "delete": "Delete selected",
             "deleteConfirm": "Delete {{count}} marker(s)? This cannot be undone.",
             "deleted": "Deleted {{count}} marker(s).",
@@ -457,7 +459,10 @@
             "edit": "Edit marker",
             "delete": "Delete marker",
             "deleted": "Marker deleted."
-          }
+          },
+          "mapVisibilityHint": "Check rows or click a row to show markers on the map.",
+          "dragActiveHint": "Drag a visible marker to update its coordinates and altitude.",
+          "moved": "Marker position updated."
         },
         "emptySegments": "No segments yet. Trace a trail or add geometry to see rows here.",
         "emptyPaths": "No paths yet. Segments share a path group id to form a path.",

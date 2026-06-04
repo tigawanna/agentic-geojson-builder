@@ -20,6 +20,7 @@ type MapDataExplorerPageState = {
   mapboxInspectMode: boolean;
   editTarget: MapDataExplorerEditTarget | null;
   statusMessage: string | null;
+  checkedMapPointIds: number[];
   setTab: (tab: MapDataExplorerTab) => void;
   setSelection: (selection: MapDataExplorerSelection | null) => void;
   setHighlightedSegmentId: (segmentId: number | null) => void;
@@ -30,6 +31,7 @@ type MapDataExplorerPageState = {
   toggleMapboxInspectMode: () => void;
   setEditTarget: (target: MapDataExplorerEditTarget | null) => void;
   setStatusMessage: (message: string | null) => void;
+  setCheckedMapPointIds: (ids: number[]) => void;
   reset: () => void;
 };
 
@@ -43,6 +45,7 @@ const initialState = {
   mapboxInspectMode: false,
   editTarget: null as MapDataExplorerEditTarget | null,
   statusMessage: null as string | null,
+  checkedMapPointIds: [] as number[],
 };
 
 export const useMapDataExplorerPageStore = create<MapDataExplorerPageState>((set) => ({
@@ -60,5 +63,6 @@ export const useMapDataExplorerPageStore = create<MapDataExplorerPageState>((set
   toggleMapboxInspectMode: () => set((state) => ({ mapboxInspectMode: !state.mapboxInspectMode })),
   setEditTarget: (editTarget) => set({ editTarget }),
   setStatusMessage: (statusMessage) => set({ statusMessage }),
+  setCheckedMapPointIds: (checkedMapPointIds) => set({ checkedMapPointIds }),
   reset: () => set(initialState),
 }));

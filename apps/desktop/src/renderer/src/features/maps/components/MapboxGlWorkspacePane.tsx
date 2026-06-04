@@ -94,6 +94,7 @@ export function MapboxGlWorkspacePane({
   canPickTracePoint = false,
   canPlaceMapPoint = false,
   controlPointDragEnabled = false,
+  mapPointDragEnabled = false,
   editingSegmentId = null,
   selectedControlPointId = null,
   selectedSegmentId = null,
@@ -111,6 +112,7 @@ export function MapboxGlWorkspacePane({
   onMapPointClick,
   onPendingTracePointMove,
   onControlPointMapMove,
+  onMapPointMapMove,
   onControlPointClick,
   onSegmentClick,
   onCapture,
@@ -158,6 +160,7 @@ export function MapboxGlWorkspacePane({
   const onMapPointClickRef = useRef(onMapPointClick);
   const onPendingTracePointMoveRef = useRef(onPendingTracePointMove);
   const onControlPointMapMoveRef = useRef(onControlPointMapMove);
+  const onMapPointMapMoveRef = useRef(onMapPointMapMove);
   const onControlPointClickRef = useRef(onControlPointClick);
   const onSegmentClickRef = useRef(onSegmentClick);
   const onCaptureRef = useRef(onCapture);
@@ -173,6 +176,7 @@ export function MapboxGlWorkspacePane({
   onMapPointClickRef.current = onMapPointClick;
   onPendingTracePointMoveRef.current = onPendingTracePointMove;
   onControlPointMapMoveRef.current = onControlPointMapMove;
+  onMapPointMapMoveRef.current = onMapPointMapMove;
   onControlPointClickRef.current = onControlPointClick;
   onSegmentClickRef.current = onSegmentClick;
   onCaptureRef.current = onCapture;
@@ -883,11 +887,22 @@ export function MapboxGlWorkspacePane({
         const ring = isLinkSource ? "#f59e0b" : selected ? "#2563eb" : "#ffffff";
         const label = point.ref ?? point.name ?? "";
         const element = document.createElement("div");
-        element.style.cssText = "display:flex;align-items:center;gap:4px;cursor:pointer;";
+        const markerCursor = mapPointDragEnabled ? "grab" : "pointer";
+        element.style.cssText = `display:flex;align-items:center;gap:4px;cursor:${markerCursor};`;
         element.innerHTML = `<div style="width:18px;height:18px;transform:rotate(45deg);border:2px solid ${ring};background:${color};box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>${label ? `<span style="transform:translateY(-1px);font-size:10px;font-weight:700;color:#0f172a;background:rgba(255,255,255,0.85);border-radius:4px;padding:0 3px;white-space:nowrap;">${label}</span>` : ""}`;
-        const marker = new mapboxgl.Marker({ element, anchor: "center" })
+        const marker = new mapboxgl.Marker({
+          element,
+          anchor: "center",
+          draggable: mapPointDragEnabled,
+        })
           .setLngLat([point.longitude, point.latitude])
           .addTo(map);
+        if (mapPointDragEnabled) {
+          marker.on("dragend", () => {
+            const lngLat = marker.getLngLat();
+            onMapPointMapMoveRef.current?.(point.id, lngLat.lat, lngLat.lng);
+          });
+        }
         element.addEventListener("click", (clickEvent) => {
           clickEvent.stopPropagation();
           onMapPointClickRef.current?.(point.id);
@@ -926,6 +941,7 @@ export function MapboxGlWorkspacePane({
   }, [
     controlPoints,
     controlPointDragEnabled,
+    mapPointDragEnabled,
     mapPoints,
     selectedMapPointId,
     linkFromPointId,

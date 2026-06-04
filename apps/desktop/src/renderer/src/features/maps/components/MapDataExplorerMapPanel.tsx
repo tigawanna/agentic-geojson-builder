@@ -20,6 +20,14 @@ import {
   mapMarkerDraftToCreateInput,
   type MapMarkerSaveDraft,
 } from "@renderer/features/maps/lib/map-marker-save-draft";
+import { buildTrailElevationGuides } from "@renderer/features/maps/lib/build-trail-elevation-guides";
+import { resolveVisibleMapPointsForExplorer } from "@renderer/features/maps/lib/map-data-explorer-visible-map-points";
+import { usePickModifierHeld } from "@renderer/features/maps/lib/pick-modifier";
+import {
+  resolveInspectElevation,
+  toNearbyElevationPointsFromControlPoints,
+  toNearbyElevationPointsFromMapPoints,
+} from "@renderer/features/maps/lib/resolve-inspect-elevation";
 import { useMapDataExplorerPageStore } from "@renderer/features/maps/store/map-data-explorer-page-store";
 import {
   useMapWorkspacePhase,
@@ -51,7 +59,10 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
   const { t } = useTranslation();
   const phase = useMapWorkspacePhase();
   const workspace = useMapWorkspaceState((state) => state.workspace);
+  const tab = useMapDataExplorerPageStore((state) => state.tab);
   const selection = useMapDataExplorerPageStore((state) => state.selection);
+  const setSelection = useMapDataExplorerPageStore((state) => state.setSelection);
+  const checkedMapPointIds = useMapDataExplorerPageStore((state) => state.checkedMapPointIds);
   const highlightedSegmentId = useMapDataExplorerPageStore((state) => state.highlightedSegmentId);
   const highlightedPathGroupId = useMapDataExplorerPageStore(
     (state) => state.highlightedPathGroupId,
@@ -62,6 +73,7 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
   );
   const mapboxInspectMode = useMapDataExplorerPageStore((state) => state.mapboxInspectMode);
   const setStatusMessage = useMapDataExplorerPageStore((state) => state.setStatusMessage);
+  const mapPointDragModifierHeld = usePickModifierHeld();
 
   const controlPointsQuery = useControlPointsQuery(mapId);
   const mapPointsQuery = useMapPointsQuery(mapId);
@@ -70,6 +82,7 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
   const tileCache = useTileCacheStatusQuery(mapId);
   const baseRenderer = useMapBaseRendererQuery().data ?? "leaflet";
   const createMapPoint = useIpcMutation("mapPoints:create");
+  const updateMapPoint = useIpcMutation("mapPoints:update");
   const [captureDraft, setCaptureDraft] = useState<MapMarkerSaveDraft | null>(null);
 
   useMapMarkerDraftEscape(captureDraft !== null, () => setCaptureDraft(null));
@@ -88,9 +101,55 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
     return mergeReferenceGeoJsonCollections(visibleCollections);
   }, [referenceGeoJsonQuery.data?.layers]);
 
+  const trailElevationGuides = useMemo(
+    () => buildTrailElevationGuides({ geoSegments, referenceOverlay }),
+    [geoSegments, referenceOverlay],
+  );
+
+  const visibleMapPoints = useMemo(() => {
+    if (tab !== "points") {
+      return mapPoints;
+    }
+    return resolveVisibleMapPointsForExplorer(mapPoints, checkedMapPointIds, selection);
+  }, [tab, mapPoints, checkedMapPointIds, selection]);
+
   const mapHighlight = selectionToMapHighlight(selection);
   const mapboxGlActive = baseRenderer === "mapbox-gl";
   const mapHandleRef = useRef<MapHandle | null>(null);
+  const mapPointDragEnabled = tab === "points" && mapPointDragModifierHeld;
+
+  const handleMapPointMapMove = useCallback(
+    (pointId: number, latitude: number, longitude: number) => {
+      const resolved = resolveInspectElevation({
+        latitude,
+        longitude,
+        trailGuides: trailElevationGuides,
+        controlPoints: toNearbyElevationPointsFromControlPoints(controlPoints),
+        mapPoints: toNearbyElevationPointsFromMapPoints(mapPoints),
+      });
+
+      void updateMapPoint
+        .mutateAsync({
+          mapId,
+          pointId,
+          latitude,
+          longitude,
+          elevation: resolved?.elevationMeters ?? null,
+          elevationSource: resolved?.elevationMeters != null ? "inferred_from_path" : null,
+        })
+        .then(() => {
+          setStatusMessage(t("maps.workspace.dataExplorer.markers.moved"));
+        });
+    },
+    [controlPoints, mapId, mapPoints, setStatusMessage, t, trailElevationGuides, updateMapPoint],
+  );
+
+  const handleMapPointClick = useCallback(
+    (pointId: number) => {
+      setSelection({ kind: "map-point", id: pointId });
+    },
+    [setSelection],
+  );
 
   const handleViewportCommand = useCallback(
     (command: {
@@ -154,9 +213,9 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
     referenceOverlay: showReferenceOverlay ? referenceOverlay : null,
     showReferenceOverlay,
     showReferenceInspectTooltip,
-    controlPoints,
+    controlPoints: tab === "points" ? [] : controlPoints,
     geoSegments,
-    mapPoints,
+    mapPoints: visibleMapPoints,
     selectedMapPointId: mapHighlight.selectedMapPointId,
     linkFromPointId: null,
     pendingMapPoint: null,
@@ -165,6 +224,7 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
     canPickTracePoint: false,
     canPlaceMapPoint: false,
     controlPointDragEnabled: false,
+    mapPointDragEnabled,
     editingSegmentId: null,
     selectedControlPointId: mapHighlight.selectedControlPointId,
     selectedSegmentId: highlightedSegmentId,
@@ -173,6 +233,8 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
     onViewportChange: noopViewport,
     onCursorMove: () => {},
     onCoordinateSelect: noopViewport,
+    onMapPointClick: handleMapPointClick,
+    onMapPointMapMove: handleMapPointMapMove,
   };
 
   return (
@@ -192,11 +254,18 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
         />
       </Activity>
       <MapDataExplorerMapToolbar mapId={mapId} />
-      {(showReferenceInspectTooltip || mapboxInspectMode) && (
+      {tab === "points" ? (
+        <div className="pointer-events-none absolute right-2 bottom-2 max-w-[16rem] rounded-md bg-base-100/90 px-2 py-1 text-[10px] text-base-content/55 shadow-sm">
+          {mapPointDragModifierHeld
+            ? t("maps.workspace.dataExplorer.markers.dragActiveHint")
+            : t("maps.workspace.dataExplorer.markers.mapVisibilityHint")}
+        </div>
+      ) : null}
+      {(showReferenceInspectTooltip || mapboxInspectMode) && tab !== "points" ? (
         <div className="pointer-events-none absolute right-2 bottom-2 max-w-[14rem] rounded-md bg-base-100/90 px-2 py-1 text-[10px] text-base-content/55 shadow-sm">
           {t("maps.workspace.dataExplorer.inspect.copyHint")}
         </div>
-      )}
+      ) : null}
       <MapMarkerDraftDialog
         draft={captureDraft}
         savePending={createMapPoint.isPending}

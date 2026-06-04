@@ -82,7 +82,9 @@ export type LeafletMapPaneProps = {
   onMapPointClick?: (pointId: number) => void;
   onPendingTracePointMove?: (index: number, latitude: number, longitude: number) => void;
   onControlPointMapMove?: (controlPointId: number, latitude: number, longitude: number) => void;
+  onMapPointMapMove?: (pointId: number, latitude: number, longitude: number) => void;
   onControlPointClick?: (controlPointId: number) => void;
+  mapPointDragEnabled?: boolean;
   onSegmentClick?: (segmentId: number) => void;
   selectedSegmentId?: number | null;
   highlightedPathGroupId?: string | null;
@@ -106,6 +108,7 @@ export function LeafletMapPane({
   canPickTracePoint = false,
   canPlaceMapPoint = false,
   controlPointDragEnabled = false,
+  mapPointDragEnabled = false,
   editingSegmentId = null,
   selectedControlPointId = null,
   onReady,
@@ -119,6 +122,7 @@ export function LeafletMapPane({
   onMapPointClick,
   onPendingTracePointMove,
   onControlPointMapMove,
+  onMapPointMapMove,
   onControlPointClick,
   onSegmentClick,
   selectedSegmentId = null,
@@ -144,6 +148,7 @@ export function LeafletMapPane({
   const onMapPointClickRef = useRef(onMapPointClick);
   const onPendingTracePointMoveRef = useRef(onPendingTracePointMove);
   const onControlPointMapMoveRef = useRef(onControlPointMapMove);
+  const onMapPointMapMoveRef = useRef(onMapPointMapMove);
   const onControlPointClickRef = useRef(onControlPointClick);
   const onSegmentClickRef = useRef(onSegmentClick);
   const geocodedRef = useRef(false);
@@ -169,6 +174,7 @@ export function LeafletMapPane({
   onMapPointClickRef.current = onMapPointClick;
   onPendingTracePointMoveRef.current = onPendingTracePointMove;
   onControlPointMapMoveRef.current = onControlPointMapMove;
+  onMapPointMapMoveRef.current = onMapPointMapMove;
   onControlPointClickRef.current = onControlPointClick;
   onSegmentClickRef.current = onSegmentClick;
 
@@ -646,13 +652,22 @@ export function LeafletMapPane({
       const color = mapPointColor(point.category);
       const ring = isLinkSource ? "#f59e0b" : selected ? "#2563eb" : "#ffffff";
       const label = point.ref ?? point.name ?? "";
+      const markerCursor = mapPointDragEnabled ? "grab" : "pointer";
       const marker = L.marker([point.latitude, point.longitude], {
+        draggable: mapPointDragEnabled,
         icon: L.divIcon({
           className: "",
-          html: `<div style="margin-left:-9px;margin-top:-9px;display:flex;align-items:center;gap:4px;"><div style="width:18px;height:18px;transform:rotate(45deg);border:2px solid ${ring};background:${color};box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>${label ? `<span style="transform:translateY(-1px);font-size:10px;font-weight:700;color:#0f172a;background:rgba(255,255,255,0.85);border-radius:4px;padding:0 3px;white-space:nowrap;">${label}</span>` : ""}</div>`,
+          html: `<div style="margin-left:-9px;margin-top:-9px;display:flex;align-items:center;gap:4px;cursor:${markerCursor};"><div style="width:18px;height:18px;transform:rotate(45deg);border:2px solid ${ring};background:${color};box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>${label ? `<span style="transform:translateY(-1px);font-size:10px;font-weight:700;color:#0f172a;background:rgba(255,255,255,0.85);border-radius:4px;padding:0 3px;white-space:nowrap;">${label}</span>` : ""}</div>`,
           iconSize: [18, 18],
         }),
       }).addTo(markersLayer);
+
+      if (mapPointDragEnabled) {
+        marker.on("dragend", () => {
+          const { lat, lng } = marker.getLatLng();
+          onMapPointMapMoveRef.current?.(point.id, lat, lng);
+        });
+      }
 
       marker.on("click", (event) => {
         L.DomEvent.stopPropagation(event);
@@ -688,6 +703,7 @@ export function LeafletMapPane({
   }, [
     controlPointDragEnabled,
     controlPoints,
+    mapPointDragEnabled,
     mapPoints,
     selectedMapPointId,
     linkFromPointId,
