@@ -8,6 +8,7 @@ import { registerGeoSegmentTools } from "@main/mcp/tools/register-geo-segment-to
 import { registerReferenceSnapTools } from "@main/mcp/tools/register-reference-snap-tools.js";
 import { registerSegmentDrawingGuide } from "@main/mcp/tools/register-segment-drawing-guide.js";
 import { registerMapPointTools } from "@main/mcp/tools/register-map-point-tools.js";
+import { registerSegmentTrailTools } from "@main/mcp/tools/register-segment-trail-tools.js";
 
 export function createDesktopMcpServer(): McpServer {
   const server = new McpServer({
@@ -24,6 +25,7 @@ export function createDesktopMcpServer(): McpServer {
   registerGeoSegmentTools(server);
   registerReferenceSnapTools(server);
   registerMapPointTools(server);
+  registerSegmentTrailTools(server);
 
   return server;
 }

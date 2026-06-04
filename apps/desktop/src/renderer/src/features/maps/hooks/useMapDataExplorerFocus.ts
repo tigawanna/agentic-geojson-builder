@@ -3,6 +3,7 @@ import type { ControlPointRecord } from "@shared/control-points.types";
 import type { GeoSegmentRecord } from "@shared/geo-segments.types";
 import type { MapLinkRecord } from "@shared/map-links.types";
 import type { MapPointRecord } from "@shared/map-points.types";
+import type { TrailRecord } from "@shared/trails.types";
 import { getViewportCommand } from "@renderer/features/maps/lib/viewport-command-registry";
 import { mergeMapBounds } from "@renderer/features/maps/lib/merge-map-bounds";
 import { lineStringToMapBounds } from "@renderer/features/maps/lib/segment-utils";
@@ -15,6 +16,7 @@ type UseMapDataExplorerFocusInput = {
   mapPoints: MapPointRecord[];
   geoSegments: GeoSegmentRecord[];
   mapLinks: MapLinkRecord[];
+  trails: TrailRecord[];
 };
 
 export function useMapDataExplorerFocus({
@@ -23,6 +25,7 @@ export function useMapDataExplorerFocus({
   mapPoints,
   geoSegments,
   mapLinks,
+  trails,
 }: UseMapDataExplorerFocusInput) {
   const selection = useMapDataExplorerPageStore((state) => state.selection);
   const setHighlightedSegmentId = useMapDataExplorerPageStore(
@@ -101,6 +104,34 @@ export function useMapDataExplorerFocus({
       return;
     }
 
+    if (selection.kind === "trail") {
+      const trail = trails.find((entry) => entry.id === selection.id);
+      if (!trail || trail.members.length === 0) {
+        return;
+      }
+      const memberSegments = trail.members
+        .map((member) => mapLinks.find((link) => link.id === member.segmentEdgeId))
+        .filter((link): link is MapLinkRecord => link !== undefined);
+      setHighlightedSegmentId(null);
+      setHighlightedPathGroupId(null);
+      const bounds = mergeMapBounds(
+        memberSegments.flatMap((link) =>
+          link.geometry
+            ? lineStringToMapBounds(link.geometry.coordinates)
+            : [
+                mapPoints.find((p) => p.ref === link.fromRef),
+                mapPoints.find((p) => p.ref === link.toRef),
+              ]
+                .filter((p): p is MapPointRecord => p !== undefined)
+                .map((p) => lineStringToMapBounds([[p.longitude, p.latitude]])),
+        ),
+      );
+      if (bounds) {
+        viewport?.({ fitBounds: bounds });
+      }
+      return;
+    }
+
     if (selection.kind === "link") {
       const link = mapLinks.find((entry) => entry.id === selection.id);
       if (!link) {
@@ -129,6 +160,7 @@ export function useMapDataExplorerFocus({
     mapId,
     mapLinks,
     mapPoints,
+    trails,
     selection,
     setHighlightedPathGroupId,
     setHighlightedSegmentId,
@@ -149,6 +181,9 @@ export function isMapDataExplorerSelectionEqual(
     return current.groupId === next.groupId;
   }
   if (current.kind === "link" && next.kind === "link") {
+    return current.id === next.id;
+  }
+  if (current.kind === "trail" && next.kind === "trail") {
     return current.id === next.id;
   }
   if (

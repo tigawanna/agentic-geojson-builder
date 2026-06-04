@@ -4,9 +4,9 @@ Plan for the **next sub-feature**: join markers into **segments**, compose segme
 
 This is a **trail-mapping sub-feature**. The core product (georeferenced PDF, markers/control points, drawn geometry) is already accomplished. This layer adds **topology and routing** on top of what exists.
 
-**Status:** Phases 1–3 implemented in desktop (schema migration `0009`, IPC, segmentation + routing algorithms). Phase 5 UI (split-view composer) not started.
+**Status:** Phases 1–4 largely done (schema, IPC, algorithms, Data Explorer tabs, MCP tools, unit tests). Trail member composer (drag-order segments into trails) still minimal.
 
-**Related:** [`karura-trail-drawing-handoff.md`](karura-trail-drawing-handoff.md) · [`desktop-app-handoff.md`](desktop-app-handoff.md) · [`agent-digitization-design.md`](agent-digitization-design.md) · [`../TODOS.md`](../TODOS.md) · [`apps/desktop/docs/02-architecture.md`](../apps/desktop/docs/02-architecture.md) · [`apps/desktop/docs/03-ipc.md`](../apps/desktop/docs/03-ipc.md)
+**Related:** [`segments-and-trails-handoff.md`](segments-and-trails-handoff.md) (daily handoff — start here) · [`karura-trail-drawing-handoff.md`](karura-trail-drawing-handoff.md) · [`desktop-app-handoff.md`](desktop-app-handoff.md) · [`agent-digitization-design.md`](agent-digitization-design.md) · [`../TODOS.md`](../TODOS.md) · [`apps/desktop/docs/02-architecture.md`](../apps/desktop/docs/02-architecture.md) · [`apps/desktop/docs/03-ipc.md`](../apps/desktop/docs/03-ipc.md)
 
 ---
 
@@ -249,7 +249,7 @@ Each phase ends with `vp check --fix` and is independently shippable. Drizzle sc
 
 - [x] `lib/geojson/segmentation.ts`.
 - [x] `lib/routing/route-graph.ts`.
-- [ ] Unit tests (AAA, happy/edge/failure).
+- [x] Unit tests: `tests/unit/segmentation.test.ts`, `tests/unit/route-graph.test.ts`.
 
 ### Phase 3 — Services + IPC
 
@@ -259,16 +259,31 @@ Each phase ends with `vp check --fix` and is independently shippable. Drizzle sc
 
 ### Phase 4 — Agent / MCP
 
-- [ ] `register-segment-trail-tools.ts` + guide resource/prompt.
-- [ ] Wire into `create-desktop-mcp-server.ts`; `broadcastToRenderers` on mutations.
-- [ ] `.cursor/skills/desktop-segment-trail-composition/`.
+- [x] `register-segment-trail-tools.ts` + wire into `create-desktop-mcp-server.ts`.
+- [ ] Guide resource/prompt + `.cursor/skills/desktop-segment-trail-composition/`.
 
 ### Phase 5 — UI (split view)
 
-- [ ] Query hooks: `useSegmentsQuery`, `useTrailsQuery`, `useRouteFinder`.
-- [ ] Data Explorer: real Segments tab actions + Trails composer + Route tool ("Save as trail").
-- [ ] Workspace "Segment this path" affordance.
-- [ ] `data-test` attributes; component/hook tests.
+- [x] Query hooks: `useSegmentsQuery`, `useTrailsQuery`.
+- [x] Data Explorer: **Path segments**, **Trails**, **Route** tabs; build-from-markers panel.
+- [x] Workspace Controls: **Markers & segments** + `nodeRole` on marker edit.
+- [ ] Trail member composer (assign/reorder edges into a trail).
+- [ ] Save route as trail; fuller `data-test` coverage.
+
+### Phase 5b — Link mode segment composer (UX redesign) — **not started**
+
+Current link mode is **pairwise only** (two clicks → one edge → reset). Karura-scale maps need a guided composer. See [`segments-and-trails-handoff.md`](segments-and-trails-handoff.md#ux-roadmap--path-segment-creation-needs-redesign).
+
+| Deliverable             | Acceptance                                                                                                                              |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Side panel on link mode | Toggling link tool opens **Segment composer** panel; map stays usable beside it.                                                        |
+| Multi-marker chain      | User builds `A → B → C → …` in panel; **Finish** writes consecutive `segment_edge` rows (or batch API).                                 |
+| Proximity suggestions   | After each pick, panel lists next markers by distance **along active path** (fraction on `pathSlug` geometry), excluding chain members. |
+| Bigger targets          | Marker hit area ~2× in link mode; clear selected / in-chain / suggestion styling.                                                       |
+| Path slug selector      | Same path dropdown as build panel; edges attach to chosen traced loop.                                                                  |
+| Existing edges          | Panel shows segments already connected to current marker for extend/repair.                                                             |
+
+**Out of scope for 5b:** full junction d-pad (Phase 6+); auto-build entire loop without clicks (keep **Build segments from path** as bulk action).
 
 ### Phase 6 — Docs & polish
 

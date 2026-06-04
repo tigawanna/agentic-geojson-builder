@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { Trash2, X } from "lucide-react";
 import {
   MAP_POINT_CATEGORIES,
+  MAP_POINT_NODE_ROLES,
   type MapPointCategory,
+  type MapPointNodeRole,
   type MapPointRecord,
 } from "@shared/map-points.types";
 import { useIpcMutation } from "@renderer/hooks/useIpc";
@@ -20,6 +22,7 @@ export function MapPointDetailPanel({ point, mapId, onClose }: MapPointDetailPan
   const [ref, setRef] = useState("");
   const [name, setName] = useState("");
   const [category, setCategory] = useState<MapPointCategory>("custom");
+  const [nodeRole, setNodeRole] = useState<MapPointNodeRole | "">("");
   const [elevation, setElevation] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +31,7 @@ export function MapPointDetailPanel({ point, mapId, onClose }: MapPointDetailPan
     setRef(point.ref ?? "");
     setName(point.name ?? "");
     setCategory(point.category);
+    setNodeRole(point.nodeRole ?? "");
     setElevation(point.elevation !== null ? String(point.elevation) : "");
     setDescription(point.description ?? "");
     setError(null);
@@ -48,6 +52,7 @@ export function MapPointDetailPanel({ point, mapId, onClose }: MapPointDetailPan
         ref: ref.trim() || null,
         name: name.trim() || null,
         category,
+        nodeRole: nodeRole === "" ? null : nodeRole,
         elevation: parsedElevation,
         elevationSource: parsedElevation !== null ? "manual" : null,
         description: description.trim() || null,
@@ -100,6 +105,23 @@ export function MapPointDetailPanel({ point, mapId, onClose }: MapPointDetailPan
             onChange={(event) => setCategory(event.target.value as MapPointCategory)}
           >
             {MAP_POINT_CATEGORIES.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="form-control gap-1.5">
+          <span className="label-text text-xs font-medium">Node role (routing)</span>
+          <select
+            className="select-bordered select w-full select-sm"
+            value={nodeRole}
+            onChange={(event) => setNodeRole(event.target.value as MapPointNodeRole | "")}
+            data-test="map-point-node-role"
+          >
+            <option value="">—</option>
+            {MAP_POINT_NODE_ROLES.map((value) => (
               <option key={value} value={value}>
                 {value}
               </option>

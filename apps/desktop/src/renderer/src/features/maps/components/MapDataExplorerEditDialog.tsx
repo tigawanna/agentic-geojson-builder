@@ -3,7 +3,9 @@ import { ClipboardPaste, Mountain, RefreshCw, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   MAP_POINT_CATEGORIES,
+  MAP_POINT_NODE_ROLES,
   type MapPointCategory,
+  type MapPointNodeRole,
   type MapPointRecord,
 } from "@shared/map-points.types";
 import type { ControlPointRecord } from "@shared/control-points.types";
@@ -62,6 +64,7 @@ export function MapDataExplorerEditDialog({
   const [name, setName] = useState("");
   const [ref, setRef] = useState("");
   const [category, setCategory] = useState<MapPointCategory>("custom");
+  const [nodeRole, setNodeRole] = useState<MapPointNodeRole | "">("");
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -79,6 +82,7 @@ export function MapDataExplorerEditDialog({
       setName(mapPoint.name ?? "");
       setRef(mapPoint.ref ?? "");
       setCategory(mapPoint.category);
+      setNodeRole(mapPoint.nodeRole ?? "");
       setSaveError(null);
     }
   }, [controlPoint, mapPoint, target]);
@@ -151,6 +155,7 @@ export function MapDataExplorerEditDialog({
           name: name.trim() || null,
           ref: ref.trim() || null,
           category,
+          nodeRole: nodeRole === "" ? null : nodeRole,
         },
         {
           onSuccess: () => {
@@ -299,6 +304,24 @@ export function MapDataExplorerEditDialog({
                   </select>
                 </label>
               </div>
+              <label className="form-control gap-1">
+                <span className="text-xs font-medium text-base-content/60">
+                  {t("maps.workspace.dataExplorer.nodeRole")}
+                </span>
+                <select
+                  className="select-bordered select w-full select-sm"
+                  value={nodeRole}
+                  onChange={(event) => setNodeRole(event.target.value as MapPointNodeRole | "")}
+                  disabled={pending}
+                >
+                  <option value="">—</option>
+                  {MAP_POINT_NODE_ROLES.map((value) => (
+                    <option key={value} value={value}>
+                      {value}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </section>
           )}
 

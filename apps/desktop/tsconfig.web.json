@@ -23,10 +23,5 @@
       "@preload/*": ["./src/preload/*"]
     }
   },
-  "include": [
-    "src/renderer/**/*.ts",
-    "src/renderer/**/*.tsx",
-    "src/shared/**/*.ts",
-    "tests/unit/**/*"
-  ]
+  "include": ["src/renderer/**/*.ts", "src/renderer/**/*.tsx", "src/shared/**/*.ts"]
 }

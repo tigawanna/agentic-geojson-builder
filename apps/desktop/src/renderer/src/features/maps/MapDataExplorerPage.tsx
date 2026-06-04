@@ -20,6 +20,7 @@ import { useGeoSegmentsQuery } from "@renderer/features/maps/hooks/useGeoSegment
 import { useMapDataExplorerFocus } from "@renderer/features/maps/hooks/useMapDataExplorerFocus";
 import { useMapLinksQuery } from "@renderer/features/maps/hooks/useMapLinksQuery";
 import { useMapPointsQuery } from "@renderer/features/maps/hooks/useMapPointsQuery";
+import { useTrailsQuery } from "@renderer/features/maps/hooks/useTrailsQuery";
 import { useHydrateMapWorkspace } from "@renderer/features/maps/hooks/useHydrateMapWorkspace";
 import {
   DATA_EXPLORER_STATUS_TOAST_MS,
@@ -32,7 +33,7 @@ import {
 } from "@renderer/features/maps/store/MapWorkspaceProvider";
 import type { MapDataExplorerTab } from "@renderer/features/maps/types/map-data-explorer.types";
 
-const TABS: MapDataExplorerTab[] = ["points", "segments", "paths", "links", "history"];
+const TABS: MapDataExplorerTab[] = ["points", "segments", "links", "trails", "route", "history"];
 
 type MapDataExplorerPageProps = {
   mapId: number;
@@ -72,10 +73,12 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
   const mapPointsQuery = useMapPointsQuery(mapId);
   const geoSegmentsQuery = useGeoSegmentsQuery(mapId);
   const mapLinksQuery = useMapLinksQuery(mapId);
+  const trailsQuery = useTrailsQuery(mapId);
   const controlPoints = controlPointsQuery.data?.controlPoints ?? [];
   const mapPoints = mapPointsQuery.data?.points ?? [];
   const geoSegments = geoSegmentsQuery.data?.segments ?? [];
   const mapLinks = mapLinksQuery.data?.links ?? [];
+  const trails = trailsQuery.data?.trails ?? [];
 
   useEffect(() => {
     return () => reset();
@@ -87,6 +90,7 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
     mapPoints,
     geoSegments,
     mapLinks,
+    trails,
   });
 
   const showMapPane = tab !== "history";
@@ -180,6 +184,7 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
                   mapPoints={mapPoints}
                   geoSegments={geoSegments}
                   mapLinks={mapLinks}
+                  trails={trails}
                 />
               </div>
             </ResizablePanel>
@@ -198,6 +203,7 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
                       mapPoints={mapPoints}
                       geoSegments={geoSegments}
                       mapLinks={mapLinks}
+                      trails={trails}
                       onEdit={openEditForSelection}
                     />
                   </div>
@@ -212,6 +218,7 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
               mapPoints={mapPoints}
               geoSegments={geoSegments}
               mapLinks={mapLinks}
+              trails={trails}
             />
           </div>
         )}

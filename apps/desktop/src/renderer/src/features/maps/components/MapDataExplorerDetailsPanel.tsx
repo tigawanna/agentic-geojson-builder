@@ -7,6 +7,7 @@ import type { ControlPointRecord } from "@shared/control-points.types";
 import type { GeoSegmentRecord } from "@shared/geo-segments.types";
 import type { MapLinkRecord } from "@shared/map-links.types";
 import type { MapPointRecord } from "@shared/map-points.types";
+import type { TrailRecord } from "@shared/trails.types";
 import { MapDataExplorerElevationChart } from "@renderer/features/maps/components/MapDataExplorerElevationChart";
 import { formatMapCoordinates } from "@renderer/features/maps/lib/copy-map-coordinates";
 import { buildElevationProfileFromCoordinates } from "@renderer/features/maps/lib/elevation-profile";
@@ -23,6 +24,7 @@ type MapDataExplorerDetailsPanelProps = {
   mapPoints: MapPointRecord[];
   geoSegments: GeoSegmentRecord[];
   mapLinks: MapLinkRecord[];
+  trails: TrailRecord[];
   onEdit: () => void;
 };
 
@@ -91,6 +93,7 @@ export function MapDataExplorerDetailsPanel({
   mapPoints,
   geoSegments,
   mapLinks,
+  trails,
   onEdit,
 }: MapDataExplorerDetailsPanelProps) {
   const { t } = useTranslation();
@@ -222,6 +225,14 @@ export function MapDataExplorerDetailsPanel({
               <dt className="text-base-content/55">{t("maps.workspace.dataExplorer.category")}</dt>
               <dd>{point.category}</dd>
             </div>
+            {point.nodeRole ? (
+              <div className="flex justify-between gap-2">
+                <dt className="text-base-content/55">
+                  {t("maps.workspace.dataExplorer.nodeRole")}
+                </dt>
+                <dd>{point.nodeRole}</dd>
+              </div>
+            ) : null}
             {point.ref ? (
               <div className="flex justify-between gap-2">
                 <dt className="text-base-content/55">ref</dt>
@@ -320,6 +331,40 @@ export function MapDataExplorerDetailsPanel({
     );
   }
 
+  if (selection.kind === "trail") {
+    const trail = trails.find((entry) => entry.id === selection.id);
+    if (!trail) {
+      return null;
+    }
+    return (
+      <div className="flex h-full flex-col gap-4 overflow-y-auto p-4">
+        <h3 className="text-sm font-semibold">{trail.name ?? trail.slug}</h3>
+        <PreviewSection title={t("maps.workspace.dataExplorer.trailMembers")}>
+          {trail.members.length === 0 ? (
+            <p className="text-xs text-base-content/55">
+              {t("maps.workspace.dataExplorer.emptyTrailMembers")}
+            </p>
+          ) : (
+            <ul className="space-y-1 text-xs">
+              {trail.members.map((member) => (
+                <li
+                  key={member.id}
+                  className="rounded-lg border border-base-content/10 bg-base-100/60 px-2 py-1.5 font-mono"
+                >
+                  #{member.orderIndex} · edge {member.segmentEdgeId} · {member.direction}
+                </li>
+              ))}
+            </ul>
+          )}
+        </PreviewSection>
+      </div>
+    );
+  }
+
+  if (selection.kind !== "link") {
+    return null;
+  }
+
   const link = mapLinks.find((entry) => entry.id === selection.id);
   if (!link) {
     return null;
@@ -354,6 +399,9 @@ export function MapDataExplorerDetailsPanel({
       </PreviewSection>
       <PreviewSection title={t("maps.workspace.dataExplorer.pathGroup")}>
         <p className="font-mono text-xs">{link.pathSlug}</p>
+        {link.lengthM !== null ? (
+          <p className="mt-1 text-xs text-base-content/60">{Math.round(link.lengthM)} m</p>
+        ) : null}
       </PreviewSection>
     </div>
   );

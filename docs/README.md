@@ -12,7 +12,8 @@ All docs describe the **same current reality**: server Postgres, `/maps` routes,
 | [`.cursor/skills/desktop-reference-point-placement/`](../.cursor/skills/desktop-reference-point-placement/) | **Cursor skill:** placement workflow + accuracy improvements backlog                    |
 | [`agent-digitization-design.md`](agent-digitization-design.md)                                              | How agents should work: chunking, coordinates, verification tools                       |
 | [`karura-trail-drawing-handoff.md`](karura-trail-drawing-handoff.md)                                        | **Karura next phase:** sparse trail drawing, GPX underlay, web Trace trail              |
-| [`segments-and-trails-plan.md`](segments-and-trails-plan.md)                                                | **Next sub-feature:** join markers into segments, compose trails, route between markers |
+| [`segments-and-trails-handoff.md`](segments-and-trails-handoff.md)                                          | **Start here tomorrow:** segments/trails status, UI locations, MCP, gotchas, next tasks |
+| [`segments-and-trails-plan.md`](segments-and-trails-plan.md)                                                | Full design + phased execution plan                                                     |
 | [`../TODOS.md`](../TODOS.md)                                                                                | What's done vs next phases; full tool inventory with UI/Agent columns                   |
 | [`../GAMEPLAN.md`](../GAMEPLAN.md)                                                                          | Product workflow mapped to implementation status                                        |
 | [`../ARCHITECTURE.md`](../ARCHITECTURE.md)                                                                  | Stack, data layer diagram, key paths                                                    |
