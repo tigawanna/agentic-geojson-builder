@@ -1,4 +1,4 @@
-import { Activity, useCallback, useEffect, useMemo, useRef } from "react";
+import { Activity, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LeafletMapPane } from "@renderer/features/maps/components/LeafletMapPane";
 import { MapboxGlWorkspacePane } from "@renderer/features/maps/components/MapboxGlWorkspacePane";
@@ -12,7 +12,14 @@ import { resolveLocalTileUrl } from "@renderer/features/maps/hooks/tile-cache-ap
 import { mergeReferenceGeoJsonCollections } from "@repo/isomorphic/reference-geojson";
 import type { MapHandle, MapViewport } from "@renderer/features/maps/lib/map-handle";
 import { registerViewportCommand } from "@renderer/features/maps/lib/viewport-command-registry";
+import { MapMarkerDraftDialog } from "@renderer/features/maps/components/MapboxCaptureDraftDialog";
+import { useMapMarkerDraftEscape } from "@renderer/features/maps/hooks/useMapMarkerDraftEscape";
 import { MapDataExplorerMapToolbar } from "@renderer/features/maps/components/MapDataExplorerMapToolbar";
+import { useIpcMutation } from "@renderer/hooks/useIpc";
+import {
+  mapMarkerDraftToCreateInput,
+  type MapMarkerSaveDraft,
+} from "@renderer/features/maps/lib/map-marker-save-draft";
 import { useMapDataExplorerPageStore } from "@renderer/features/maps/store/map-data-explorer-page-store";
 import {
   useMapWorkspacePhase,
@@ -54,6 +61,7 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
     (state) => state.showReferenceInspectTooltip,
   );
   const mapboxInspectMode = useMapDataExplorerPageStore((state) => state.mapboxInspectMode);
+  const setStatusMessage = useMapDataExplorerPageStore((state) => state.setStatusMessage);
 
   const controlPointsQuery = useControlPointsQuery(mapId);
   const mapPointsQuery = useMapPointsQuery(mapId);
@@ -61,6 +69,10 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
   const referenceGeoJsonQuery = useReferenceGeoJsonQuery(mapId);
   const tileCache = useTileCacheStatusQuery(mapId);
   const baseRenderer = useMapBaseRendererQuery().data ?? "leaflet";
+  const createMapPoint = useIpcMutation("mapPoints:create");
+  const [captureDraft, setCaptureDraft] = useState<MapMarkerSaveDraft | null>(null);
+
+  useMapMarkerDraftEscape(captureDraft !== null, () => setCaptureDraft(null));
 
   const controlPoints = controlPointsQuery.data?.controlPoints ?? [];
   const mapPoints = mapPointsQuery.data?.points ?? [];
@@ -172,7 +184,12 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
         <LeafletMapPane {...sharedPaneProps} />
       </Activity>
       <Activity mode={mapboxGlActive ? "visible" : "hidden"}>
-        <MapboxGlWorkspacePane {...sharedPaneProps} inspectMode={mapboxInspectMode} />
+        <MapboxGlWorkspacePane
+          {...sharedPaneProps}
+          inspectMode={mapboxInspectMode}
+          capturePending={createMapPoint.isPending}
+          onCapture={setCaptureDraft}
+        />
       </Activity>
       <MapDataExplorerMapToolbar mapId={mapId} />
       {(showReferenceInspectTooltip || mapboxInspectMode) && (
@@ -180,6 +197,17 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
           {t("maps.workspace.dataExplorer.inspect.copyHint")}
         </div>
       )}
+      <MapMarkerDraftDialog
+        draft={captureDraft}
+        savePending={createMapPoint.isPending}
+        onClose={() => setCaptureDraft(null)}
+        onSave={(draft) => {
+          void createMapPoint.mutateAsync(mapMarkerDraftToCreateInput(mapId, draft)).then(() => {
+            setCaptureDraft(null);
+            setStatusMessage(t("maps.workspace.mapMarkerSaved", { name: draft.name }));
+          });
+        }}
+      />
     </div>
   );
 }

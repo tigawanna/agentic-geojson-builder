@@ -72,7 +72,6 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
   const mapPointsQuery = useMapPointsQuery(mapId);
   const geoSegmentsQuery = useGeoSegmentsQuery(mapId);
   const mapLinksQuery = useMapLinksQuery(mapId);
-
   const controlPoints = controlPointsQuery.data?.controlPoints ?? [];
   const mapPoints = mapPointsQuery.data?.points ?? [];
   const geoSegments = geoSegmentsQuery.data?.segments ?? [];
@@ -178,7 +177,6 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
               <div className="h-full overflow-y-auto p-4">
                 <MapDataExplorerTables
                   mapId={mapId}
-                  controlPoints={controlPoints}
                   mapPoints={mapPoints}
                   geoSegments={geoSegments}
                   mapLinks={mapLinks}
@@ -211,7 +209,6 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
           <div className="h-full overflow-y-auto p-4">
             <MapDataExplorerTables
               mapId={mapId}
-              controlPoints={controlPoints}
               mapPoints={mapPoints}
               geoSegments={geoSegments}
               mapLinks={mapLinks}

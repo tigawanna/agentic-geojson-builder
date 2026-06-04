@@ -1,5 +1,9 @@
 import { getElevationAtLatLng } from "@repo/isomorphic/elevation-at-point";
-import { haversineDistanceMeters } from "@repo/isomorphic/nearest-line-point";
+import {
+  findNearestPointOnGuides,
+  haversineDistanceMeters,
+  type LineGuide,
+} from "@repo/isomorphic/nearest-line-point";
 import type { MapboxGeoJSONFeature } from "mapbox-gl";
 import { partitionMapboxFeatures } from "@renderer/features/maps/lib/mapbox-feature-utils";
 import type { ReferenceInspectHover } from "@renderer/features/maps/lib/reference-inspect-tooltip";
@@ -18,6 +22,7 @@ const MAX_NEARBY_POINT_DISTANCE_METERS = 100;
 
 export type InspectElevationSource =
   | "reference_trail"
+  | "trail_geometry"
   | "control_point"
   | "map_point"
   | "mapbox_feature"
@@ -39,6 +44,7 @@ type ResolveInspectElevationInput = {
   latitude: number;
   longitude: number;
   referenceHover?: ReferenceInspectHover | null;
+  trailGuides?: LineGuide[];
   terrainElevationMeters?: number | null;
   controlPoints?: NearbyElevationPoint[];
   mapPoints?: NearbyElevationPoint[];
@@ -74,7 +80,7 @@ function pushNearbyPoints(
   points: NearbyElevationPoint[] | undefined,
   latitude: number,
   longitude: number,
-  source: "control_point" | "map_point",
+  source: Extract<InspectElevationSource, "control_point" | "map_point">,
   maxDistanceMeters: number,
 ) {
   for (const point of points ?? []) {
@@ -105,10 +111,11 @@ function compareCandidates(a: ElevationCandidate, b: ElevationCandidate): number
   }
   const priority: Record<InspectElevationSource, number> = {
     reference_trail: 0,
-    control_point: 1,
-    map_point: 2,
-    mapbox_feature: 3,
-    terrain: 4,
+    trail_geometry: 1,
+    control_point: 2,
+    map_point: 3,
+    mapbox_feature: 4,
+    terrain: 5,
   };
   return priority[a.source] - priority[b.source];
 }
@@ -136,6 +143,24 @@ export function resolveInspectElevation(
     }
   }
 
+  if (input.trailGuides && input.trailGuides.length > 0) {
+    const nearest = findNearestPointOnGuides(input.latitude, input.longitude, input.trailGuides);
+    if (nearest && nearest.distanceMeters <= maxNearbyDistanceMeters) {
+      const trailElevationMeters = getElevationAtLatLng(
+        nearest.coordinates,
+        nearest.latitude,
+        nearest.longitude,
+      );
+      if (trailElevationMeters !== null) {
+        candidates.push({
+          elevationMeters: trailElevationMeters,
+          distanceMeters: nearest.distanceMeters,
+          source: "trail_geometry",
+        });
+      }
+    }
+  }
+
   pushNearbyPoints(
     candidates,
     input.controlPoints,
@@ -152,7 +177,6 @@ export function resolveInspectElevation(
     "map_point",
     maxNearbyDistanceMeters,
   );
-
   const { basemap } = partitionMapboxFeatures(input.features ?? []);
   for (const feature of basemap) {
     const elevationMeters = parseElevationFromProperties(

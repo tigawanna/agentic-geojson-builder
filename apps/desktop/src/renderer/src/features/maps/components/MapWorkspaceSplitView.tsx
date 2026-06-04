@@ -48,8 +48,12 @@ import {
   useSetMapBaseRendererMutation,
 } from "@renderer/features/maps/hooks/useMapBaseRenderer";
 import type { MapboxGlStyleId } from "@renderer/features/maps/lib/mapbox-gl-styles";
-import { MapboxCaptureDraftDialog } from "@renderer/features/maps/components/MapboxCaptureDraftDialog";
-import type { CreateMapboxGroundCaptureInput } from "@shared/mapbox-capture.types";
+import { MapMarkerDraftDialog } from "@renderer/features/maps/components/MapboxCaptureDraftDialog";
+import { useMapMarkerDraftEscape } from "@renderer/features/maps/hooks/useMapMarkerDraftEscape";
+import {
+  mapMarkerDraftToCreateInput,
+  type MapMarkerSaveDraft,
+} from "@renderer/features/maps/lib/map-marker-save-draft";
 import { MapTileCacheBoundsModal } from "@renderer/features/maps/components/MapTileCacheBoundsModal";
 import { MapWorkspaceControlsModal } from "@renderer/features/maps/components/MapWorkspaceControlsModal";
 import { MapWorkspaceHeader } from "@renderer/features/maps/components/MapWorkspaceHeader";
@@ -205,7 +209,6 @@ export function MapWorkspaceSplitView() {
   const createGeoSegment = useIpcMutation("geoSegments:create");
   const updateGeoSegment = useIpcMutation("geoSegments:update");
   const exportGeoJson = useIpcMutation("geoSegments:exportToFile");
-  const createCapture = useIpcMutation("mapboxCaptures:create");
   const baseRenderer = useMapBaseRendererQuery().data ?? "leaflet";
   const setBaseRenderer = useSetMapBaseRendererMutation();
 
@@ -217,7 +220,7 @@ export function MapWorkspaceSplitView() {
   const highlightedPathGroupId = useMapWorkspaceUiState((state) => state.highlightedPathGroupId);
   const { setHighlightedSegmentId } = useMapWorkspaceUiActions();
   const [auditLogOpen, setAuditLogOpen] = useState(false);
-  const [captureDraft, setCaptureDraft] = useState<CreateMapboxGroundCaptureInput | null>(null);
+  const [captureDraft, setCaptureDraft] = useState<MapMarkerSaveDraft | null>(null);
   const [geoJsonPreviewOpen, setGeoJsonPreviewOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const checkedOnboardingRef = useRef(false);
@@ -926,20 +929,30 @@ export function MapWorkspaceSplitView() {
     [queueSave],
   );
 
-  const handleCapture = useCallback((input: CreateMapboxGroundCaptureInput) => {
-    setCaptureDraft(input);
+  const handleCapture = useCallback((draft: MapMarkerSaveDraft) => {
+    setCaptureDraft(draft);
   }, []);
 
+  useMapMarkerDraftEscape(captureDraft !== null, () => setCaptureDraft(null));
+
   const handleCaptureSave = useCallback(
-    (input: CreateMapboxGroundCaptureInput) => {
-      void createCapture.mutateAsync(input).then(() => {
-        setCaptureDraft(null);
-        setStatusMessage(t("mapboxViewer.captureSaved", { title: input.title }));
-        window.clearTimeout(statusTimerRef.current);
-        statusTimerRef.current = window.setTimeout(() => setStatusMessage(null), 2500);
-      });
+    (draft: MapMarkerSaveDraft) => {
+      if (!workspace) {
+        return;
+      }
+      void createMapPoint
+        .mutateAsync(mapMarkerDraftToCreateInput(workspace.id, draft))
+        .then((result) => {
+          setCaptureDraft(null);
+          setDetailPanelMapPointId(result.point.id);
+          setStatusMessage(
+            t("maps.workspace.mapMarkerSaved", { name: result.point.name ?? draft.name }),
+          );
+          window.clearTimeout(statusTimerRef.current);
+          statusTimerRef.current = window.setTimeout(() => setStatusMessage(null), 2500);
+        });
     },
-    [createCapture, setStatusMessage, t],
+    [createMapPoint, setDetailPanelMapPointId, setStatusMessage, t, workspace],
   );
 
   useMapWorkspaceMenuActions({
@@ -1164,7 +1177,7 @@ export function MapWorkspaceSplitView() {
                     {...sharedPaneProps}
                     onReady={handleMapboxMapReady}
                     inspectMode={mapboxInspectMode}
-                    capturePending={createCapture.isPending}
+                    capturePending={createMapPoint.isPending}
                     onCapture={handleCapture}
                   />
                 </Activity>
@@ -1291,9 +1304,9 @@ export function MapWorkspaceSplitView() {
         onOpenControls={handleOnboardingOpenControls}
         hasSourceFile={Boolean(sourceFile)}
       />
-      <MapboxCaptureDraftDialog
+      <MapMarkerDraftDialog
         draft={captureDraft}
-        savePending={createCapture.isPending}
+        savePending={createMapPoint.isPending}
         onClose={() => setCaptureDraft(null)}
         onSave={handleCaptureSave}
       />
