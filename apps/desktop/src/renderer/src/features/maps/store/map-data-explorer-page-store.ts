@@ -1,4 +1,6 @@
 import { create } from "zustand";
+
+export const DATA_EXPLORER_STATUS_TOAST_MS = 5000;
 import type {
   MapDataExplorerSelection,
   MapDataExplorerTab,

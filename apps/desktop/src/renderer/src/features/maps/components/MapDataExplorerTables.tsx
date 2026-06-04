@@ -7,6 +7,7 @@ import { segmentGroupColor } from "@renderer/features/maps/lib/segment-utils";
 import { isMapDataExplorerSelectionEqual } from "@renderer/features/maps/hooks/useMapDataExplorerFocus";
 import { useMapDataExplorerPageStore } from "@renderer/features/maps/store/map-data-explorer-page-store";
 import type { MapDataExplorerSelection } from "@renderer/features/maps/types/map-data-explorer.types";
+import { ControlPointsExplorerTable } from "@renderer/features/maps/components/ControlPointsExplorerTable";
 import type { ControlPointRecord } from "@shared/control-points.types";
 import type { GeoSegmentRecord } from "@shared/geo-segments.types";
 import type { MapLinkRecord } from "@shared/map-links.types";
@@ -59,7 +60,11 @@ export function MapDataExplorerTables({
   const setSelection = useMapDataExplorerPageStore((state) => state.setSelection);
   const pathGroups = groupSegmentsByPath(geoSegments);
 
-  function selectRow(next: MapDataExplorerSelection) {
+  function selectRow(next: MapDataExplorerSelection | null) {
+    if (next === null) {
+      setSelection(null);
+      return;
+    }
     if (isMapDataExplorerSelectionEqual(selection, next)) {
       setSelection(null);
       return;
@@ -78,45 +83,12 @@ export function MapDataExplorerTables({
           <h4 className="text-xs font-semibold tracking-wide text-base-content/50 uppercase">
             {t("maps.workspace.dataExplorer.referencePoints")}
           </h4>
-          <ExplorerTable
-            isEmpty={controlPoints.length === 0}
-            emptyMessage={t("maps.workspace.dataExplorer.emptyControlPoints")}
-          >
-            <thead>
-              <tr className="text-base-content/50">
-                <th>ID</th>
-                <th>{t("maps.workspace.dataExplorer.label")}</th>
-                <th>{t("maps.workspace.dataExplorer.altitude")}</th>
-                <th>{t("maps.workspace.dataExplorer.coordinates")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {controlPoints.map((point) => {
-                const rowSelection: MapDataExplorerSelection = {
-                  kind: "control-point",
-                  id: point.id,
-                };
-                const isSelected = isMapDataExplorerSelectionEqual(selection, rowSelection);
-                return (
-                  <tr
-                    key={point.id}
-                    className={selectRowClass(isSelected)}
-                    onClick={() => selectRow(rowSelection)}
-                    data-test={`data-explorer-control-point-${point.id}`}
-                  >
-                    <td className="font-mono text-xs">{point.id}</td>
-                    <td>{point.label ?? point.poleNumber ?? "—"}</td>
-                    <td className="font-mono text-xs">
-                      {point.altitudeM !== null ? `${point.altitudeM.toFixed(0)} m` : "—"}
-                    </td>
-                    <td className="font-mono text-xs">
-                      {point.latitude.toFixed(5)}, {point.longitude.toFixed(5)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </ExplorerTable>
+          <ControlPointsExplorerTable
+            mapId={mapId}
+            controlPoints={controlPoints}
+            selection={selection}
+            onSelectRow={selectRow}
+          />
         </section>
 
         <section className="space-y-2">

@@ -13,5 +13,6 @@ export function useDataExplorerInspectCopyShortcut() {
     showReferenceInspectTooltip,
     setStatusMessage,
     copiedMessageKey: "maps.workspace.dataExplorer.inspect.copied",
+    statusToastMs: null,
   });
 }

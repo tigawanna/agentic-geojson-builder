@@ -20,7 +20,10 @@ import { useMapDataExplorerFocus } from "@renderer/features/maps/hooks/useMapDat
 import { useMapLinksQuery } from "@renderer/features/maps/hooks/useMapLinksQuery";
 import { useMapPointsQuery } from "@renderer/features/maps/hooks/useMapPointsQuery";
 import { useHydrateMapWorkspace } from "@renderer/features/maps/hooks/useHydrateMapWorkspace";
-import { useMapDataExplorerPageStore } from "@renderer/features/maps/store/map-data-explorer-page-store";
+import {
+  DATA_EXPLORER_STATUS_TOAST_MS,
+  useMapDataExplorerPageStore,
+} from "@renderer/features/maps/store/map-data-explorer-page-store";
 import {
   MapWorkspaceProvider,
   useMapWorkspacePhase,
@@ -46,7 +49,20 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
   const editTarget = useMapDataExplorerPageStore((state) => state.editTarget);
   const setEditTarget = useMapDataExplorerPageStore((state) => state.setEditTarget);
   const statusMessage = useMapDataExplorerPageStore((state) => state.statusMessage);
+  const setStatusMessage = useMapDataExplorerPageStore((state) => state.setStatusMessage);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!statusMessage) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setStatusMessage(null);
+    }, DATA_EXPLORER_STATUS_TOAST_MS);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [setStatusMessage, statusMessage]);
 
   useDataExplorerInspectCopyShortcut();
 

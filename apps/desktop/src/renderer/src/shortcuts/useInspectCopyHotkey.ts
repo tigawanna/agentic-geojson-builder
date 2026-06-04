@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { SHORTCUT_IDS } from "@shared/shortcuts";
 import { copyProbeText } from "@renderer/features/maps/lib/mapbox-probe-coordinates";
@@ -14,6 +14,7 @@ type UseInspectCopyHotkeyOptions = {
   showReferenceInspectTooltip: boolean;
   setStatusMessage: (message: string | null) => void;
   copiedMessageKey: string;
+  statusToastMs?: number | null;
 };
 
 export function useInspectCopyHotkey({
@@ -21,23 +22,15 @@ export function useInspectCopyHotkey({
   showReferenceInspectTooltip,
   setStatusMessage,
   copiedMessageKey,
+  statusToastMs = 5000,
 }: UseInspectCopyHotkeyOptions) {
   const { t } = useTranslation();
-  const statusTimerRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
     if (!showReferenceInspectTooltip) {
       setReferenceInspectCopyTarget(null);
     }
   }, [showReferenceInspectTooltip]);
-
-  useEffect(() => {
-    return () => {
-      if (statusTimerRef.current !== undefined) {
-        window.clearTimeout(statusTimerRef.current);
-      }
-    };
-  }, []);
 
   useAppShortcut(
     SHORTCUT_IDS.copyInspectCoordinates,
@@ -50,10 +43,9 @@ export function useInspectCopyHotkey({
       const text = formatReferenceInspectCopyText(copyTarget);
       void copyProbeText(text).then(() => {
         setStatusMessage(t(copiedMessageKey, { value: text }));
-        if (statusTimerRef.current !== undefined) {
-          window.clearTimeout(statusTimerRef.current);
+        if (statusToastMs != null) {
+          window.setTimeout(() => setStatusMessage(null), statusToastMs);
         }
-        statusTimerRef.current = window.setTimeout(() => setStatusMessage(null), 2500);
       });
     },
     { enabled },
