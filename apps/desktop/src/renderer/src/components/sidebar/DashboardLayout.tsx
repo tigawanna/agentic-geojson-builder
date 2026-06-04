@@ -22,10 +22,11 @@ function DashboardShell() {
     select: (state) => {
       const path = state.location.pathname.replace(/\/$/, "") || "/";
       const isMapWorkspace = /^\/maps\/[^/]+$/.test(path) && path !== "/maps/new";
+      const isDataExplorer = /^\/data\/[^/]+$/.test(path);
       return {
-        hideDashboardHeader: path === "/" || isMapWorkspace,
-        isFullWidth: path === "/" || isMapWorkspace,
-        isFillHeight: path === "/audit-log",
+        hideDashboardHeader: path === "/" || isMapWorkspace || isDataExplorer,
+        isFullWidth: path === "/" || isMapWorkspace || isDataExplorer,
+        isFillHeight: path === "/audit-log" || isDataExplorer,
       };
     },
   });

@@ -6,6 +6,7 @@
   "nav": {
     "home": "Home",
     "maps": "Maps",
+    "data": "Data",
     "history": "History",
     "settings": "Settings",
     "about": "About"
@@ -141,6 +142,15 @@
       }
     }
   },
+  "data": {
+    "list": {
+      "description": "Browse points, segments, paths, and links for each map project.",
+      "openMaps": "Maps",
+      "loading": "Loading projects…",
+      "error": "Could not load projects.",
+      "empty": "No map projects yet. Create a map first, then open its data here."
+    }
+  },
   "maps": {
     "demo": {
       "heading": "Maps IPC demo",
@@ -265,6 +275,39 @@
       "dataExplorer": {
         "open": "Data tables",
         "title": "Map data",
+        "pageSubtitle": "Browse points, segments, paths, and links. Select a row to preview it on the map.",
+        "backToData": "Back to data",
+        "openWorkspace": "Open map workspace",
+        "viewOnly": "View only",
+        "mapUnavailable": "Map preview is unavailable until this project finishes loading.",
+        "altitude": "Altitude",
+        "elevationProfile": "Elevation profile",
+        "elevationLowHigh": "Low → high along geometry",
+        "inspect": {
+          "trails": "Trails",
+          "trailHover": "Trail inspect",
+          "trailHoverHint": "Hover paths to read lat, lng, and altitude. Press Ctrl+C to copy.",
+          "copyHint": "Ctrl+C copies lat, lng, alt from the trail under the cursor.",
+          "copied": "Copied {{value}}"
+        },
+        "edit": {
+          "open": "Edit",
+          "title": "Edit location",
+          "location": "Coordinates",
+          "latitude": "Latitude",
+          "longitude": "Longitude",
+          "altitude": "Altitude (m)",
+          "pasteHint": "Paste comma-separated values into any field — 2 values fill lat & lng, 3 add altitude.",
+          "fromInspect": "From map inspect",
+          "inheritTrail": "Altitude from trail",
+          "inheritedAltitude": "Altitude inherited from nearest trail.",
+          "noInspectTarget": "Hover a trail on the map first, or enable trail inspect.",
+          "copyCoordinates": "Copy coordinates",
+          "save": "Save changes",
+          "saving": "Saving…",
+          "cancel": "Cancel",
+          "close": "Close"
+        },
         "subtitle": "Browse points, segments, paths, and links. Select a row to preview it on the map behind this window.",
         "tabs": {
           "points": "Points",

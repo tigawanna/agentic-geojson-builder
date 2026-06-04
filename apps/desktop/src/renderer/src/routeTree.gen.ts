@@ -12,10 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as MapsIndexRouteImport } from './routes/maps/index'
+import { Route as DataIndexRouteImport } from './routes/data/index'
 import { Route as AuditLogIndexRouteImport } from './routes/audit-log/index'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as MapsNewIndexRouteImport } from './routes/maps/new/index'
 import { Route as MapsMapIdIndexRouteImport } from './routes/maps/$mapId/index'
+import { Route as DataMapIdIndexRouteImport } from './routes/data/$mapId/index'
 import { Route as MapsMapIdSourceRouteImport } from './routes/maps/$mapId/source'
 import { Route as MapsMapIdExportRouteImport } from './routes/maps/$mapId/export'
 
@@ -32,6 +34,11 @@ const SettingsIndexRoute = SettingsIndexRouteImport.update({
 const MapsIndexRoute = MapsIndexRouteImport.update({
   id: '/maps/',
   path: '/maps/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DataIndexRoute = DataIndexRouteImport.update({
+  id: '/data/',
+  path: '/data/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuditLogIndexRoute = AuditLogIndexRouteImport.update({
@@ -54,6 +61,11 @@ const MapsMapIdIndexRoute = MapsMapIdIndexRouteImport.update({
   path: '/maps/$mapId/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DataMapIdIndexRoute = DataMapIdIndexRouteImport.update({
+  id: '/data/$mapId/',
+  path: '/data/$mapId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MapsMapIdSourceRoute = MapsMapIdSourceRouteImport.update({
   id: '/maps/$mapId/source',
   path: '/maps/$mapId/source',
@@ -69,10 +81,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about/': typeof AboutIndexRoute
   '/audit-log/': typeof AuditLogIndexRoute
+  '/data/': typeof DataIndexRoute
   '/maps/': typeof MapsIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/maps/$mapId/export': typeof MapsMapIdExportRoute
   '/maps/$mapId/source': typeof MapsMapIdSourceRoute
+  '/data/$mapId/': typeof DataMapIdIndexRoute
   '/maps/$mapId/': typeof MapsMapIdIndexRoute
   '/maps/new/': typeof MapsNewIndexRoute
 }
@@ -80,10 +94,12 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutIndexRoute
   '/audit-log': typeof AuditLogIndexRoute
+  '/data': typeof DataIndexRoute
   '/maps': typeof MapsIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/maps/$mapId/export': typeof MapsMapIdExportRoute
   '/maps/$mapId/source': typeof MapsMapIdSourceRoute
+  '/data/$mapId': typeof DataMapIdIndexRoute
   '/maps/$mapId': typeof MapsMapIdIndexRoute
   '/maps/new': typeof MapsNewIndexRoute
 }
@@ -92,10 +108,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about/': typeof AboutIndexRoute
   '/audit-log/': typeof AuditLogIndexRoute
+  '/data/': typeof DataIndexRoute
   '/maps/': typeof MapsIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/maps/$mapId/export': typeof MapsMapIdExportRoute
   '/maps/$mapId/source': typeof MapsMapIdSourceRoute
+  '/data/$mapId/': typeof DataMapIdIndexRoute
   '/maps/$mapId/': typeof MapsMapIdIndexRoute
   '/maps/new/': typeof MapsNewIndexRoute
 }
@@ -105,10 +123,12 @@ export interface FileRouteTypes {
     | '/'
     | '/about/'
     | '/audit-log/'
+    | '/data/'
     | '/maps/'
     | '/settings/'
     | '/maps/$mapId/export'
     | '/maps/$mapId/source'
+    | '/data/$mapId/'
     | '/maps/$mapId/'
     | '/maps/new/'
   fileRoutesByTo: FileRoutesByTo
@@ -116,10 +136,12 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/audit-log'
+    | '/data'
     | '/maps'
     | '/settings'
     | '/maps/$mapId/export'
     | '/maps/$mapId/source'
+    | '/data/$mapId'
     | '/maps/$mapId'
     | '/maps/new'
   id:
@@ -127,10 +149,12 @@ export interface FileRouteTypes {
     | '/'
     | '/about/'
     | '/audit-log/'
+    | '/data/'
     | '/maps/'
     | '/settings/'
     | '/maps/$mapId/export'
     | '/maps/$mapId/source'
+    | '/data/$mapId/'
     | '/maps/$mapId/'
     | '/maps/new/'
   fileRoutesById: FileRoutesById
@@ -139,10 +163,12 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutIndexRoute: typeof AboutIndexRoute
   AuditLogIndexRoute: typeof AuditLogIndexRoute
+  DataIndexRoute: typeof DataIndexRoute
   MapsIndexRoute: typeof MapsIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
   MapsMapIdExportRoute: typeof MapsMapIdExportRoute
   MapsMapIdSourceRoute: typeof MapsMapIdSourceRoute
+  DataMapIdIndexRoute: typeof DataMapIdIndexRoute
   MapsMapIdIndexRoute: typeof MapsMapIdIndexRoute
   MapsNewIndexRoute: typeof MapsNewIndexRoute
 }
@@ -168,6 +194,13 @@ declare module '@tanstack/react-router' {
       path: '/maps'
       fullPath: '/maps/'
       preLoaderRoute: typeof MapsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/data/': {
+      id: '/data/'
+      path: '/data'
+      fullPath: '/data/'
+      preLoaderRoute: typeof DataIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/audit-log/': {
@@ -198,6 +231,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MapsMapIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/data/$mapId/': {
+      id: '/data/$mapId/'
+      path: '/data/$mapId'
+      fullPath: '/data/$mapId/'
+      preLoaderRoute: typeof DataMapIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/maps/$mapId/source': {
       id: '/maps/$mapId/source'
       path: '/maps/$mapId/source'
@@ -219,10 +259,12 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutIndexRoute: AboutIndexRoute,
   AuditLogIndexRoute: AuditLogIndexRoute,
+  DataIndexRoute: DataIndexRoute,
   MapsIndexRoute: MapsIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
   MapsMapIdExportRoute: MapsMapIdExportRoute,
   MapsMapIdSourceRoute: MapsMapIdSourceRoute,
+  DataMapIdIndexRoute: DataMapIdIndexRoute,
   MapsMapIdIndexRoute: MapsMapIdIndexRoute,
   MapsNewIndexRoute: MapsNewIndexRoute,
 }

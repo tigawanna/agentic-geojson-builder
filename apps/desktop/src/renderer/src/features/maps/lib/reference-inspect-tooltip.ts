@@ -65,22 +65,25 @@ export function formatReferenceInspectCopyText(target: ReferenceInspectCopyTarge
 }
 
 export function buildReferenceInspectTooltipContent(hover: ReferenceInspectHover): string {
-  const { cursorLatitude, cursorLongitude, nearest } = hover;
+  const { nearest } = hover;
   const trailElevation = buildReferenceInspectCopyTarget(hover).elevationMeters;
   const elevationLabel = formatElevation(trailElevation);
   const title = escapeHtml(nearest.lineName);
 
   const rows = [
-    `<div class="reference-inspect-tooltip-row"><span class="reference-inspect-tooltip-label">Cursor</span><span class="reference-inspect-tooltip-value">${formatCoord(cursorLatitude)}, ${formatCoord(cursorLongitude)}</span></div>`,
-    `<div class="reference-inspect-tooltip-row"><span class="reference-inspect-tooltip-label">On trail</span><span class="reference-inspect-tooltip-value">${formatCoord(nearest.latitude)}, ${formatCoord(nearest.longitude)}</span></div>`,
-    `<div class="reference-inspect-tooltip-row"><span class="reference-inspect-tooltip-label">Offset</span><span class="reference-inspect-tooltip-value">${escapeHtml(formatDistanceMeters(nearest.distanceMeters))}</span></div>`,
+    `<div class="reference-inspect-tooltip-row"><span class="reference-inspect-tooltip-label">Lat</span><span class="reference-inspect-tooltip-value">${formatCoord(nearest.latitude)}</span></div>`,
+    `<div class="reference-inspect-tooltip-row"><span class="reference-inspect-tooltip-label">Lng</span><span class="reference-inspect-tooltip-value">${formatCoord(nearest.longitude)}</span></div>`,
   ];
 
   if (elevationLabel) {
     rows.push(
-      `<div class="reference-inspect-tooltip-elevation">${escapeHtml(elevationLabel)} <span class="reference-inspect-tooltip-elevation-hint">on trail</span></div>`,
+      `<div class="reference-inspect-tooltip-row"><span class="reference-inspect-tooltip-label">Alt</span><span class="reference-inspect-tooltip-value">${escapeHtml(elevationLabel)}</span></div>`,
     );
   }
+
+  rows.push(
+    `<div class="reference-inspect-tooltip-row"><span class="reference-inspect-tooltip-label">Offset</span><span class="reference-inspect-tooltip-value">${escapeHtml(formatDistanceMeters(nearest.distanceMeters))}</span></div>`,
+  );
 
   return `<div class="reference-inspect-tooltip-title">${title}</div>${rows.join("")}`;
 }

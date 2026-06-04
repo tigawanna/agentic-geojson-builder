@@ -6,17 +6,15 @@ import {
   getReferenceInspectCopyTarget,
   setReferenceInspectCopyTarget,
 } from "@renderer/features/maps/lib/reference-inspect-copy-registry";
-import {
-  useMapWorkspaceUiActions,
-  useMapWorkspaceUiState,
-} from "@renderer/features/maps/store/MapWorkspaceProvider";
+import { useMapDataExplorerPageStore } from "@renderer/features/maps/store/map-data-explorer-page-store";
 
-export function useReferenceInspectCopyShortcut() {
+export function useDataExplorerInspectCopyShortcut() {
   const { t } = useTranslation();
-  const showReferenceInspectTooltip = useMapWorkspaceUiState(
+  const showReferenceInspectTooltip = useMapDataExplorerPageStore(
     (state) => state.showReferenceInspectTooltip,
   );
-  const setStatusMessage = useMapWorkspaceUiActions().setStatusMessage;
+  const mapboxInspectMode = useMapDataExplorerPageStore((state) => state.mapboxInspectMode);
+  const setStatusMessage = useMapDataExplorerPageStore((state) => state.setStatusMessage);
   const statusTimerRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
@@ -27,9 +25,6 @@ export function useReferenceInspectCopyShortcut() {
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (!showReferenceInspectTooltip) {
-        return;
-      }
       if (event.key !== "c" && event.key !== "C") {
         return;
       }
@@ -53,12 +48,16 @@ export function useReferenceInspectCopyShortcut() {
       event.preventDefault();
       const text = formatReferenceInspectCopyText(copyTarget);
       void copyProbeText(text).then(() => {
-        setStatusMessage(t("maps.workspace.coordinatesCopied", { value: text }));
+        setStatusMessage(t("maps.workspace.dataExplorer.inspect.copied", { value: text }));
         if (statusTimerRef.current !== undefined) {
           window.clearTimeout(statusTimerRef.current);
         }
         statusTimerRef.current = window.setTimeout(() => setStatusMessage(null), 2500);
       });
+    }
+
+    if (!showReferenceInspectTooltip && !mapboxInspectMode) {
+      return;
     }
 
     window.addEventListener("keydown", handleKeyDown);
@@ -68,5 +67,5 @@ export function useReferenceInspectCopyShortcut() {
         window.clearTimeout(statusTimerRef.current);
       }
     };
-  }, [setStatusMessage, showReferenceInspectTooltip, t]);
+  }, [mapboxInspectMode, setStatusMessage, showReferenceInspectTooltip, t]);
 }

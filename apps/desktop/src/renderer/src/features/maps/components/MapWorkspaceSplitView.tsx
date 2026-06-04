@@ -57,7 +57,6 @@ import { MapWorkspaceMenuSyncBridge } from "@renderer/features/maps/components/M
 import { MapWorkspaceToolsPanel } from "@renderer/features/maps/components/MapWorkspaceToolsPanel";
 import { GeoJsonPreviewModal } from "@renderer/features/maps/components/GeoJsonPreviewModal";
 import { MapAuditLogModal } from "@renderer/features/maps/components/MapAuditLogModal";
-import { MapDataExplorerModal } from "@renderer/features/maps/components/MapDataExplorerModal";
 import { MapWorkspaceOnboardingModal } from "@renderer/features/maps/components/MapWorkspaceOnboardingModal";
 import { MapWorkspacePanelToolbar } from "@renderer/features/maps/components/MapWorkspacePanelToolbar";
 import { MapWorkspaceSourceDocumentPane } from "@renderer/features/maps/components/MapWorkspaceSourceDocumentPane";
@@ -217,9 +216,7 @@ export function MapWorkspaceSplitView() {
   useReferenceInspectCopyShortcut();
   const highlightedSegmentId = useMapWorkspaceUiState((state) => state.highlightedSegmentId);
   const highlightedPathGroupId = useMapWorkspaceUiState((state) => state.highlightedPathGroupId);
-  const dataExplorerOpen = useMapWorkspaceUiState((state) => state.dataExplorerOpen);
-  const { setHighlightedSegmentId, closeDataExplorer, openDataExplorer } =
-    useMapWorkspaceUiActions();
+  const { setHighlightedSegmentId } = useMapWorkspaceUiActions();
   const [auditLogOpen, setAuditLogOpen] = useState(false);
   const [geoJsonPreviewOpen, setGeoJsonPreviewOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
@@ -1237,7 +1234,7 @@ export function MapWorkspaceSplitView() {
           onExportGeoJson={handleExportGeoJson}
           onOpenControls={() => openControls()}
           onOpenAuditLog={() => setAuditLogOpen(true)}
-          onOpenDataExplorer={() => openDataExplorer()}
+          mapId={workspace.id}
           onOpenGuide={() => setOnboardingOpen(true)}
           onHardReload={() => void window.api.invoke("app:hardReload", undefined)}
           onTraceFinish={handleFinishTrace}
@@ -1283,11 +1280,6 @@ export function MapWorkspaceSplitView() {
         mapId={workspace.id}
         open={auditLogOpen}
         onClose={() => setAuditLogOpen(false)}
-      />
-      <MapDataExplorerModal
-        mapId={workspace.id}
-        open={dataExplorerOpen}
-        onClose={closeDataExplorer}
       />
       <GeoJsonPreviewModal
         mapId={workspace.id}

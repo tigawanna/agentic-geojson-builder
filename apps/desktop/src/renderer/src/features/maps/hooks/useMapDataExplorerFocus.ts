@@ -6,11 +6,8 @@ import type { MapPointRecord } from "@shared/map-points.types";
 import { getViewportCommand } from "@renderer/features/maps/lib/viewport-command-registry";
 import { mergeMapBounds } from "@renderer/features/maps/lib/merge-map-bounds";
 import { lineStringToMapBounds } from "@renderer/features/maps/lib/segment-utils";
+import { useMapDataExplorerPageStore } from "@renderer/features/maps/store/map-data-explorer-page-store";
 import type { MapDataExplorerSelection } from "@renderer/features/maps/types/map-data-explorer.types";
-import {
-  useMapWorkspaceUiActions,
-  useMapWorkspaceUiState,
-} from "@renderer/features/maps/store/MapWorkspaceProvider";
 
 type UseMapDataExplorerFocusInput = {
   mapId: number | null;
@@ -27,15 +24,13 @@ export function useMapDataExplorerFocus({
   geoSegments,
   mapLinks,
 }: UseMapDataExplorerFocusInput) {
-  const selection = useMapWorkspaceUiState((state) => state.dataExplorerSelection);
-  const {
-    setSelectedControlPointId,
-    setDetailPanelControlPointId,
-    setSelectedMapPointId,
-    setDetailPanelMapPointId,
-    setHighlightedSegmentId,
-    setHighlightedPathGroupId,
-  } = useMapWorkspaceUiActions();
+  const selection = useMapDataExplorerPageStore((state) => state.selection);
+  const setHighlightedSegmentId = useMapDataExplorerPageStore(
+    (state) => state.setHighlightedSegmentId,
+  );
+  const setHighlightedPathGroupId = useMapDataExplorerPageStore(
+    (state) => state.setHighlightedPathGroupId,
+  );
 
   useEffect(() => {
     if (!mapId || !selection) {
@@ -51,7 +46,6 @@ export function useMapDataExplorerFocus({
       }
       setHighlightedSegmentId(null);
       setHighlightedPathGroupId(null);
-      setDetailPanelControlPointId(point.id);
       viewport?.({
         latitude: point.latitude,
         longitude: point.longitude,
@@ -67,9 +61,6 @@ export function useMapDataExplorerFocus({
       }
       setHighlightedSegmentId(null);
       setHighlightedPathGroupId(null);
-      setSelectedControlPointId(null);
-      setDetailPanelControlPointId(null);
-      setDetailPanelMapPointId(point.id);
       viewport?.({
         latitude: point.latitude,
         longitude: point.longitude,
@@ -85,10 +76,6 @@ export function useMapDataExplorerFocus({
       }
       setHighlightedPathGroupId(null);
       setHighlightedSegmentId(segment.id);
-      setSelectedControlPointId(null);
-      setDetailPanelControlPointId(null);
-      setDetailPanelMapPointId(null);
-      setSelectedMapPointId(null);
       const bounds = lineStringToMapBounds(segment.geometry.coordinates);
       if (bounds) {
         viewport?.({ fitBounds: bounds });
@@ -105,10 +92,6 @@ export function useMapDataExplorerFocus({
       }
       setHighlightedSegmentId(null);
       setHighlightedPathGroupId(selection.groupId);
-      setSelectedControlPointId(null);
-      setDetailPanelControlPointId(null);
-      setDetailPanelMapPointId(null);
-      setSelectedMapPointId(null);
       const bounds = mergeMapBounds(
         pathSegments.map((segment) => lineStringToMapBounds(segment.geometry.coordinates)),
       );
@@ -130,10 +113,6 @@ export function useMapDataExplorerFocus({
       );
       setHighlightedSegmentId(null);
       setHighlightedPathGroupId(link.pathSlug);
-      setSelectedControlPointId(null);
-      setDetailPanelControlPointId(null);
-      setDetailPanelMapPointId(null);
-      setSelectedMapPointId(null);
 
       const bounds = mergeMapBounds([
         fromPoint ? lineStringToMapBounds([[fromPoint.longitude, fromPoint.latitude]]) : null,
@@ -151,12 +130,8 @@ export function useMapDataExplorerFocus({
     mapLinks,
     mapPoints,
     selection,
-    setDetailPanelControlPointId,
-    setDetailPanelMapPointId,
     setHighlightedPathGroupId,
     setHighlightedSegmentId,
-    setSelectedControlPointId,
-    setSelectedMapPointId,
   ]);
 }
 

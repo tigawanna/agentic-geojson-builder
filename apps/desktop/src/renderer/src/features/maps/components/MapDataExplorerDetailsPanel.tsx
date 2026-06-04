@@ -1,22 +1,61 @@
-import type { ReactNode } from "react";
-import { MapPin, Route } from "lucide-react";
+import { useMemo, type ReactNode } from "react";
+import { Copy, MapPin, Pencil, Route } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { getElevationAtLatLng, type GeoCoordinate } from "@repo/isomorphic/elevation-at-point";
+import { formatElevation } from "@renderer/features/map-playground/lib/analyze-trail-feature";
 import type { ControlPointRecord } from "@shared/control-points.types";
 import type { GeoSegmentRecord } from "@shared/geo-segments.types";
 import type { MapLinkRecord } from "@shared/map-links.types";
 import type { MapPointRecord } from "@shared/map-points.types";
+import { MapDataExplorerElevationChart } from "@renderer/features/maps/components/MapDataExplorerElevationChart";
 import { formatMapCoordinates } from "@renderer/features/maps/lib/copy-map-coordinates";
+import { buildElevationProfileFromCoordinates } from "@renderer/features/maps/lib/elevation-profile";
 import { groupSegmentsByPath } from "@renderer/features/maps/lib/group-segments-by-path";
 import { segmentGroupColor } from "@renderer/features/maps/lib/segment-utils";
+import { copyProbeText } from "@renderer/features/maps/lib/mapbox-probe-coordinates";
+import { formatCoordinateTripleCopy } from "@renderer/features/maps/lib/parse-coordinate-paste";
+import { useMapDataExplorerPageStore } from "@renderer/features/maps/store/map-data-explorer-page-store";
 import type { MapDataExplorerSelection } from "@renderer/features/maps/types/map-data-explorer.types";
 
-type MapDataExplorerPreviewPanelProps = {
+type MapDataExplorerDetailsPanelProps = {
   selection: MapDataExplorerSelection | null;
   controlPoints: ControlPointRecord[];
   mapPoints: MapPointRecord[];
   geoSegments: GeoSegmentRecord[];
   mapLinks: MapLinkRecord[];
+  onEdit: () => void;
 };
+
+function DetailActions({
+  onEdit,
+  onCopy,
+  showEdit,
+}: {
+  onEdit: () => void;
+  onCopy?: () => void;
+  showEdit: boolean;
+}) {
+  const { t } = useTranslation();
+  if (!showEdit && !onCopy) {
+    return null;
+  }
+  return (
+    <div className="flex flex-wrap gap-2">
+      {showEdit ? (
+        <button type="button" className="btn gap-1 btn-xs btn-primary" onClick={onEdit}>
+          <Pencil className="size-3" />
+          {t("maps.workspace.dataExplorer.edit.open")}
+        </button>
+      ) : null}
+      {onCopy ? (
+        <button type="button" className="btn gap-1 btn-ghost btn-xs" onClick={onCopy}>
+          <Copy className="size-3" />
+          {t("maps.workspace.dataExplorer.edit.copyCoordinates")}
+        </button>
+      ) : null}
+    </div>
+  );
+}
 
 function PreviewSection({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -46,22 +85,56 @@ function CoordinateRow({
   );
 }
 
-export function MapDataExplorerPreviewPanel({
+export function MapDataExplorerDetailsPanel({
   selection,
   controlPoints,
   mapPoints,
   geoSegments,
   mapLinks,
-}: MapDataExplorerPreviewPanelProps) {
+  onEdit,
+}: MapDataExplorerDetailsPanelProps) {
   const { t } = useTranslation();
+  const setStatusMessage = useMapDataExplorerPageStore((state) => state.setStatusMessage);
+
+  function copyCoordinatesText(latitude: number, longitude: number, altitudeM: number | null) {
+    const text = formatCoordinateTripleCopy(latitude, longitude, altitudeM);
+    void copyProbeText(text).then(() => {
+      setStatusMessage(t("maps.workspace.dataExplorer.inspect.copied", { value: text }));
+    });
+  }
+
+  const elevationProfile = useMemo(() => {
+    if (!selection) {
+      return null;
+    }
+    if (selection.kind === "segment") {
+      const segment = geoSegments.find((entry) => entry.id === selection.id);
+      if (!segment) {
+        return null;
+      }
+      return buildElevationProfileFromCoordinates(
+        segment.geometry.coordinates.map(([longitude, latitude]) => ({ latitude, longitude })),
+      );
+    }
+    if (selection.kind === "path") {
+      const pathSegments = geoSegments
+        .filter((segment) => segment.segmentGroupId === selection.groupId)
+        .sort((a, b) => a.segmentIndex - b.segmentIndex);
+      const coordinates = pathSegments.flatMap((segment) =>
+        segment.geometry.coordinates.map(([longitude, latitude]) => ({ latitude, longitude })),
+      );
+      return buildElevationProfileFromCoordinates(coordinates);
+    }
+    return null;
+  }, [geoSegments, selection]);
 
   if (!selection) {
     return (
-      <aside className="flex w-72 shrink-0 flex-col border-l border-base-content/10 bg-base-200/20 p-4">
-        <p className="text-sm text-base-content/55">
+      <div className="flex h-full items-center justify-center p-4">
+        <p className="text-center text-sm text-base-content/55">
           {t("maps.workspace.dataExplorer.previewEmpty")}
         </p>
-      </aside>
+      </div>
     );
   }
 
@@ -71,18 +144,28 @@ export function MapDataExplorerPreviewPanel({
       return null;
     }
     return (
-      <aside className="flex w-72 shrink-0 flex-col gap-4 overflow-y-auto border-l border-base-content/10 bg-base-200/20 p-4">
+      <div className="flex h-full flex-col gap-4 overflow-y-auto p-4">
         <div className="flex items-center gap-2">
           <MapPin className="size-4 text-primary" />
-          <h3 className="text-sm font-semibold">
+          <h3 className="min-w-0 flex-1 truncate text-sm font-semibold">
             {point.label ?? t("maps.workspace.dataExplorer.referencePoint", { id: point.id })}
           </h3>
         </div>
+        <DetailActions
+          showEdit
+          onEdit={onEdit}
+          onCopy={() => copyCoordinatesText(point.latitude, point.longitude, point.altitudeM)}
+        />
         <CoordinateRow
           label={t("maps.workspace.dataExplorer.mapLocation")}
           latitude={point.latitude}
           longitude={point.longitude}
         />
+        {point.altitudeM !== null ? (
+          <PreviewSection title={t("maps.workspace.dataExplorer.altitude")}>
+            <p className="text-lg font-semibold tabular-nums">{formatElevation(point.altitudeM)}</p>
+          </PreviewSection>
+        ) : null}
         <PreviewSection title={t("maps.workspace.dataExplorer.details")}>
           <dl className="space-y-1 text-xs">
             <div className="flex justify-between gap-2">
@@ -97,10 +180,7 @@ export function MapDataExplorerPreviewPanel({
             ) : null}
           </dl>
         </PreviewSection>
-        <p className="text-xs text-base-content/50">
-          {t("maps.workspace.dataExplorer.pointMapHint")}
-        </p>
-      </aside>
+      </div>
     );
   }
 
@@ -110,16 +190,28 @@ export function MapDataExplorerPreviewPanel({
       return null;
     }
     return (
-      <aside className="flex w-72 shrink-0 flex-col gap-4 overflow-y-auto border-l border-base-content/10 bg-base-200/20 p-4">
+      <div className="flex h-full flex-col gap-4 overflow-y-auto p-4">
         <div className="flex items-center gap-2">
           <MapPin className="size-4 text-secondary" />
-          <h3 className="text-sm font-semibold">{point.name ?? point.ref ?? `#${point.id}`}</h3>
+          <h3 className="min-w-0 flex-1 truncate text-sm font-semibold">
+            {point.name ?? point.ref ?? `#${point.id}`}
+          </h3>
         </div>
+        <DetailActions
+          showEdit
+          onEdit={onEdit}
+          onCopy={() => copyCoordinatesText(point.latitude, point.longitude, point.elevation)}
+        />
         <CoordinateRow
           label={t("maps.workspace.dataExplorer.mapLocation")}
           latitude={point.latitude}
           longitude={point.longitude}
         />
+        {point.elevation !== null ? (
+          <PreviewSection title={t("maps.workspace.dataExplorer.altitude")}>
+            <p className="text-lg font-semibold tabular-nums">{formatElevation(point.elevation)}</p>
+          </PreviewSection>
+        ) : null}
         <PreviewSection title={t("maps.workspace.dataExplorer.details")}>
           <dl className="space-y-1 text-xs">
             <div className="flex justify-between gap-2">
@@ -138,10 +230,7 @@ export function MapDataExplorerPreviewPanel({
             ) : null}
           </dl>
         </PreviewSection>
-        <p className="text-xs text-base-content/50">
-          {t("maps.workspace.dataExplorer.pointMapHint")}
-        </p>
-      </aside>
+      </div>
     );
   }
 
@@ -151,8 +240,16 @@ export function MapDataExplorerPreviewPanel({
       return null;
     }
     const coordinates = segment.geometry.coordinates;
+    const midpoint = coordinates[Math.floor(coordinates.length / 2)];
+    const midpointLatitude = midpoint?.[1] ?? 0;
+    const midpointLongitude = midpoint?.[0] ?? 0;
+    const midpointAltitude = getElevationAtLatLng(
+      coordinates as GeoCoordinate[],
+      midpointLatitude,
+      midpointLongitude,
+    );
     return (
-      <aside className="flex w-72 shrink-0 flex-col gap-4 overflow-y-auto border-l border-base-content/10 bg-base-200/20 p-4">
+      <div className="flex h-full flex-col gap-4 overflow-y-auto p-4">
         <div className="flex items-center gap-2">
           <span
             className="inline-block size-2.5 shrink-0 rounded-full"
@@ -162,25 +259,18 @@ export function MapDataExplorerPreviewPanel({
             {segment.name ?? `${segment.segmentGroupId} #${segment.segmentIndex + 1}`}
           </h3>
         </div>
+        <DetailActions
+          showEdit={false}
+          onEdit={onEdit}
+          onCopy={() => copyCoordinatesText(midpointLatitude, midpointLongitude, midpointAltitude)}
+        />
+        {elevationProfile ? <MapDataExplorerElevationChart profile={elevationProfile} /> : null}
         <PreviewSection title={t("maps.workspace.dataExplorer.segmentVertices")}>
           <p className="text-xs text-base-content/60">
             {t("maps.workspace.dataExplorer.vertexCount", { count: coordinates.length })}
           </p>
-          <ol className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-base-content/10 bg-base-100/60 p-2">
-            {coordinates.map(([longitude, latitude], index) => (
-              <li
-                key={`${segment.id}-${index}`}
-                className="font-mono text-[11px] text-base-content/75"
-              >
-                {index + 1}. {formatMapCoordinates(latitude, longitude)}
-              </li>
-            ))}
-          </ol>
         </PreviewSection>
-        <p className="text-xs text-base-content/50">
-          {t("maps.workspace.dataExplorer.segmentMapHint")}
-        </p>
-      </aside>
+      </div>
     );
   }
 
@@ -194,11 +284,12 @@ export function MapDataExplorerPreviewPanel({
       return null;
     }
     return (
-      <aside className="flex w-72 shrink-0 flex-col gap-4 overflow-y-auto border-l border-base-content/10 bg-base-200/20 p-4">
+      <div className="flex h-full flex-col gap-4 overflow-y-auto p-4">
         <div className="flex items-center gap-2">
           <Route className="size-4 text-primary" />
           <h3 className="min-w-0 truncate text-sm font-semibold">{path.name ?? path.groupId}</h3>
         </div>
+        {elevationProfile ? <MapDataExplorerElevationChart profile={elevationProfile} /> : null}
         <PreviewSection title={t("maps.workspace.dataExplorer.pathSummary")}>
           <dl className="space-y-1 text-xs">
             <div className="flex justify-between gap-2">
@@ -208,10 +299,6 @@ export function MapDataExplorerPreviewPanel({
             <div className="flex justify-between gap-2">
               <dt className="text-base-content/55">{t("maps.workspace.dataExplorer.segments")}</dt>
               <dd>{path.segmentCount}</dd>
-            </div>
-            <div className="flex justify-between gap-2">
-              <dt className="text-base-content/55">{t("maps.workspace.dataExplorer.vertices")}</dt>
-              <dd>{path.pointCount}</dd>
             </div>
           </dl>
         </PreviewSection>
@@ -229,10 +316,7 @@ export function MapDataExplorerPreviewPanel({
             ))}
           </ul>
         </PreviewSection>
-        <p className="text-xs text-base-content/50">
-          {t("maps.workspace.dataExplorer.pathMapHint")}
-        </p>
-      </aside>
+      </div>
     );
   }
 
@@ -244,7 +328,7 @@ export function MapDataExplorerPreviewPanel({
   const toPoint = mapPoints.find((point) => point.ref === link.toRef);
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col gap-4 overflow-y-auto border-l border-base-content/10 bg-base-200/20 p-4">
+    <div className="flex h-full flex-col gap-4 overflow-y-auto p-4">
       <h3 className="text-sm font-semibold">
         {link.fromRef} → {link.toRef}
       </h3>
@@ -271,7 +355,6 @@ export function MapDataExplorerPreviewPanel({
       <PreviewSection title={t("maps.workspace.dataExplorer.pathGroup")}>
         <p className="font-mono text-xs">{link.pathSlug}</p>
       </PreviewSection>
-      <p className="text-xs text-base-content/50">{t("maps.workspace.dataExplorer.linkMapHint")}</p>
-    </aside>
+    </div>
   );
 }
