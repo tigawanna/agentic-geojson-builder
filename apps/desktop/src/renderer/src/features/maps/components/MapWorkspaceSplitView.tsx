@@ -57,6 +57,7 @@ import { MapWorkspaceMenuSyncBridge } from "@renderer/features/maps/components/M
 import { MapWorkspaceToolsPanel } from "@renderer/features/maps/components/MapWorkspaceToolsPanel";
 import { GeoJsonPreviewModal } from "@renderer/features/maps/components/GeoJsonPreviewModal";
 import { MapAuditLogModal } from "@renderer/features/maps/components/MapAuditLogModal";
+import { MapDataExplorerModal } from "@renderer/features/maps/components/MapDataExplorerModal";
 import { MapWorkspaceOnboardingModal } from "@renderer/features/maps/components/MapWorkspaceOnboardingModal";
 import { MapWorkspacePanelToolbar } from "@renderer/features/maps/components/MapWorkspacePanelToolbar";
 import { MapWorkspaceSourceDocumentPane } from "@renderer/features/maps/components/MapWorkspaceSourceDocumentPane";
@@ -214,7 +215,11 @@ export function MapWorkspaceSplitView() {
   usePersistedControlPointDragPreference();
   usePersistedMapWorkspaceLayout();
   useReferenceInspectCopyShortcut();
-  const [selectedSegmentId, setSelectedSegmentId] = useState<number | null>(null);
+  const highlightedSegmentId = useMapWorkspaceUiState((state) => state.highlightedSegmentId);
+  const highlightedPathGroupId = useMapWorkspaceUiState((state) => state.highlightedPathGroupId);
+  const dataExplorerOpen = useMapWorkspaceUiState((state) => state.dataExplorerOpen);
+  const { setHighlightedSegmentId, closeDataExplorer, openDataExplorer } =
+    useMapWorkspaceUiActions();
   const [auditLogOpen, setAuditLogOpen] = useState(false);
   const [geoJsonPreviewOpen, setGeoJsonPreviewOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
@@ -830,16 +835,16 @@ export function MapWorkspaceSplitView() {
       if (traceMode) {
         return;
       }
-      setSelectedSegmentId((current) => (current === segmentId ? null : segmentId));
+      setHighlightedSegmentId(highlightedSegmentId === segmentId ? null : segmentId);
     },
-    [traceMode],
+    [highlightedSegmentId, setHighlightedSegmentId, traceMode],
   );
 
   const handleEditSelectedSegment = useCallback(() => {
-    if (!selectedSegmentId) {
+    if (!highlightedSegmentId) {
       return;
     }
-    const segment = geoSegments.find((s) => s.id === selectedSegmentId);
+    const segment = geoSegments.find((s) => s.id === highlightedSegmentId);
     if (!segment) {
       return;
     }
@@ -851,7 +856,7 @@ export function MapWorkspaceSplitView() {
       segment.geometry.coordinates.map(([lng, lat]) => ({ latitude: lat, longitude: lng })),
     );
     setTraceMode(true);
-    setSelectedSegmentId(null);
+    setHighlightedSegmentId(null);
 
     const bounds = lineStringToMapBounds(segment.geometry.coordinates);
     if (bounds && mapHandleRef.current) {
@@ -865,7 +870,7 @@ export function MapWorkspaceSplitView() {
   }, [
     geoSegments,
     queueSave,
-    selectedSegmentId,
+    highlightedSegmentId,
     setEditingSegmentId,
     setSegmentGroupId,
     setSegmentName,
@@ -875,20 +880,26 @@ export function MapWorkspaceSplitView() {
   ]);
 
   const handleDeleteSelectedSegment = useCallback(() => {
-    if (!workspace || !selectedSegmentId) {
+    if (!workspace || !highlightedSegmentId) {
       return;
     }
     void deleteGeoSegment
-      .mutateAsync({ mapId: workspace.id, segmentId: selectedSegmentId })
+      .mutateAsync({ mapId: workspace.id, segmentId: highlightedSegmentId })
       .then(() => {
-        setSelectedSegmentId(null);
+        setHighlightedSegmentId(null);
         setStatusMessage("Segment deleted.");
       });
-  }, [deleteGeoSegment, selectedSegmentId, setStatusMessage, workspace]);
+  }, [
+    deleteGeoSegment,
+    highlightedSegmentId,
+    setHighlightedSegmentId,
+    setStatusMessage,
+    workspace,
+  ]);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (!selectedSegmentId) {
+      if (!highlightedSegmentId) {
         return;
       }
       if (event.key === "Delete" || event.key === "Backspace") {
@@ -900,12 +911,12 @@ export function MapWorkspaceSplitView() {
         handleDeleteSelectedSegment();
       }
       if (event.key === "Escape" && !controlsOpen) {
-        setSelectedSegmentId(null);
+        setHighlightedSegmentId(null);
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [controlsOpen, handleDeleteSelectedSegment, selectedSegmentId]);
+  }, [controlsOpen, handleDeleteSelectedSegment, highlightedSegmentId, setHighlightedSegmentId]);
 
   const handleExportGeoJson = useCallback(() => {
     if (!workspace) {
@@ -1017,7 +1028,8 @@ export function MapWorkspaceSplitView() {
     onControlPointMapMove: handleControlPointMapMove,
     onControlPointClick: (id: number) => setDetailPanelControlPointId(id),
     onSegmentClick: handleSegmentClick,
-    selectedSegmentId,
+    selectedSegmentId: highlightedSegmentId,
+    highlightedPathGroupId,
   };
 
   return (
@@ -1162,10 +1174,10 @@ export function MapWorkspaceSplitView() {
                   />
                 </Activity>
               </div>
-              {selectedSegmentId && !traceMode ? (
+              {highlightedSegmentId && !traceMode && !highlightedPathGroupId ? (
                 <div className="absolute right-3 bottom-3 z-1000 flex items-center gap-1 rounded-box bg-base-100/95 px-2 py-1.5 shadow-lg">
                   <span className="mr-1 text-xs text-base-content/70">
-                    Segment #{selectedSegmentId}
+                    Segment #{highlightedSegmentId}
                   </span>
                   <button
                     type="button"
@@ -1184,7 +1196,7 @@ export function MapWorkspaceSplitView() {
                   <button
                     type="button"
                     className="btn btn-ghost btn-xs"
-                    onClick={() => setSelectedSegmentId(null)}
+                    onClick={() => setHighlightedSegmentId(null)}
                   >
                     ✕
                   </button>
@@ -1225,6 +1237,7 @@ export function MapWorkspaceSplitView() {
           onExportGeoJson={handleExportGeoJson}
           onOpenControls={() => openControls()}
           onOpenAuditLog={() => setAuditLogOpen(true)}
+          onOpenDataExplorer={() => openDataExplorer()}
           onOpenGuide={() => setOnboardingOpen(true)}
           onHardReload={() => void window.api.invoke("app:hardReload", undefined)}
           onTraceFinish={handleFinishTrace}
@@ -1270,6 +1283,11 @@ export function MapWorkspaceSplitView() {
         mapId={workspace.id}
         open={auditLogOpen}
         onClose={() => setAuditLogOpen(false)}
+      />
+      <MapDataExplorerModal
+        mapId={workspace.id}
+        open={dataExplorerOpen}
+        onClose={closeDataExplorer}
       />
       <GeoJsonPreviewModal
         mapId={workspace.id}

@@ -85,6 +85,7 @@ export type LeafletMapPaneProps = {
   onControlPointClick?: (controlPointId: number) => void;
   onSegmentClick?: (segmentId: number) => void;
   selectedSegmentId?: number | null;
+  highlightedPathGroupId?: string | null;
 };
 
 export function LeafletMapPane({
@@ -121,6 +122,7 @@ export function LeafletMapPane({
   onControlPointClick,
   onSegmentClick,
   selectedSegmentId = null,
+  highlightedPathGroupId = null,
 }: LeafletMapPaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
@@ -550,7 +552,8 @@ export function LeafletMapPane({
             return;
           }
 
-          const isSelected = segment.id === selectedSegmentId;
+          const isSelected =
+            segment.id === selectedSegmentId || segment.segmentGroupId === highlightedPathGroupId;
           const polyline = L.polyline(lineStringToLatLngs(coordinates), {
             color: isSelected ? "#2563eb" : segmentGroupColor(segment.segmentGroupId),
             weight: isSelected ? 9 : 7,
@@ -587,7 +590,14 @@ export function LeafletMapPane({
         ).addTo(segmentsLayer);
       }
     })();
-  }, [editingSegmentId, geoSegments, mapReady, pendingTracePoints, selectedSegmentId]);
+  }, [
+    editingSegmentId,
+    geoSegments,
+    highlightedPathGroupId,
+    mapReady,
+    pendingTracePoints,
+    selectedSegmentId,
+  ]);
 
   useEffect(() => {
     if (!mapReady) {

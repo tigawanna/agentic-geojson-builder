@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import {
+  Database,
   Download,
   Eye,
   FileOutput,
@@ -28,6 +29,7 @@ type MapWorkspaceToolsPanelProps = {
   onExportGeoJson: () => void;
   onOpenControls: () => void;
   onOpenAuditLog: () => void;
+  onOpenDataExplorer: () => void;
   onOpenGuide: () => void;
   onHardReload: () => void;
   onTraceFinish: () => void;
@@ -44,6 +46,7 @@ export function MapWorkspaceToolsPanel({
   onExportGeoJson,
   onOpenControls,
   onOpenAuditLog,
+  onOpenDataExplorer,
   onOpenGuide,
   onHardReload,
   onTraceFinish,
@@ -154,6 +157,15 @@ export function MapWorkspaceToolsPanel({
         >
           <Settings2 className="size-3.5" />
           {t("maps.workspace.controls")}
+        </button>
+        <button
+          type="button"
+          className="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-base-content/5"
+          onClick={onOpenDataExplorer}
+          data-test="open-data-explorer"
+        >
+          <Database className="size-3.5" />
+          {t("maps.workspace.dataExplorer.open")}
         </button>
         <button
           type="button"

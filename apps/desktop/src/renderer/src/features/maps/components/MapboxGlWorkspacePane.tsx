@@ -87,6 +87,7 @@ export function MapboxGlWorkspacePane({
   editingSegmentId = null,
   selectedControlPointId = null,
   selectedSegmentId = null,
+  highlightedPathGroupId = null,
   inspectMode = false,
   capturePending = false,
   onReady,
@@ -162,6 +163,7 @@ export function MapboxGlWorkspacePane({
     showReferenceInspectTooltip,
     geoSegments,
     selectedSegmentId,
+    highlightedPathGroupId,
     editingSegmentId,
     pendingTracePoints,
     tileCacheOverlay,
@@ -184,6 +186,7 @@ export function MapboxGlWorkspacePane({
     showReferenceInspectTooltip,
     geoSegments,
     selectedSegmentId,
+    highlightedPathGroupId,
     editingSegmentId,
     pendingTracePoints,
     tileCacheOverlay,
@@ -389,10 +392,15 @@ export function MapboxGlWorkspacePane({
             properties: {
               id: segment.id,
               color:
-                segment.id === data.selectedSegmentId
+                segment.id === data.selectedSegmentId ||
+                segment.segmentGroupId === data.highlightedPathGroupId
                   ? "#2563eb"
                   : segmentGroupColor(segment.segmentGroupId),
-              width: segment.id === data.selectedSegmentId ? 9 : 7,
+              width:
+                segment.id === data.selectedSegmentId ||
+                segment.segmentGroupId === data.highlightedPathGroupId
+                  ? 9
+                  : 7,
             },
           })),
       };
@@ -714,6 +722,7 @@ export function MapboxGlWorkspacePane({
     showReferenceOverlay,
     geoSegments,
     selectedSegmentId,
+    highlightedPathGroupId,
     editingSegmentId,
     pendingTracePoints,
     tileCacheOverlay,

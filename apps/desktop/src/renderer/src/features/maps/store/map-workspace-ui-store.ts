@@ -9,6 +9,10 @@ export type MapCoordinates = {
 import type { MapViewport } from "@renderer/features/maps/lib/map-handle";
 import type { GeoSegmentPathKind } from "@shared/geo-segments.types";
 import type { SourcePanelPresentation } from "@shared/workspace-layout.types";
+import type {
+  MapDataExplorerSelection,
+  MapDataExplorerTab,
+} from "@renderer/features/maps/types/map-data-explorer.types";
 
 type MapWorkspaceUiState = {
   controlsOpen: boolean;
@@ -39,6 +43,11 @@ type MapWorkspaceUiState = {
   selectedMapPointId: number | null;
   detailPanelMapPointId: number | null;
   linkFromPointId: number | null;
+  dataExplorerOpen: boolean;
+  dataExplorerTab: MapDataExplorerTab;
+  dataExplorerSelection: MapDataExplorerSelection | null;
+  highlightedSegmentId: number | null;
+  highlightedPathGroupId: string | null;
 };
 
 type MapWorkspaceUiActions = {
@@ -77,6 +86,12 @@ type MapWorkspaceUiActions = {
   setSelectedMapPointId: (pointId: number | null) => void;
   setDetailPanelMapPointId: (pointId: number | null) => void;
   setLinkFromPointId: (pointId: number | null) => void;
+  openDataExplorer: (tab?: MapDataExplorerTab) => void;
+  closeDataExplorer: () => void;
+  setDataExplorerTab: (tab: MapDataExplorerTab) => void;
+  setDataExplorerSelection: (selection: MapDataExplorerSelection | null) => void;
+  setHighlightedSegmentId: (segmentId: number | null) => void;
+  setHighlightedPathGroupId: (groupId: string | null) => void;
   stopMarkerMode: () => void;
   stopLinkMode: () => void;
   stopReferenceMode: () => void;
@@ -115,6 +130,11 @@ const initialState: MapWorkspaceUiState = {
   selectedMapPointId: null,
   detailPanelMapPointId: null,
   linkFromPointId: null,
+  dataExplorerOpen: false,
+  dataExplorerTab: "points",
+  dataExplorerSelection: null,
+  highlightedSegmentId: null,
+  highlightedPathGroupId: null,
 };
 
 export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
@@ -167,6 +187,24 @@ export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
     setDetailPanelMapPointId: (detailPanelMapPointId) =>
       set({ detailPanelMapPointId, selectedMapPointId: detailPanelMapPointId }),
     setLinkFromPointId: (linkFromPointId) => set({ linkFromPointId }),
+    openDataExplorer: (tab) =>
+      set((state) => ({
+        dataExplorerOpen: true,
+        dataExplorerTab: tab ?? state.dataExplorerTab,
+      })),
+    closeDataExplorer: () =>
+      set({
+        dataExplorerOpen: false,
+        dataExplorerSelection: null,
+        highlightedSegmentId: null,
+        highlightedPathGroupId: null,
+      }),
+    setDataExplorerTab: (dataExplorerTab) => set({ dataExplorerTab }),
+    setDataExplorerSelection: (dataExplorerSelection) => set({ dataExplorerSelection }),
+    setHighlightedSegmentId: (highlightedSegmentId) =>
+      set({ highlightedSegmentId, highlightedPathGroupId: null }),
+    setHighlightedPathGroupId: (highlightedPathGroupId) =>
+      set({ highlightedPathGroupId, highlightedSegmentId: null }),
     stopMarkerMode: () => set({ markerMode: false }),
     stopLinkMode: () => set({ linkMode: false, linkFromPointId: null }),
     stopReferenceMode: () =>
