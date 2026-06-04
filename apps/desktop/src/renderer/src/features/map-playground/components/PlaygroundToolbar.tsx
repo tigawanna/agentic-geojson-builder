@@ -8,8 +8,7 @@ import type {
   PlaygroundLayer,
   PlaygroundSelectedFeature,
 } from "@renderer/types/map-playground.types";
-import type { MapBaseMapStyle, MapBaseRenderer } from "@shared/maps.types";
-import { MapEngineToggle } from "@renderer/features/maps/components/MapEngineToggle";
+import type { MapBaseMapStyle } from "@shared/maps.types";
 import { ipcInvoke } from "@renderer/hooks/useIpc";
 import { HelpCircle, Map, Mountain, PanelLeft, RotateCw, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -18,8 +17,6 @@ type PlaygroundToolbarProps = {
   layers: PlaygroundLayer[];
   selectedFeature: PlaygroundSelectedFeature | null;
   baseMapStyle: MapBaseMapStyle;
-  baseRenderer: MapBaseRenderer;
-  onBaseRendererChange: (renderer: MapBaseRenderer) => void;
   elevationMode: boolean;
   hasElevationData: boolean;
   onToggleElevationMode: () => void;
@@ -39,8 +36,6 @@ export function PlaygroundToolbar({
   layers,
   selectedFeature,
   baseMapStyle,
-  baseRenderer,
-  onBaseRendererChange,
   elevationMode,
   hasElevationData,
   onToggleElevationMode,
@@ -116,7 +111,6 @@ export function PlaygroundToolbar({
       </div>
 
       <div className="pointer-events-auto flex shrink-0 flex-nowrap items-center gap-1.5 sm:gap-2">
-        <MapEngineToggle value={baseRenderer} onChange={onBaseRendererChange} />
         <BaseMapStyleDialogTrigger value={baseMapStyle} onClick={onOpenBaseMapDialog} />
 
         <button

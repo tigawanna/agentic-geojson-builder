@@ -15,7 +15,7 @@ export function PlaygroundElevationLegend({ range }: PlaygroundElevationLegendPr
   return (
     <div
       data-test="playground-elevation-legend"
-      className="pointer-events-none absolute bottom-4 left-4 z-[1000] w-52 max-w-[calc(100%-2rem)] rounded-2xl border border-base-300 bg-base-100/95 p-3 shadow-xl backdrop-blur-sm"
+      className="pointer-events-none absolute bottom-4 left-4 z-1000 w-52 max-w-[calc(100%-2rem)] rounded-2xl border border-base-300 bg-base-100/95 p-3 shadow-xl backdrop-blur-sm"
     >
       <p className="text-xs font-semibold tracking-wide text-base-content/70 uppercase">
         {t("home.playground.elevationLegend")}

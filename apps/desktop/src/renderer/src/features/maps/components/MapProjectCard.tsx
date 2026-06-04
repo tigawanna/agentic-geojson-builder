@@ -30,7 +30,7 @@ export function MapProjectCard({ map }: MapProjectCardProps) {
       <Link
         to="/maps/$mapId"
         params={{ mapId: String(map.id) }}
-        className="relative block aspect-[4/3] overflow-hidden bg-base-300/50"
+        className="relative block aspect-4/3 overflow-hidden bg-base-300/50"
       >
         {thumbnail.data ? (
           <img

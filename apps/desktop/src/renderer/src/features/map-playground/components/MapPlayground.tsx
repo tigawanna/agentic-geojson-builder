@@ -2,11 +2,7 @@ import { Activity } from "react";
 import { PlaygroundElevationLegend } from "@renderer/features/map-playground/components/PlaygroundElevationLegend";
 import { PlaygroundMapPane } from "@renderer/features/map-playground/components/PlaygroundMapPane";
 import { PlaygroundMapboxGlPane } from "@renderer/features/map-playground/components/PlaygroundMapboxGlPane";
-import { MapEngineToggle } from "@renderer/features/maps/components/MapEngineToggle";
-import {
-  useMapBaseRendererQuery,
-  useSetMapBaseRendererMutation,
-} from "@renderer/features/maps/hooks/useMapBaseRenderer";
+import { useMapBaseRendererQuery } from "@renderer/features/maps/hooks/useMapBaseRenderer";
 import { PlaygroundOnboardingModal } from "@renderer/features/map-playground/components/PlaygroundOnboardingModal";
 import { BaseMapStyleDialog } from "@renderer/features/maps/components/BaseMapStyleDialog";
 import { useMapboxTokenQuery } from "@renderer/features/maps/hooks/useMapboxToken";
@@ -34,9 +30,7 @@ export function MapPlayground() {
   const navigate = useNavigate();
   const playground = useMapPlayground();
   const mapboxToken = useMapboxTokenQuery().data ?? null;
-  const baseRenderer = useMapBaseRendererQuery().data ?? "leaflet";
-  const setBaseRenderer = useSetMapBaseRendererMutation();
-  const mapboxGlActive = baseRenderer === "mapbox-gl";
+  const mapboxGlActive = (useMapBaseRendererQuery().data ?? "leaflet") === "mapbox-gl";
   const sharedViewportRef = useRef<PlaygroundViewport>(DEFAULT_PLAYGROUND_VIEWPORT);
   const handlePlaygroundViewportChange = useCallback((viewport: PlaygroundViewport) => {
     sharedViewportRef.current = viewport;
@@ -113,8 +107,6 @@ export function MapPlayground() {
           layers={playground.layers}
           selectedFeature={playground.selectedFeature}
           baseMapStyle={playground.baseMapStyle}
-          baseRenderer={baseRenderer}
-          onBaseRendererChange={(renderer) => void setBaseRenderer.mutateAsync(renderer)}
           onOpenBaseMapDialog={() => setBaseMapDialogOpen(true)}
           elevationMode={playground.elevationMode}
           hasElevationData={playground.hasElevationData}

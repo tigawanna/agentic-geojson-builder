@@ -18,11 +18,6 @@ import {
 } from "@renderer/features/maps/store/MapWorkspaceProvider";
 import type { MapHandle } from "@renderer/features/maps/lib/map-handle";
 import { BaseMapStylePicker } from "@renderer/features/maps/components/BaseMapStylePicker";
-import { MapEngineToggle } from "@renderer/features/maps/components/MapEngineToggle";
-import {
-  useMapBaseRendererQuery,
-  useSetMapBaseRendererMutation,
-} from "@renderer/features/maps/hooks/useMapBaseRenderer";
 import { MapGeoSegmentsSection } from "@renderer/features/maps/components/MapGeoSegmentsSection";
 import { MapMarkersSection } from "@renderer/features/maps/components/MapMarkersSection";
 import { MapReferenceGeoJsonSection } from "@renderer/features/maps/components/MapReferenceGeoJsonSection";
@@ -90,8 +85,6 @@ export function MapWorkspaceControlsModal({
   const deleteControlPoint = useIpcMutation("controlPoints:delete");
   const tileCache = useTileCacheStatusQuery(mapId);
   const mapboxToken = useMapboxTokenQuery().data ?? null;
-  const baseRenderer = useMapBaseRendererQuery().data ?? "leaflet";
-  const setBaseRenderer = useSetMapBaseRendererMutation();
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -234,7 +227,7 @@ export function MapWorkspaceControlsModal({
   }
 
   return (
-    <div className="modal-open modal z-[1100]">
+    <div className="modal-open modal z-1100">
       <div className="modal-box max-h-[88vh] max-w-xl overflow-y-auto px-8 py-8 shadow-2xl">
         <button
           type="button"
@@ -278,16 +271,6 @@ export function MapWorkspaceControlsModal({
               </button>
             </form>
             {locationError ? <p className="text-sm text-error">{locationError}</p> : null}
-
-            <div className="flex flex-col gap-2.5">
-              <span className="text-xs font-medium tracking-wide text-base-content/50 uppercase">
-                {t("maps.workspace.engineLabel")}
-              </span>
-              <MapEngineToggle
-                value={baseRenderer}
-                onChange={(renderer) => void setBaseRenderer.mutateAsync(renderer)}
-              />
-            </div>
 
             <div className="flex flex-col gap-2.5">
               <span className="text-xs font-medium tracking-wide text-base-content/50 uppercase">

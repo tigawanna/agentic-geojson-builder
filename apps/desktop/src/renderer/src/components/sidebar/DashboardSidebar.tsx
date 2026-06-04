@@ -25,7 +25,7 @@ export function DashboardSidebar({
     <aside
       className={cn(
         "relative flex h-full shrink-0 flex-col border-r border-sidebar-border bg-linear-to-b from-base-200 via-base-200 to-base-100 shadow-[inset_-1px_0_0_color-mix(in_oklch,var(--color-base-content)_6%,transparent)] transition-[width] duration-300 ease-out",
-        isCollapsed ? "w-[4.5rem]" : "w-72",
+        isCollapsed ? "w-18" : "w-72",
       )}
     >
       <div className="drag-region px-3 pt-4 pb-3">

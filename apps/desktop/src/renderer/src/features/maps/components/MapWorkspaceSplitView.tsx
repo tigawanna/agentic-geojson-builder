@@ -66,6 +66,7 @@ import { useMapWorkspaceToolsPanelShortcut } from "@renderer/features/maps/hooks
 import { useReferenceInspectCopyShortcut } from "@renderer/features/maps/hooks/useReferenceInspectCopyShortcut";
 import { useWorkspaceUiSyncPublisher } from "@renderer/features/maps/hooks/useWorkspaceUiSync";
 import { usePersistedControlPointDragPreference } from "@renderer/features/maps/hooks/usePersistedControlPointDragPreference";
+import { usePersistedMapWorkspaceLayout } from "@renderer/features/maps/hooks/usePersistedMapWorkspaceLayout";
 import { ControlPointDetailPanel } from "@renderer/features/maps/components/ControlPointDetailPanel";
 import { cn } from "@renderer/lib/utils";
 
@@ -211,6 +212,7 @@ export function MapWorkspaceSplitView() {
 
   const { handleControlPointMapMove } = useControlPointMove();
   usePersistedControlPointDragPreference();
+  usePersistedMapWorkspaceLayout();
   useReferenceInspectCopyShortcut();
   const [selectedSegmentId, setSelectedSegmentId] = useState<number | null>(null);
   const [auditLogOpen, setAuditLogOpen] = useState(false);
@@ -1030,7 +1032,7 @@ export function MapWorkspaceSplitView() {
 
       <div className="relative min-h-0 flex-1 overflow-hidden">
         {!showSourceDocked ? (
-          <div className="pointer-events-auto absolute inset-y-0 left-0 z-[1100] flex w-9 flex-col border-r border-base-300 bg-base-100 shadow-md">
+          <div className="pointer-events-auto absolute inset-y-0 left-0 z-1100 flex w-9 flex-col border-r border-base-300 bg-base-100 shadow-md">
             <button
               type="button"
               className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 px-1 transition-colors hover:bg-primary/10"
@@ -1057,7 +1059,7 @@ export function MapWorkspaceSplitView() {
         ) : null}
 
         {mapPanelCollapsed ? (
-          <div className="pointer-events-auto absolute inset-y-0 right-0 z-[1100] flex w-9 flex-col border-l border-base-300 bg-base-100 shadow-md">
+          <div className="pointer-events-auto absolute inset-y-0 right-0 z-1100 flex w-9 flex-col border-l border-base-300 bg-base-100 shadow-md">
             <button
               type="button"
               className="btn btn-square btn-ghost btn-sm"
@@ -1134,7 +1136,7 @@ export function MapWorkspaceSplitView() {
               />
               <button
                 type="button"
-                className="btn absolute top-16 left-3 z-[1000] btn-square bg-base-100/90 shadow-sm btn-ghost btn-sm"
+                className="btn absolute top-16 left-3 z-1000 btn-square bg-base-100/90 shadow-sm btn-ghost btn-sm"
                 onClick={handleCenterMap}
                 disabled={!mapHandle || !homeViewport}
                 aria-label={t("maps.workspace.centerMap")}
@@ -1161,7 +1163,7 @@ export function MapWorkspaceSplitView() {
                 </Activity>
               </div>
               {selectedSegmentId && !traceMode ? (
-                <div className="absolute right-3 bottom-3 z-[1000] flex items-center gap-1 rounded-box bg-base-100/95 px-2 py-1.5 shadow-lg">
+                <div className="absolute right-3 bottom-3 z-1000 flex items-center gap-1 rounded-box bg-base-100/95 px-2 py-1.5 shadow-lg">
                   <span className="mr-1 text-xs text-base-content/70">
                     Segment #{selectedSegmentId}
                   </span>

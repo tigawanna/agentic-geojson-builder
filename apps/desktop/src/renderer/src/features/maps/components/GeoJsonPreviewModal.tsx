@@ -91,7 +91,7 @@ export function GeoJsonPreviewModal({ mapId, open, onClose }: GeoJsonPreviewModa
   const sizeKb = previewJson ? (new Blob([previewJson]).size / 1024).toFixed(1) : "0";
 
   return (
-    <div className="modal-open modal z-[1200]">
+    <div className="modal-open modal z-1200">
       <div className="modal-box flex max-h-[90vh] max-w-4xl flex-col overflow-hidden px-0 py-0 shadow-2xl">
         <div className="flex items-center justify-between border-b border-base-content/10 px-5 py-3">
           <div className="flex items-center gap-3">

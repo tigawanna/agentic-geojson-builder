@@ -4,11 +4,6 @@ import { useTranslation } from "react-i18next";
 import { DashboardSidebarTrigger } from "@renderer/components/sidebar/DashboardSidebar";
 import { useSidebar } from "@renderer/components/sidebar/SidebarProvider";
 import { formatMapCoordinates } from "@renderer/features/maps/lib/copy-map-coordinates";
-import { MapEngineToggle } from "@renderer/features/maps/components/MapEngineToggle";
-import {
-  useMapBaseRendererQuery,
-  useSetMapBaseRendererMutation,
-} from "@renderer/features/maps/hooks/useMapBaseRenderer";
 import {
   useMapWorkspaceUiActions,
   useMapWorkspaceUiState,
@@ -37,8 +32,6 @@ export function MapWorkspaceHeader({ hasSourceFile }: MapWorkspaceHeaderProps) {
   const markerMode = useMapWorkspaceUiState((state) => state.markerMode);
   const linkMode = useMapWorkspaceUiState((state) => state.linkMode);
   const toolsPanelOpen = useMapWorkspaceUiState((state) => state.toolsPanelOpen);
-  const baseRenderer = useMapBaseRendererQuery().data ?? "leaflet";
-  const setBaseRenderer = useSetMapBaseRendererMutation();
   const {
     setReferenceMode,
     stopReferenceMode,
@@ -82,13 +75,6 @@ export function MapWorkspaceHeader({ hasSourceFile }: MapWorkspaceHeaderProps) {
             {coordinateLine}
           </span>
         ) : null}
-      </div>
-
-      <div className="no-drag flex shrink-0 items-center gap-2">
-        <MapEngineToggle
-          value={baseRenderer}
-          onChange={(renderer) => void setBaseRenderer.mutateAsync(renderer)}
-        />
       </div>
 
       <div className="no-drag flex shrink-0 items-center gap-0.5 rounded-lg border border-base-content/10 bg-base-100/50 p-0.5">

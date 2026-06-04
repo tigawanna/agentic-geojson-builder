@@ -744,17 +744,17 @@ export function LeafletMapPane({
     <div className="absolute inset-0">
       <div ref={containerRef} className="absolute inset-0" />
       {canPickMapPoint ? (
-        <div className="pointer-events-none absolute bottom-3 left-3 z-[1000] rounded-box bg-base-100/90 px-2 py-1 text-xs text-base-content/70">
+        <div className="pointer-events-none absolute bottom-3 left-3 z-1000 rounded-box bg-base-100/90 px-2 py-1 text-xs text-base-content/70">
           Ctrl+click to set map pin
         </div>
       ) : null}
       {canPickTracePoint ? (
-        <div className="pointer-events-none absolute bottom-3 left-3 z-[1000] rounded-box bg-base-100/90 px-2 py-1 text-xs text-base-content/70">
+        <div className="pointer-events-none absolute bottom-3 left-3 z-1000 rounded-box bg-base-100/90 px-2 py-1 text-xs text-base-content/70">
           Ctrl+click to add trail point
         </div>
       ) : null}
       {canPlaceMapPoint ? (
-        <div className="pointer-events-none absolute bottom-3 left-3 z-[1000] rounded-box bg-base-100/90 px-2 py-1 text-xs text-base-content/70">
+        <div className="pointer-events-none absolute bottom-3 left-3 z-1000 rounded-box bg-base-100/90 px-2 py-1 text-xs text-base-content/70">
           Ctrl+click to drop a marker
         </div>
       ) : null}

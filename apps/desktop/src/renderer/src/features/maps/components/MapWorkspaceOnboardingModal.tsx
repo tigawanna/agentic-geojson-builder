@@ -31,7 +31,7 @@ export function MapWorkspaceOnboardingModal({
   }
 
   return (
-    <div className="modal-open modal z-[1300]">
+    <div className="modal-open modal z-1300">
       <div className="modal-box max-w-lg px-8 py-8">
         <button
           type="button"

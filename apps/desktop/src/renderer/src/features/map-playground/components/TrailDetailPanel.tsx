@@ -22,7 +22,7 @@ function StatRow({ label, value }: StatRowProps) {
   return (
     <div className="flex items-start justify-between gap-3 text-sm">
       <span className="shrink-0 text-base-content/60">{label}</span>
-      <span className="min-w-0 text-right font-medium break-words">{value}</span>
+      <span className="min-w-0 text-right font-medium wrap-break-word">{value}</span>
     </div>
   );
 }

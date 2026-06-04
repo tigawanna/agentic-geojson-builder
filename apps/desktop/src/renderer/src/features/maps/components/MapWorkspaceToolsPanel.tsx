@@ -66,7 +66,7 @@ export function MapWorkspaceToolsPanel({
 
   return (
     <aside
-      className="pointer-events-auto absolute inset-y-0 right-0 z-[1080] flex w-72 flex-col border-l border-base-content/10 bg-base-100/98 shadow-xl backdrop-blur-sm"
+      className="pointer-events-auto absolute inset-y-0 right-0 z-1080 flex w-72 flex-col border-l border-base-content/10 bg-base-100/98 shadow-xl backdrop-blur-sm"
       data-test="workspace-tools-panel"
     >
       <div className="flex items-center justify-between border-b border-base-content/10 px-3 py-2">

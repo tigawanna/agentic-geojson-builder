@@ -245,9 +245,6 @@
       "openExport": "Open export screen",
       "addMarker": "Marker",
       "markerHint": "Ctrl+click the map to drop a marker.",
-      "engineLabel": "Map engine",
-      "engineLeaflet": "Leaflet",
-      "engineMapboxGl": "Mapbox GL",
       "mapboxTokenModal": {
         "title": "Mapbox access token required",
         "description": "The Mapbox GL engine needs a public access token stored on this device. Add one below or in Settings—the map appears as soon as a token is saved.",

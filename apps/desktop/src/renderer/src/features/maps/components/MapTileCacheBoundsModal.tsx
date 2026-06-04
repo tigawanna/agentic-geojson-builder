@@ -112,7 +112,7 @@ export function MapTileCacheBoundsModal() {
   }
 
   return (
-    <div className="modal-open modal z-[1200]">
+    <div className="modal-open modal z-1200">
       <div className="modal-box max-w-3xl px-8 py-8">
         <button
           type="button"

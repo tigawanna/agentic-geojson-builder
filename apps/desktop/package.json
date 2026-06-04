@@ -20,6 +20,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "tailwind:check": "tailwind-suggest-canonical-classes \"src/renderer/**/*.{tsx,ts,css}\" --css src/renderer/src/styles/globals.css --check",
+    "tailwind:fix": "tailwind-suggest-canonical-classes \"src/renderer/**/*.{tsx,ts,css}\" --css src/renderer/src/styles/globals.css",
     "package": "pnpm run build && electron-builder --dir",
     "package:mac": "pnpm run build && electron-builder --mac --publish never",
     "package:win": "pnpm run build && electron-builder --win --publish never",
@@ -56,6 +58,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@laststance/tailwind-suggest-canonical-classes": "^0.1.1",
     "@playwright/test": "^1.49.1",
     "@tailwindcss/vite": "^4.0.0",
     "@tanstack/router-plugin": "^1.168.11",

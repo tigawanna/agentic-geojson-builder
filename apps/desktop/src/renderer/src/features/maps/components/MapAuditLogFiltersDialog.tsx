@@ -99,7 +99,7 @@ export function MapAuditLogFiltersDialog({
   }
 
   return (
-    <div className="modal-open modal z-[1300]">
+    <div className="modal-open modal z-1300">
       <div className="modal-box max-w-md px-6 py-6 shadow-2xl">
         <div className="mb-5 flex items-center justify-between">
           <h4 className="text-base font-semibold">{t("maps.workspace.auditLogFiltersTitle")}</h4>
