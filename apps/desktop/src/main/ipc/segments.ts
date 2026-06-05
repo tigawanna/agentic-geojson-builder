@@ -2,6 +2,7 @@ import type { IpcChannel, IpcRequest, IpcResponse } from "@shared/ipc-contract.j
 import {
   buildSegmentsFromPath,
   createSegmentEdge,
+  createSegmentEdgeChainFromPoints,
   createSegmentEdgeFromPoints,
   deleteSegmentEdge,
   listSegmentEdges,
@@ -34,6 +35,13 @@ export const segmentsHandlers: { [K in IpcChannel]?: Handler<K> } = {
     const segment = await createSegmentEdgeFromPoints(input);
     notifyChanged(input.mapId, "created", segment.id);
     return { segment };
+  },
+  "segments:createChainFromPoints": async (input) => {
+    const result = await createSegmentEdgeChainFromPoints(input);
+    for (const segment of result.segments) {
+      notifyChanged(input.mapId, "created", segment.id);
+    }
+    return result;
   },
   "segments:update": async (input) => {
     const segment = await updateSegmentEdge(input);

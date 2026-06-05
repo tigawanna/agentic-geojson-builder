@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { ipcInvoke } from "@renderer/hooks/useIpc";
 import { useReferenceGeoJsonQuery } from "@renderer/features/maps/hooks/useReferenceGeoJsonQuery";
 import { CONTROL_POINT_DRAG_STORE_KEY } from "@renderer/features/maps/hooks/usePersistedControlPointDragPreference";
+import { NEIGHBOR_COVERAGE_STORE_KEY } from "@renderer/features/maps/hooks/usePersistedNeighborCoveragePreference";
 import {
   useMapWorkspaceState,
   useMapWorkspaceUiActions,
@@ -18,8 +19,13 @@ export function MapWorkspaceViewOptionsSection() {
     (state) => state.showReferenceInspectTooltip,
   );
   const controlPointDragEnabled = useMapWorkspaceUiState((state) => state.controlPointDragEnabled);
-  const { setShowReferenceOverlay, setShowReferenceInspectTooltip, setControlPointDragEnabled } =
-    useMapWorkspaceUiActions();
+  const showNeighborCoverage = useMapWorkspaceUiState((state) => state.showNeighborCoverage);
+  const {
+    setShowReferenceOverlay,
+    setShowReferenceInspectTooltip,
+    setControlPointDragEnabled,
+    setShowNeighborCoverage,
+  } = useMapWorkspaceUiActions();
   const referenceGeoJsonQuery = useReferenceGeoJsonQuery(workspace?.id ?? null);
   const hasReferenceGeoJson = (referenceGeoJsonQuery.data?.layers.length ?? 0) > 0;
 
@@ -68,6 +74,19 @@ export function MapWorkspaceViewOptionsSection() {
             }}
           />
           {t("maps.workspace.quickMenu.dragReferencePoints")}
+        </label>
+        <label className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-base-content/5">
+          <input
+            type="checkbox"
+            className="checkbox checkbox-xs"
+            checked={showNeighborCoverage}
+            onChange={() => {
+              const next = !showNeighborCoverage;
+              setShowNeighborCoverage(next);
+              void ipcInvoke("store:set", { key: NEIGHBOR_COVERAGE_STORE_KEY, value: next });
+            }}
+          />
+          {t("maps.workspace.quickMenu.showNeighborCoverage")}
         </label>
       </div>
     </section>

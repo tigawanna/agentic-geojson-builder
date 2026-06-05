@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "check-types": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "check-types": "tsgo -b --noEmit",
     "db:pglite:generate": "drizzle-kit generate --config drizzle.pglite.config.ts",
     "db:pglite:studio": "drizzle-kit studio --config drizzle.pglite.config.ts",
     "db:import-stash": "node scripts/import-data-stash.mjs",
@@ -75,6 +75,7 @@
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@typescript/native-preview": "catalog:",
     "@vitejs/plugin-react": "^4.3.4",
     "drizzle-kit": "^0.31.10",
     "electron": "^41.2.2",

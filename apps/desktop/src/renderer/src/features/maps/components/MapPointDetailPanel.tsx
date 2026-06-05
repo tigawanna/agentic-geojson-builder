@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Trash2, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   MAP_POINT_CATEGORIES,
   MAP_POINT_NODE_ROLES,
@@ -7,17 +8,36 @@ import {
   type MapPointNodeRole,
   type MapPointRecord,
 } from "@shared/map-points.types";
+import type { MarkerNeighborRecord } from "@shared/marker-neighbors.types";
+import { resolveMapPointLinkRef } from "@shared/map-point-link-ref";
 import { useIpcMutation } from "@renderer/hooks/useIpc";
+import {
+  MapMarkerNeighborsSection,
+  type MapMarkerNeighborsSectionHandle,
+} from "@renderer/features/maps/components/MapMarkerNeighborsSection";
+import { useMapWorkspaceUiActions } from "@renderer/features/maps/store/MapWorkspaceProvider";
 
 type MapPointDetailPanelProps = {
   point: MapPointRecord;
   mapId: number;
+  mapPoints: MapPointRecord[];
+  markerNeighbors: MarkerNeighborRecord[];
   onClose: () => void;
 };
 
-export function MapPointDetailPanel({ point, mapId, onClose }: MapPointDetailPanelProps) {
+export function MapPointDetailPanel({
+  point,
+  mapId,
+  mapPoints,
+  markerNeighbors,
+  onClose,
+}: MapPointDetailPanelProps) {
+  const { t } = useTranslation();
+  const { setStatusMessage } = useMapWorkspaceUiActions();
   const updatePoint = useIpcMutation("mapPoints:update");
   const deletePoint = useIpcMutation("mapPoints:delete");
+  const neighborsRef = useRef<MapMarkerNeighborsSectionHandle>(null);
+  const [saving, setSaving] = useState(false);
 
   const [ref, setRef] = useState("");
   const [name, setName] = useState("");
@@ -45,6 +65,7 @@ export function MapPointDetailPanel({ point, mapId, onClose }: MapPointDetailPan
       return;
     }
 
+    setSaving(true);
     try {
       await updatePoint.mutateAsync({
         mapId,
@@ -57,8 +78,16 @@ export function MapPointDetailPanel({ point, mapId, onClose }: MapPointDetailPan
         elevationSource: parsedElevation !== null ? "manual" : null,
         description: description.trim() || null,
       });
+      await neighborsRef.current?.saveIfDirty();
+      setStatusMessage(
+        t("maps.workspace.markerUpdated", {
+          name: name.trim() || ref.trim() || resolveMapPointLinkRef(point),
+        }),
+      );
     } catch (caught: unknown) {
       setError(caught instanceof Error ? caught.message : String(caught));
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -149,6 +178,16 @@ export function MapPointDetailPanel({ point, mapId, onClose }: MapPointDetailPan
           />
         </label>
 
+        <MapMarkerNeighborsSection
+          ref={neighborsRef}
+          mapId={mapId}
+          point={point}
+          mapPoints={mapPoints}
+          neighbors={markerNeighbors}
+          compact
+          hideSaveButton
+        />
+
         <p className="font-mono text-xs text-base-content/50">
           {point.latitude.toFixed(6)}, {point.longitude.toFixed(6)}
         </p>
@@ -171,7 +210,7 @@ export function MapPointDetailPanel({ point, mapId, onClose }: MapPointDetailPan
         <button
           type="button"
           className="btn btn-sm btn-primary"
-          disabled={updatePoint.isPending}
+          disabled={updatePoint.isPending || saving}
           onClick={() => void handleSave()}
           data-test="map-point-save"
         >

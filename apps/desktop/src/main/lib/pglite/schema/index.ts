@@ -4,6 +4,7 @@ export * from "./geo-segment.schema";
 export * from "./karura-trail.schema";
 export * from "./map.schema";
 export * from "./map-point.schema";
+export * from "./marker-neighbor.schema";
 export * from "./segment-edge.schema";
 export * from "./trail.schema";
 export * from "./mapbox-ground-capture.schema";

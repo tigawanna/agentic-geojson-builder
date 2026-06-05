@@ -11,6 +11,7 @@ import {
 import { setReferenceInspectCopyTarget } from "@renderer/features/maps/lib/reference-inspect-copy-registry";
 import type { ControlPointRecord } from "@shared/control-points.types";
 import type { GeoSegmentRecord } from "@shared/geo-segments.types";
+import type { MapLinkRecord } from "@shared/map-links.types";
 import type { MapPointRecord } from "@shared/map-points.types";
 import type { MapWorkspaceState } from "@shared/maps.types";
 import type { TileCacheBounds } from "@shared/tile-cache.types";
@@ -27,6 +28,10 @@ import {
   usePickModifierHeld,
 } from "@renderer/features/maps/lib/pick-modifier";
 import { useMapboxTokenQuery } from "@renderer/features/maps/hooks/useMapboxToken";
+import {
+  resolveMapPointMarkerHalo,
+  resolveMapPointMarkerRing,
+} from "@renderer/features/maps/lib/map-point-marker-appearance";
 import { lineStringToLatLngs, segmentGroupColor } from "@renderer/features/maps/lib/segment-utils";
 
 const MAP_POINT_CATEGORY_COLORS: Record<string, string> = {
@@ -62,7 +67,11 @@ export type LeafletMapPaneProps = {
   geoSegments?: GeoSegmentRecord[];
   mapPoints?: MapPointRecord[];
   selectedMapPointId?: number | null;
+  linkMode?: boolean;
   linkFromPointId?: number | null;
+  linkChainPointIds?: number[];
+  linkSuggestionPointIds?: number[];
+  pathSegmentLinks?: MapLinkRecord[];
   pendingMapPoint?: PendingMapPoint | null;
   pendingTracePoints?: PendingTracePoint[];
   canPickMapPoint?: boolean;
@@ -79,7 +88,7 @@ export type LeafletMapPaneProps = {
   onMapLocationPick?: (latitude: number, longitude: number) => void;
   onTracePointAdd?: (latitude: number, longitude: number) => void;
   onMapPointPlace?: (latitude: number, longitude: number, elevationMeters?: number | null) => void;
-  onMapPointClick?: (pointId: number) => void;
+  onMapPointClick?: (pointId: number, modifiers: { ctrlKey: boolean; metaKey: boolean }) => void;
   onPendingTracePointMove?: (index: number, latitude: number, longitude: number) => void;
   onControlPointMapMove?: (controlPointId: number, latitude: number, longitude: number) => void;
   onMapPointMapMove?: (pointId: number, latitude: number, longitude: number) => void;
@@ -88,6 +97,8 @@ export type LeafletMapPaneProps = {
   onSegmentClick?: (segmentId: number) => void;
   selectedSegmentId?: number | null;
   highlightedPathGroupId?: string | null;
+  showNeighborCoverage?: boolean;
+  markerIdsWithNeighborLinks?: number[];
 };
 
 export function LeafletMapPane({
@@ -101,7 +112,11 @@ export function LeafletMapPane({
   geoSegments = [],
   mapPoints = [],
   selectedMapPointId = null,
+  linkMode = false,
   linkFromPointId = null,
+  linkChainPointIds = [],
+  linkSuggestionPointIds = [],
+  pathSegmentLinks = [],
   pendingMapPoint = null,
   pendingTracePoints = [],
   canPickMapPoint = false,
@@ -127,6 +142,8 @@ export function LeafletMapPane({
   onSegmentClick,
   selectedSegmentId = null,
   highlightedPathGroupId = null,
+  showNeighborCoverage = false,
+  markerIdsWithNeighborLinks = [],
 }: LeafletMapPaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
@@ -595,12 +612,29 @@ export function LeafletMapPane({
           },
         ).addTo(segmentsLayer);
       }
+
+      for (const link of pathSegmentLinks) {
+        const coordinates = link.geometry?.coordinates;
+        if (!coordinates || coordinates.length < 2) {
+          continue;
+        }
+        L.polyline(lineStringToLatLngs(coordinates), {
+          color: "#16a34a",
+          weight: 6,
+          opacity: 0.9,
+          lineCap: "round",
+          lineJoin: "round",
+        })
+          .bindTooltip(`${link.fromRef} → ${link.toRef}`)
+          .addTo(segmentsLayer);
+      }
     })();
   }, [
     editingSegmentId,
     geoSegments,
     highlightedPathGroupId,
     mapReady,
+    pathSegmentLinks,
     pendingTracePoints,
     selectedSegmentId,
   ]);
@@ -646,19 +680,57 @@ export function LeafletMapPane({
       });
     });
 
+    if (linkMode && linkChainPointIds.length >= 2) {
+      const chainCoordinates = linkChainPointIds
+        .map((pointId) => mapPoints.find((point) => point.id === pointId))
+        .filter((point): point is NonNullable<typeof point> => point !== undefined)
+        .map((point) => ({ lat: point.latitude, lng: point.longitude }));
+      if (chainCoordinates.length >= 2) {
+        L.polyline(chainCoordinates, {
+          color: "#0ea5e9",
+          weight: 5,
+          opacity: 0.95,
+          dashArray: "10 8",
+        }).addTo(markersLayer);
+      }
+    }
+
+    const chainSet = new Set(linkChainPointIds);
+    const chainIndexById = new Map(linkChainPointIds.map((pointId, index) => [pointId, index + 1]));
+    const suggestionSet = new Set(linkSuggestionPointIds);
+    const neighborLinkSet = new Set(markerIdsWithNeighborLinks);
+    const pinSize = linkMode ? 26 : 18;
+    const pinOffset = linkMode ? -13 : -9;
+
     mapPoints.forEach((point) => {
       const selected = point.id === selectedMapPointId;
-      const isLinkSource = point.id === linkFromPointId;
+      const inChain = chainSet.has(point.id);
+      const chainIndex = chainIndexById.get(point.id);
+      const isLinkHead = point.id === linkFromPointId;
+      const isSuggestion = suggestionSet.has(point.id);
       const color = mapPointColor(point.category);
-      const ring = isLinkSource ? "#f59e0b" : selected ? "#2563eb" : "#ffffff";
-      const label = point.ref ?? point.name ?? "";
+      const appearanceInput = {
+        pointId: point.id,
+        selected,
+        linkMode,
+        inChain,
+        isLinkHead,
+        isSuggestion,
+        showNeighborCoverage,
+        markerIdsWithNeighborLinks: neighborLinkSet,
+      };
+      const ring = resolveMapPointMarkerRing(appearanceInput);
+      const baseLabel = point.ref ?? point.name ?? "";
+      const label =
+        chainIndex !== undefined && baseLabel ? `${chainIndex}:${baseLabel}` : baseLabel;
       const markerCursor = mapPointDragEnabled ? "grab" : "pointer";
+      const halo = resolveMapPointMarkerHalo(ring, appearanceInput);
       const marker = L.marker([point.latitude, point.longitude], {
         draggable: mapPointDragEnabled,
         icon: L.divIcon({
           className: "",
-          html: `<div style="margin-left:-9px;margin-top:-9px;display:flex;align-items:center;gap:4px;cursor:${markerCursor};"><div style="width:18px;height:18px;transform:rotate(45deg);border:2px solid ${ring};background:${color};box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>${label ? `<span style="transform:translateY(-1px);font-size:10px;font-weight:700;color:#0f172a;background:rgba(255,255,255,0.85);border-radius:4px;padding:0 3px;white-space:nowrap;">${label}</span>` : ""}</div>`,
-          iconSize: [18, 18],
+          html: `<div style="margin-left:${pinOffset}px;margin-top:${pinOffset}px;display:flex;align-items:center;gap:4px;cursor:${markerCursor};"><div style="width:${pinSize}px;height:${pinSize}px;transform:rotate(45deg);border:2px solid ${ring};background:${color};${halo}"></div>${label ? `<span style="transform:translateY(-1px);font-size:${linkMode ? 11 : 10}px;font-weight:700;color:#0f172a;background:rgba(255,255,255,0.9);border-radius:4px;padding:0 4px;white-space:nowrap;">${label}</span>` : ""}</div>`,
+          iconSize: [pinSize, pinSize],
         }),
       }).addTo(markersLayer);
 
@@ -671,7 +743,10 @@ export function LeafletMapPane({
 
       marker.on("click", (event) => {
         L.DomEvent.stopPropagation(event);
-        onMapPointClickRef.current?.(point.id);
+        onMapPointClickRef.current?.(point.id, {
+          ctrlKey: event.originalEvent.ctrlKey,
+          metaKey: event.originalEvent.metaKey,
+        });
       });
     });
 
@@ -706,11 +781,16 @@ export function LeafletMapPane({
     mapPointDragEnabled,
     mapPoints,
     selectedMapPointId,
+    linkChainPointIds,
     linkFromPointId,
+    linkMode,
+    linkSuggestionPointIds,
     mapReady,
     pendingMapPoint,
     pendingTracePoints,
     selectedControlPointId,
+    showNeighborCoverage,
+    markerIdsWithNeighborLinks,
   ]);
 
   useEffect(() => {
@@ -782,6 +862,11 @@ export function LeafletMapPane({
       {canPlaceMapPoint ? (
         <div className="pointer-events-none absolute bottom-3 left-3 z-1000 rounded-box bg-base-100/90 px-2 py-1 text-xs text-base-content/70">
           Ctrl+click to drop a marker
+        </div>
+      ) : null}
+      {linkMode ? (
+        <div className="pointer-events-none absolute bottom-3 left-3 z-1000 max-w-xs rounded-box bg-info/90 px-2 py-1 text-xs text-info-content">
+          Ctrl+click markers to add to segment chain. Drag list items to reorder.
         </div>
       ) : null}
     </div>

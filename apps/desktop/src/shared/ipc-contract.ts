@@ -119,6 +119,11 @@ import type {
   UpdateMapPointInput,
 } from "./map-points.types.js";
 import type {
+  MarkerNeighborRecord,
+  MarkerNeighborsChangedEvent,
+  ReplaceMarkerNeighborsInput,
+} from "./marker-neighbors.types.js";
+import type {
   CreateMapboxGroundCaptureInput,
   DeleteMapboxGroundCaptureInput,
   MapboxCapturesChangedEvent,
@@ -137,6 +142,8 @@ import type {
   BuildSegmentsFromPathInput,
   BuildSegmentsFromPathPreview,
   BuildSegmentsFromPathResult,
+  CreateSegmentEdgeChainFromPointsInput,
+  CreateSegmentEdgeChainFromPointsResult,
   CreateSegmentEdgeFromPointsInput,
   CreateSegmentEdgeInput,
   DeleteSegmentEdgeInput,
@@ -389,6 +396,13 @@ export interface IpcContract {
   "mapPoints:update": { req: UpdateMapPointInput; res: { point: MapPointRecord } };
   "mapPoints:delete": { req: DeleteMapPointInput; res: { ok: true } };
 
+  // --- Marker neighbors (directional routing hints) --------------------------
+  "markerNeighbors:list": { req: { mapId: number }; res: { neighbors: MarkerNeighborRecord[] } };
+  "markerNeighbors:replace": {
+    req: ReplaceMarkerNeighborsInput;
+    res: { neighbors: MarkerNeighborRecord[] };
+  };
+
   // --- Mapbox ground captures (experimental basemap sampling) ----------------
   "mapboxCaptures:list": { req: void; res: { captures: MapboxGroundCaptureRecord[] } };
   "mapboxCaptures:create": {
@@ -414,6 +428,10 @@ export interface IpcContract {
   "segments:createFromPoints": {
     req: CreateSegmentEdgeFromPointsInput;
     res: { segment: SegmentEdgeRecord };
+  };
+  "segments:createChainFromPoints": {
+    req: CreateSegmentEdgeChainFromPointsInput;
+    res: CreateSegmentEdgeChainFromPointsResult;
   };
   "segments:update": { req: UpdateSegmentEdgeInput; res: { segment: SegmentEdgeRecord } };
   "segments:delete": { req: DeleteSegmentEdgeInput; res: { ok: true } };
@@ -513,6 +531,7 @@ export interface IpcEventMap {
   "referenceGeoJson:changed": ReferenceGeoJsonChangedEvent;
   "geoSegments:changed": GeoSegmentsChangedEvent;
   "mapPoints:changed": MapPointsChangedEvent;
+  "markerNeighbors:changed": MarkerNeighborsChangedEvent;
   "mapboxCaptures:changed": MapboxCapturesChangedEvent;
   "mapLinks:changed": MapLinksChangedEvent;
   "segments:changed": SegmentsChangedEvent;

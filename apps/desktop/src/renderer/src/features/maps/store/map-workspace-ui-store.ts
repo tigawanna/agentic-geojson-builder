@@ -24,6 +24,7 @@ type MapWorkspaceUiState = {
   showReferenceInspectTooltip: boolean;
   controlPointDragEnabled: boolean;
   mapboxInspectMode: boolean;
+  showNeighborCoverage: boolean;
   sourcePanelPresentation: SourcePanelPresentation;
   mapPanelCollapsed: boolean;
   pendingMapPoint: MapCoordinates | null;
@@ -36,6 +37,8 @@ type MapWorkspaceUiState = {
   segmentPathKind: GeoSegmentPathKind;
   markerMode: boolean;
   linkMode: boolean;
+  linkChain: number[];
+  linkPathSlug: string;
   selectedMapPointId: number | null;
   detailPanelMapPointId: number | null;
   linkFromPointId: number | null;
@@ -62,6 +65,8 @@ type MapWorkspaceUiActions = {
   setControlPointDragEnabled: (enabled: boolean) => void;
   setMapboxInspectMode: (enabled: boolean) => void;
   toggleMapboxInspectMode: () => void;
+  setShowNeighborCoverage: (enabled: boolean) => void;
+  toggleShowNeighborCoverage: () => void;
   setSourcePanelPresentation: (presentation: SourcePanelPresentation) => void;
   setMapPanelCollapsed: (collapsed: boolean) => void;
   setPendingMapPoint: (point: MapCoordinates | null) => void;
@@ -76,6 +81,12 @@ type MapWorkspaceUiActions = {
   setSegmentPathKind: (pathKind: GeoSegmentPathKind) => void;
   setMarkerMode: (enabled: boolean) => void;
   setLinkMode: (enabled: boolean) => void;
+  setLinkChain: (pointIds: number[]) => void;
+  appendLinkChainPoint: (pointId: number) => void;
+  removeLinkChainPointAt: (index: number) => void;
+  reorderLinkChain: (fromIndex: number, toIndex: number) => void;
+  clearLinkChain: () => void;
+  setLinkPathSlug: (pathSlug: string) => void;
   setSelectedMapPointId: (pointId: number | null) => void;
   setDetailPanelMapPointId: (pointId: number | null) => void;
   setLinkFromPointId: (pointId: number | null) => void;
@@ -104,6 +115,7 @@ const initialState: MapWorkspaceUiState = {
   showReferenceInspectTooltip: false,
   controlPointDragEnabled: false,
   mapboxInspectMode: false,
+  showNeighborCoverage: false,
   sourcePanelPresentation: "docked",
   mapPanelCollapsed: false,
   pendingMapPoint: null,
@@ -116,6 +128,8 @@ const initialState: MapWorkspaceUiState = {
   segmentPathKind: "walking-trail",
   markerMode: false,
   linkMode: false,
+  linkChain: [],
+  linkPathSlug: "",
   selectedMapPointId: null,
   detailPanelMapPointId: null,
   linkFromPointId: null,
@@ -150,6 +164,9 @@ export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
     setMapboxInspectMode: (mapboxInspectMode) => set({ mapboxInspectMode }),
     toggleMapboxInspectMode: () =>
       set((state) => ({ mapboxInspectMode: !state.mapboxInspectMode })),
+    setShowNeighborCoverage: (showNeighborCoverage) => set({ showNeighborCoverage }),
+    toggleShowNeighborCoverage: () =>
+      set((state) => ({ showNeighborCoverage: !state.showNeighborCoverage })),
     setSourcePanelPresentation: (sourcePanelPresentation) => set({ sourcePanelPresentation }),
     setMapPanelCollapsed: (mapPanelCollapsed) => set({ mapPanelCollapsed }),
     setPendingMapPoint: (pendingMapPoint) => set({ pendingMapPoint }),
@@ -168,7 +185,39 @@ export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
     setSegmentName: (segmentName) => set({ segmentName }),
     setSegmentPathKind: (segmentPathKind) => set({ segmentPathKind }),
     setMarkerMode: (markerMode) => set({ markerMode }),
-    setLinkMode: (linkMode) => set({ linkMode }),
+    setLinkMode: (linkMode) =>
+      set((state) => ({
+        linkMode,
+        linkChain: linkMode ? state.linkChain : [],
+        linkFromPointId: null,
+        toolsPanelOpen: linkMode ? true : state.toolsPanelOpen,
+      })),
+    setLinkChain: (linkChain) => set({ linkChain, linkFromPointId: linkChain.at(-1) ?? null }),
+    appendLinkChainPoint: (pointId) =>
+      set((state) => {
+        if (state.linkChain.includes(pointId)) {
+          return state;
+        }
+        const linkChain = [...state.linkChain, pointId];
+        return { linkChain, linkFromPointId: pointId };
+      }),
+    removeLinkChainPointAt: (index) =>
+      set((state) => {
+        const linkChain = state.linkChain.filter((_, pointIndex) => pointIndex !== index);
+        return { linkChain, linkFromPointId: linkChain.at(-1) ?? null };
+      }),
+    reorderLinkChain: (fromIndex, toIndex) =>
+      set((state) => {
+        const linkChain = [...state.linkChain];
+        const [moved] = linkChain.splice(fromIndex, 1);
+        if (moved === undefined) {
+          return state;
+        }
+        linkChain.splice(toIndex, 0, moved);
+        return { linkChain, linkFromPointId: linkChain.at(-1) ?? null };
+      }),
+    clearLinkChain: () => set({ linkChain: [], linkFromPointId: null }),
+    setLinkPathSlug: (linkPathSlug) => set({ linkPathSlug }),
     setSelectedMapPointId: (selectedMapPointId) => set({ selectedMapPointId }),
     setDetailPanelMapPointId: (detailPanelMapPointId) =>
       set({ detailPanelMapPointId, selectedMapPointId: detailPanelMapPointId }),
@@ -178,7 +227,8 @@ export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
     setHighlightedPathGroupId: (highlightedPathGroupId) =>
       set({ highlightedPathGroupId, highlightedSegmentId: null }),
     stopMarkerMode: () => set({ markerMode: false }),
-    stopLinkMode: () => set({ linkMode: false, linkFromPointId: null }),
+    stopLinkMode: () =>
+      set({ linkMode: false, linkFromPointId: null, linkChain: [], linkPathSlug: "" }),
     stopReferenceMode: () =>
       set({ referenceMode: false, pendingMapPoint: null, selectedControlPointId: null }),
     stopTraceMode: () =>

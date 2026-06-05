@@ -4,6 +4,8 @@ import type {
   BuildSegmentsFromPathInput,
   BuildSegmentsFromPathPreview,
   BuildSegmentsFromPathResult,
+  CreateSegmentEdgeChainFromPointsInput,
+  CreateSegmentEdgeChainFromPointsResult,
   CreateSegmentEdgeFromPointsInput,
   CreateSegmentEdgeInput,
   DeleteSegmentEdgeInput,
@@ -17,6 +19,7 @@ import {
   projectPointFractionOnLine,
   sliceLineBetweenFractions,
 } from "@main/lib/geojson/line-fraction.js";
+import { resolveMapPointLinkRef } from "@shared/map-point-link-ref.js";
 import { buildSegmentProposalsFromPath } from "@main/lib/geojson/segmentation.js";
 import { getPgliteDb } from "@main/lib/pglite/client.js";
 import { geoSegmentTable } from "@main/lib/pglite/schema/geo-segment.schema.js";
@@ -216,19 +219,23 @@ export async function createSegmentEdgeFromPoints(
   if (!fromPoint || !toPoint) {
     throw new Error("Both points must exist on this map.");
   }
-  if (!fromPoint.ref || !toPoint.ref) {
-    throw new Error("Both points need a ref before they can be linked.");
-  }
+  const fromRef = resolveMapPointLinkRef({
+    id: fromPoint.id,
+    ref: fromPoint.ref,
+    name: fromPoint.name,
+  });
+  const toRef = resolveMapPointLinkRef({
+    id: toPoint.id,
+    ref: toPoint.ref,
+    name: toPoint.name,
+  });
 
   const groups = await loadGroupGeometries(input.mapId);
-  if (groups.length === 0) {
-    throw new Error("No trail paths exist yet. Trace a path before linking points.");
-  }
 
   let chosen: {
     pathSlug: string;
-    startFraction: number;
-    endFraction: number;
+    startFraction: number | null;
+    endFraction: number | null;
     pathKind: GeoSegmentPathKind;
     geometry: NonNullable<SegmentEdgeRow["geometryJson"]>;
     lengthM: number;
@@ -277,13 +284,24 @@ export async function createSegmentEdgeFromPoints(
   }
 
   if (!chosen) {
-    throw new Error("Could not project the points onto a path.");
+    const coordinates: [number, number][] = [
+      [fromPoint.location.x, fromPoint.location.y],
+      [toPoint.location.x, toPoint.location.y],
+    ];
+    chosen = {
+      pathSlug: input.pathSlug?.trim() || "manual-segments",
+      startFraction: null,
+      endFraction: null,
+      pathKind: "unknown",
+      geometry: { type: "LineString", coordinates },
+      lengthM: pathLengthMeters(coordinates),
+    };
   }
 
   return upsertSegmentEdge({
     mapId: input.mapId,
-    fromRef: fromPoint.ref,
-    toRef: toPoint.ref,
+    fromRef,
+    toRef,
     pathSlug: chosen.pathSlug,
     startFraction: chosen.startFraction,
     endFraction: chosen.endFraction,
@@ -293,6 +311,33 @@ export async function createSegmentEdgeFromPoints(
     bidirectional: input.bidirectional ?? true,
     status: "draft",
   });
+}
+
+export async function createSegmentEdgeChainFromPoints(
+  input: CreateSegmentEdgeChainFromPointsInput,
+): Promise<CreateSegmentEdgeChainFromPointsResult> {
+  if (input.pointIds.length < 2) {
+    throw new Error("Add at least two markers to the chain.");
+  }
+
+  const segments: SegmentEdgeRecord[] = [];
+  for (let index = 0; index < input.pointIds.length - 1; index += 1) {
+    const fromPointId = input.pointIds[index];
+    const toPointId = input.pointIds[index + 1];
+    if (fromPointId === undefined || toPointId === undefined) {
+      continue;
+    }
+    const segment = await createSegmentEdgeFromPoints({
+      mapId: input.mapId,
+      fromPointId,
+      toPointId,
+      pathSlug: input.pathSlug,
+      bidirectional: input.bidirectional,
+    });
+    segments.push(segment);
+  }
+
+  return { segments };
 }
 
 export async function updateSegmentEdge(input: UpdateSegmentEdgeInput): Promise<SegmentEdgeRecord> {

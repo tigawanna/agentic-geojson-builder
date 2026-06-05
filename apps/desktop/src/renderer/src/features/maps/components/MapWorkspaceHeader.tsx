@@ -169,7 +169,7 @@ export function MapWorkspaceHeader({ hasSourceFile }: MapWorkspaceHeaderProps) {
             stopTraceMode();
             stopMarkerMode();
             setLinkMode(true);
-            setStatusMessage(t("maps.workspace.linkPickFirst"));
+            setStatusMessage(t("maps.workspace.linkComposer.hint"));
           }}
           data-test="link-mode-toggle"
         >

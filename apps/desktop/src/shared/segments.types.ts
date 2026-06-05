@@ -47,6 +47,17 @@ export type CreateSegmentEdgeFromPointsInput = {
   bidirectional?: boolean;
 };
 
+export type CreateSegmentEdgeChainFromPointsInput = {
+  mapId: number;
+  pointIds: number[];
+  pathSlug?: string;
+  bidirectional?: boolean;
+};
+
+export type CreateSegmentEdgeChainFromPointsResult = {
+  segments: SegmentEdgeRecord[];
+};
+
 export type UpdateSegmentEdgeInput = {
   mapId: number;
   segmentId: number;

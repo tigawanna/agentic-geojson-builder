@@ -1,6 +1,7 @@
 import { ipcInvoke } from "@renderer/hooks/useIpc";
 import { useIpcEvent } from "@renderer/hooks/useIpcEvent";
 import { CONTROL_POINT_DRAG_STORE_KEY } from "@renderer/features/maps/hooks/usePersistedControlPointDragPreference";
+import { NEIGHBOR_COVERAGE_STORE_KEY } from "@renderer/features/maps/hooks/usePersistedNeighborCoveragePreference";
 import { useMapWorkspaceUiStore } from "@renderer/features/maps/store/MapWorkspaceProvider";
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
@@ -121,6 +122,13 @@ export function useMapWorkspaceMenuActions(handlers: MapWorkspaceMenuHandlers) {
       return;
     }
 
+    if (action.id === "neighbor-coverage") {
+      const next = !state.showNeighborCoverage;
+      state.setShowNeighborCoverage(next);
+      void ipcInvoke("store:set", { key: NEIGHBOR_COVERAGE_STORE_KEY, value: next });
+      return;
+    }
+
     if (action.id.startsWith("mapbox-style:")) {
       const styleId = action.id.slice("mapbox-style:".length);
       if ((MAPBOX_GL_STYLE_ORDER as readonly string[]).includes(styleId)) {
@@ -181,7 +189,7 @@ export function useMapWorkspaceMenuActions(handlers: MapWorkspaceMenuHandlers) {
       state.stopTraceMode();
       state.stopMarkerMode();
       state.setLinkMode(true);
-      state.setStatusMessage(t("maps.workspace.linkPickFirst"));
+      state.setStatusMessage(t("maps.workspace.linkComposer.hint"));
     }
   });
 }

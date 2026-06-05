@@ -39,6 +39,10 @@ import { useMapboxTokenInvalid } from "@renderer/features/maps/hooks/useMapboxTo
 import { attachMapboxUnauthorizedListener } from "@renderer/features/maps/lib/attach-mapbox-unauthorized-listener";
 import { segmentGroupColor } from "@renderer/features/maps/lib/segment-utils";
 import type { LeafletMapPaneProps } from "@renderer/features/maps/components/LeafletMapPane";
+import {
+  resolveMapPointMarkerHalo,
+  resolveMapPointMarkerRing,
+} from "@renderer/features/maps/lib/map-point-marker-appearance";
 
 const MAP_POINT_CATEGORY_COLORS: Record<string, string> = {
   junction: "#7c3aed",
@@ -87,7 +91,11 @@ export function MapboxGlWorkspacePane({
   geoSegments = [],
   mapPoints = [],
   selectedMapPointId = null,
+  linkMode = false,
   linkFromPointId = null,
+  linkChainPointIds = [],
+  linkSuggestionPointIds = [],
+  pathSegmentLinks = [],
   pendingMapPoint = null,
   pendingTracePoints = [],
   canPickMapPoint = false,
@@ -116,6 +124,8 @@ export function MapboxGlWorkspacePane({
   onControlPointClick,
   onSegmentClick,
   onCapture,
+  showNeighborCoverage = false,
+  markerIdsWithNeighborLinks = [],
 }: MapboxGlWorkspacePaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -229,7 +239,11 @@ export function MapboxGlWorkspacePane({
     controlPointDragEnabled,
     mapPoints,
     selectedMapPointId,
+    linkMode,
     linkFromPointId,
+    linkChainPointIds,
+    linkSuggestionPointIds,
+    pathSegmentLinks,
     selectedControlPointId,
     pendingMapPoint,
     canPickMapPoint,
@@ -252,7 +266,11 @@ export function MapboxGlWorkspacePane({
     controlPointDragEnabled,
     mapPoints,
     selectedMapPointId,
+    linkMode,
     linkFromPointId,
+    linkChainPointIds,
+    linkSuggestionPointIds,
+    pathSegmentLinks,
     selectedControlPointId,
     pendingMapPoint,
     canPickMapPoint,
@@ -447,28 +465,42 @@ export function MapboxGlWorkspacePane({
         data.editingSegmentId !== null && data.pendingTracePoints.length >= 2
           ? data.editingSegmentId
           : null;
+      const segmentFeatures = data.geoSegments
+        .filter((segment) => segment.id !== hideSegmentId)
+        .filter((segment) => (segment.geometry?.coordinates?.length ?? 0) >= 2)
+        .map((segment) => ({
+          type: "Feature" as const,
+          geometry: segment.geometry,
+          properties: {
+            id: segment.id,
+            color:
+              segment.id === data.selectedSegmentId ||
+              segment.segmentGroupId === data.highlightedPathGroupId
+                ? "#2563eb"
+                : segmentGroupColor(segment.segmentGroupId),
+            width:
+              segment.id === data.selectedSegmentId ||
+              segment.segmentGroupId === data.highlightedPathGroupId
+                ? 9
+                : 7,
+          },
+        }));
+
+      const pathLinkFeatures = data.pathSegmentLinks
+        .filter((link) => (link.geometry?.coordinates?.length ?? 0) >= 2)
+        .map((link) => ({
+          type: "Feature" as const,
+          geometry: link.geometry!,
+          properties: {
+            id: -link.id,
+            color: "#16a34a",
+            width: 6,
+          },
+        }));
+
       const segmentCollection: GeoJSON.FeatureCollection = {
         type: "FeatureCollection",
-        features: data.geoSegments
-          .filter((segment) => segment.id !== hideSegmentId)
-          .filter((segment) => (segment.geometry?.coordinates?.length ?? 0) >= 2)
-          .map((segment) => ({
-            type: "Feature" as const,
-            geometry: segment.geometry,
-            properties: {
-              id: segment.id,
-              color:
-                segment.id === data.selectedSegmentId ||
-                segment.segmentGroupId === data.highlightedPathGroupId
-                  ? "#2563eb"
-                  : segmentGroupColor(segment.segmentGroupId),
-              width:
-                segment.id === data.selectedSegmentId ||
-                segment.segmentGroupId === data.highlightedPathGroupId
-                  ? 9
-                  : 7,
-            },
-          })),
+        features: [...segmentFeatures, ...pathLinkFeatures],
       };
       upsertGeoJsonSource(map, SEGMENT_SOURCE_ID, segmentCollection);
       if (!map.getLayer(SEGMENT_LAYER_ID)) {
@@ -481,15 +513,23 @@ export function MapboxGlWorkspacePane({
         });
       }
 
+      const chainCoordinates =
+        data.linkMode && data.linkChainPointIds.length >= 2
+          ? data.linkChainPointIds
+              .map((pointId) => data.mapPoints.find((point) => point.id === pointId))
+              .filter((point): point is NonNullable<typeof point> => point !== undefined)
+              .map((point) => [point.longitude, point.latitude] as [number, number])
+          : [];
+
       const traceCollection: GeoJSON.FeatureCollection = {
         type: "FeatureCollection",
-        features:
-          data.pendingTracePoints.length >= 2
+        features: [
+          ...(data.pendingTracePoints.length >= 2
             ? [
                 {
-                  type: "Feature",
+                  type: "Feature" as const,
                   geometry: {
-                    type: "LineString",
+                    type: "LineString" as const,
                     coordinates: data.pendingTracePoints.map((point) => [
                       point.longitude,
                       point.latitude,
@@ -498,7 +538,20 @@ export function MapboxGlWorkspacePane({
                   properties: {},
                 },
               ]
-            : [],
+            : []),
+          ...(chainCoordinates.length >= 2
+            ? [
+                {
+                  type: "Feature" as const,
+                  geometry: {
+                    type: "LineString" as const,
+                    coordinates: chainCoordinates,
+                  },
+                  properties: {},
+                },
+              ]
+            : []),
+        ],
       };
       upsertGeoJsonSource(map, TRACE_SOURCE_ID, traceCollection);
       if (!map.getLayer(TRACE_LAYER_ID)) {
@@ -880,16 +933,40 @@ export function MapboxGlWorkspacePane({
         markersRef.current.push(marker);
       });
 
+      const chainSet = new Set(linkChainPointIds);
+      const chainIndexById = new Map(
+        linkChainPointIds.map((pointId, index) => [pointId, index + 1]),
+      );
+      const suggestionSet = new Set(linkSuggestionPointIds);
+      const neighborLinkSet = new Set(markerIdsWithNeighborLinks);
+      const pinSize = linkMode ? 26 : 18;
+
       mapPoints.forEach((point) => {
         const selected = point.id === selectedMapPointId;
-        const isLinkSource = point.id === linkFromPointId;
+        const inChain = chainSet.has(point.id);
+        const chainIndex = chainIndexById.get(point.id);
+        const isLinkHead = point.id === linkFromPointId;
+        const isSuggestion = suggestionSet.has(point.id);
         const color = mapPointColor(point.category);
-        const ring = isLinkSource ? "#f59e0b" : selected ? "#2563eb" : "#ffffff";
-        const label = point.ref ?? point.name ?? "";
+        const appearanceInput = {
+          pointId: point.id,
+          selected,
+          linkMode,
+          inChain,
+          isLinkHead,
+          isSuggestion,
+          showNeighborCoverage,
+          markerIdsWithNeighborLinks: neighborLinkSet,
+        };
+        const ring = resolveMapPointMarkerRing(appearanceInput);
+        const baseLabel = point.ref ?? point.name ?? "";
+        const label =
+          chainIndex !== undefined && baseLabel ? `${chainIndex}:${baseLabel}` : baseLabel;
         const element = document.createElement("div");
         const markerCursor = mapPointDragEnabled ? "grab" : "pointer";
+        const halo = resolveMapPointMarkerHalo(ring, appearanceInput);
         element.style.cssText = `display:flex;align-items:center;gap:4px;cursor:${markerCursor};`;
-        element.innerHTML = `<div style="width:18px;height:18px;transform:rotate(45deg);border:2px solid ${ring};background:${color};box-shadow:0 1px 3px rgba(0,0,0,0.4);"></div>${label ? `<span style="transform:translateY(-1px);font-size:10px;font-weight:700;color:#0f172a;background:rgba(255,255,255,0.85);border-radius:4px;padding:0 3px;white-space:nowrap;">${label}</span>` : ""}`;
+        element.innerHTML = `<div style="width:${pinSize}px;height:${pinSize}px;transform:rotate(45deg);border:2px solid ${ring};background:${color};${halo}"></div>${label ? `<span style="transform:translateY(-1px);font-size:${linkMode ? 11 : 10}px;font-weight:700;color:#0f172a;background:rgba(255,255,255,0.9);border-radius:4px;padding:0 4px;white-space:nowrap;">${label}</span>` : ""}`;
         const marker = new mapboxgl.Marker({
           element,
           anchor: "center",
@@ -905,7 +982,10 @@ export function MapboxGlWorkspacePane({
         }
         element.addEventListener("click", (clickEvent) => {
           clickEvent.stopPropagation();
-          onMapPointClickRef.current?.(point.id);
+          onMapPointClickRef.current?.(point.id, {
+            ctrlKey: clickEvent.ctrlKey,
+            metaKey: clickEvent.metaKey,
+          });
         });
         markersRef.current.push(marker);
       });
@@ -944,10 +1024,15 @@ export function MapboxGlWorkspacePane({
     mapPointDragEnabled,
     mapPoints,
     selectedMapPointId,
+    linkChainPointIds,
     linkFromPointId,
+    linkMode,
+    linkSuggestionPointIds,
     selectedControlPointId,
     pendingMapPoint,
     pendingTracePoints,
+    showNeighborCoverage,
+    markerIdsWithNeighborLinks,
   ]);
 
   useEffect(() => {
@@ -988,6 +1073,11 @@ export function MapboxGlWorkspacePane({
       {canPlaceMapPoint ? (
         <div className="pointer-events-none absolute bottom-3 left-3 z-1000 rounded-box bg-base-100/90 px-2 py-1 text-xs text-base-content/70">
           Ctrl+click to drop a marker
+        </div>
+      ) : null}
+      {linkMode ? (
+        <div className="pointer-events-none absolute bottom-3 left-3 z-1000 max-w-xs rounded-box bg-info/90 px-2 py-1 text-xs text-info-content">
+          Ctrl+click markers to add to segment chain. Drag list items to reorder.
         </div>
       ) : null}
       {!inspectMode && referenceInspect ? (

@@ -16,8 +16,9 @@ type MapWorkspaceMenuSyncBridgeProps = {
   exportPending: boolean;
 };
 
-function isMapWorkspaceRoute(pathname: string): boolean {
-  return /^\/maps\/\d+$/.test(pathname.replace(/\/$/, ""));
+function isMapViewRoute(pathname: string): boolean {
+  const normalized = pathname.replace(/\/$/, "");
+  return /^\/maps\/\d+$/.test(normalized) || /^\/data\/\d+$/.test(normalized);
 }
 
 export function MapWorkspaceMenuSyncBridge({
@@ -37,6 +38,7 @@ export function MapWorkspaceMenuSyncBridge({
   );
   const controlPointDragEnabled = useMapWorkspaceUiState((state) => state.controlPointDragEnabled);
   const mapboxInspectMode = useMapWorkspaceUiState((state) => state.mapboxInspectMode);
+  const showNeighborCoverage = useMapWorkspaceUiState((state) => state.showNeighborCoverage);
   const referenceGeoJsonQuery = useReferenceGeoJsonQuery(workspace?.id ?? null);
   const hasReferenceGeoJson = (referenceGeoJsonQuery.data?.layers.length ?? 0) > 0;
   const mapboxTokenAvailable = (useMapboxTokenQuery().data ?? null) !== null;
@@ -49,7 +51,7 @@ export function MapWorkspaceMenuSyncBridge({
 
   useEffect(() => {
     const payload: MapWorkspaceMenuSyncState = {
-      routeActive: isMapWorkspaceRoute(pathname) && workspace !== null,
+      routeActive: isMapViewRoute(pathname) && workspace !== null,
       referenceMode,
       traceMode,
       markerMode,
@@ -62,6 +64,7 @@ export function MapWorkspaceMenuSyncBridge({
       baseRenderer,
       mapboxGlStyle,
       mapboxInspectMode,
+      showNeighborCoverage,
       mapboxTokenAvailable,
       segmentCount,
       exportPending,
@@ -82,6 +85,7 @@ export function MapWorkspaceMenuSyncBridge({
     baseRenderer,
     mapboxGlStyle,
     mapboxInspectMode,
+    showNeighborCoverage,
     mapboxTokenAvailable,
     segmentCount,
     exportPending,

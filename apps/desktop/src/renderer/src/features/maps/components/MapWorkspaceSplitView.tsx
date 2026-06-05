@@ -16,7 +16,16 @@ import { useIpcEvent } from "@renderer/hooks/useIpcEvent";
 import { useControlPointsQuery } from "@renderer/features/maps/hooks/useControlPointsQuery";
 import { useGeoSegmentsQuery } from "@renderer/features/maps/hooks/useGeoSegmentsQuery";
 import { useMapPointsQuery } from "@renderer/features/maps/hooks/useMapPointsQuery";
+import { useMarkerNeighborsQuery } from "@renderer/features/maps/hooks/useMarkerNeighborsQuery";
+import {
+  MapLinkComposerPanel,
+  resolveLinkComposerSuggestionPointIds,
+} from "@renderer/features/maps/components/MapLinkComposerPanel";
+import { AppStatusToast } from "@renderer/components/common/AppStatusToast";
 import { MapPointDetailPanel } from "@renderer/features/maps/components/MapPointDetailPanel";
+import { isPickModifierEvent } from "@renderer/features/maps/lib/pick-modifier";
+import { resolveMapPointLinkRef } from "@shared/map-point-link-ref";
+import { useMapLinksQuery } from "@renderer/features/maps/hooks/useMapLinksQuery";
 import { useReferenceGeoJsonQuery } from "@renderer/features/maps/hooks/useReferenceGeoJsonQuery";
 import { useTileCacheStatusQuery } from "@renderer/features/maps/hooks/useTileCacheStatusQuery";
 import { resolveLocalTileUrl } from "@renderer/features/maps/hooks/tile-cache-api";
@@ -69,6 +78,9 @@ import { useMapWorkspaceMenuActions } from "@renderer/features/maps/hooks/useMap
 import { useReferenceInspectCopyShortcut } from "@renderer/features/maps/hooks/useReferenceInspectCopyShortcut";
 import { useWorkspaceUiSyncPublisher } from "@renderer/features/maps/hooks/useWorkspaceUiSync";
 import { usePersistedControlPointDragPreference } from "@renderer/features/maps/hooks/usePersistedControlPointDragPreference";
+import { usePersistedNeighborCoveragePreference } from "@renderer/features/maps/hooks/usePersistedNeighborCoveragePreference";
+import { MapNeighborCoverageLegend } from "@renderer/features/maps/components/MapNeighborCoverageLegend";
+import { buildMarkerIdsWithNeighborLinks } from "@shared/marker-neighbor-coverage";
 import { usePersistedMapWorkspaceLayout } from "@renderer/features/maps/hooks/usePersistedMapWorkspaceLayout";
 import { ControlPointDetailPanel } from "@renderer/features/maps/components/ControlPointDetailPanel";
 import { cn } from "@renderer/lib/utils";
@@ -168,7 +180,11 @@ export function MapWorkspaceSplitView() {
     stopReferenceMode,
     stopTraceMode,
     setDetailPanelMapPointId,
-    setLinkFromPointId,
+    appendLinkChainPoint,
+    removeLinkChainPointAt,
+    reorderLinkChain,
+    clearLinkChain,
+    stopLinkMode,
   } = useMapWorkspaceUiActions();
   const homeViewport = useMapWorkspaceUiState((state) => state.homeViewport);
   const referenceMode = useMapWorkspaceUiState((state) => state.referenceMode);
@@ -182,6 +198,7 @@ export function MapWorkspaceSplitView() {
   const showReferenceInspectTooltip = useMapWorkspaceUiState(
     (state) => state.showReferenceInspectTooltip,
   );
+  const statusMessage = useMapWorkspaceUiState((state) => state.statusMessage);
   const controlPointDragEnabled = useMapWorkspaceUiState((state) => state.controlPointDragEnabled);
   const sourcePanelPresentation = useMapWorkspaceUiState((state) => state.sourcePanelPresentation);
   const mapPanelCollapsed = useMapWorkspaceUiState((state) => state.mapPanelCollapsed);
@@ -193,7 +210,9 @@ export function MapWorkspaceSplitView() {
   );
   const markerMode = useMapWorkspaceUiState((state) => state.markerMode);
   const linkMode = useMapWorkspaceUiState((state) => state.linkMode);
+  const linkChain = useMapWorkspaceUiState((state) => state.linkChain);
   const mapboxInspectMode = useMapWorkspaceUiState((state) => state.mapboxInspectMode);
+  const showNeighborCoverage = useMapWorkspaceUiState((state) => state.showNeighborCoverage);
   const selectedMapPointId = useMapWorkspaceUiState((state) => state.selectedMapPointId);
   const detailPanelMapPointId = useMapWorkspaceUiState((state) => state.detailPanelMapPointId);
   const linkFromPointId = useMapWorkspaceUiState((state) => state.linkFromPointId);
@@ -201,8 +220,9 @@ export function MapWorkspaceSplitView() {
   const controlPointsQuery = useControlPointsQuery(workspace?.id ?? null);
   const geoSegmentsQuery = useGeoSegmentsQuery(workspace?.id ?? null);
   const mapPointsQuery = useMapPointsQuery(workspace?.id ?? null);
+  const markerNeighborsQuery = useMarkerNeighborsQuery(workspace?.id ?? null);
   const createMapPoint = useIpcMutation("mapPoints:create");
-  const createMapLinkFromPoints = useIpcMutation("mapLinks:createFromPoints");
+  const mapLinksQuery = useMapLinksQuery(workspace?.id ?? null);
   const referenceGeoJsonQuery = useReferenceGeoJsonQuery(workspace?.id ?? null);
   const updateControlPoint = useIpcMutation("controlPoints:update");
   const deleteGeoSegment = useIpcMutation("geoSegments:delete");
@@ -214,6 +234,7 @@ export function MapWorkspaceSplitView() {
 
   const { handleControlPointMapMove } = useControlPointMove();
   usePersistedControlPointDragPreference();
+  usePersistedNeighborCoveragePreference();
   usePersistedMapWorkspaceLayout();
   useReferenceInspectCopyShortcut();
   const highlightedSegmentId = useMapWorkspaceUiState((state) => state.highlightedSegmentId);
@@ -249,6 +270,23 @@ export function MapWorkspaceSplitView() {
   controlPointsRef.current = controlPoints;
 
   const mapPoints = mapPointsQuery.data?.points ?? [];
+  const markerNeighbors = markerNeighborsQuery.data?.neighbors ?? [];
+  const markerIdsWithNeighborLinks = useMemo(
+    () => buildMarkerIdsWithNeighborLinks(markerNeighbors),
+    [markerNeighbors],
+  );
+  const mapLinks = mapLinksQuery.data?.links ?? [];
+  const linkSuggestionPointIds = useMemo(
+    () =>
+      linkMode
+        ? resolveLinkComposerSuggestionPointIds({
+            mapPoints,
+            chainPointIds: linkChain,
+            markerNeighbors,
+          })
+        : [],
+    [linkChain, linkMode, mapPoints, markerNeighbors],
+  );
 
   const detailPanelControlPoint =
     detailPanelControlPointId !== null
@@ -717,61 +755,37 @@ export function MapWorkspaceSplitView() {
   );
 
   const handleMapPointClick = useCallback(
-    (pointId: number) => {
+    (pointId: number, modifiers: { ctrlKey: boolean; metaKey: boolean }) => {
       if (!workspace) {
         return;
       }
 
       if (linkMode) {
         const clicked = mapPoints.find((point) => point.id === pointId);
-        if (!clicked?.ref?.trim()) {
-          setStatusMessage(t("maps.workspace.linkNeedsRef"));
+        if (!isPickModifierEvent(modifiers)) {
           setDetailPanelMapPointId(pointId);
           return;
         }
-
-        if (linkFromPointId === null) {
-          setLinkFromPointId(pointId);
-          setStatusMessage(t("maps.workspace.linkPickSecond"));
+        if (linkChain.includes(pointId)) {
           return;
         }
-        if (linkFromPointId === pointId) {
-          setLinkFromPointId(null);
-          setStatusMessage(t("maps.workspace.linkPickFirst"));
-          return;
-        }
-
-        const fromPoint = mapPoints.find((point) => point.id === linkFromPointId);
-        if (!fromPoint?.ref?.trim()) {
-          setLinkFromPointId(null);
-          setStatusMessage(t("maps.workspace.linkNeedsRef"));
-          return;
-        }
-
-        const fromPointId = linkFromPointId;
-        setLinkFromPointId(null);
-        void createMapLinkFromPoints
-          .mutateAsync({ mapId: workspace.id, fromPointId, toPointId: pointId })
-          .then(() => {
-            setStatusMessage(t("maps.workspace.linkCreated"));
-          })
-          .catch((error: unknown) => {
-            setStatusMessage(
-              error instanceof Error ? error.message : t("maps.workspace.linkError"),
-            );
-          });
+        appendLinkChainPoint(pointId);
+        setStatusMessage(
+          t("maps.workspace.linkComposer.addedToChain", {
+            ref: clicked ? resolveMapPointLinkRef(clicked) : "",
+          }),
+        );
         return;
       }
 
       setDetailPanelMapPointId(pointId);
     },
     [
-      createMapLinkFromPoints,
-      linkFromPointId,
+      appendLinkChainPoint,
+      linkChain,
       linkMode,
       mapPoints,
       setDetailPanelMapPointId,
-      setLinkFromPointId,
       setStatusMessage,
       t,
       workspace,
@@ -1039,7 +1053,11 @@ export function MapWorkspaceSplitView() {
     geoSegments,
     mapPoints,
     selectedMapPointId,
+    linkMode,
     linkFromPointId,
+    linkChainPointIds: linkChain,
+    linkSuggestionPointIds: linkSuggestionPointIds,
+    pathSegmentLinks: linkMode ? mapLinks : [],
     pendingMapPoint,
     pendingTracePoints,
     canPickMapPoint: referenceMode && pendingMapPoint === null,
@@ -1065,6 +1083,8 @@ export function MapWorkspaceSplitView() {
     onSegmentClick: handleSegmentClick,
     selectedSegmentId: highlightedSegmentId,
     highlightedPathGroupId,
+    showNeighborCoverage,
+    markerIdsWithNeighborLinks,
   };
 
   return (
@@ -1209,6 +1229,7 @@ export function MapWorkspaceSplitView() {
                   />
                 </Activity>
               </div>
+              {showNeighborCoverage ? <MapNeighborCoverageLegend /> : null}
               {highlightedSegmentId && !traceMode && !highlightedPathGroupId ? (
                 <div className="absolute right-3 bottom-3 z-1000 flex items-center gap-1 rounded-box bg-base-100/95 px-2 py-1.5 shadow-lg">
                   <span className="mr-1 text-xs text-base-content/70">
@@ -1294,11 +1315,35 @@ export function MapWorkspaceSplitView() {
         </div>
       ) : null}
 
-      {detailPanelMapPoint ? (
+      {linkMode ? (
+        <div className="absolute inset-y-0 right-0 z-1100 w-96 shadow-xl">
+          <MapLinkComposerPanel
+            mapId={workspace.id}
+            mapPoints={mapPoints}
+            markerNeighbors={markerNeighbors}
+            geoSegments={geoSegments}
+            mapLinks={mapLinks}
+            linkChain={linkChain}
+            onAppendToChain={appendLinkChainPoint}
+            onRemoveFromChain={removeLinkChainPointAt}
+            onReorderChain={reorderLinkChain}
+            onClearChain={clearLinkChain}
+            onClose={() => {
+              stopLinkMode();
+              setStatusMessage(null);
+            }}
+            onStatusMessage={setStatusMessage}
+          />
+        </div>
+      ) : null}
+
+      {detailPanelMapPoint && !linkMode ? (
         <div className="absolute inset-y-0 right-0 z-1100 w-80 shadow-xl">
           <MapPointDetailPanel
             point={detailPanelMapPoint}
             mapId={workspace.id}
+            mapPoints={mapPoints}
+            markerNeighbors={markerNeighbors}
             onClose={() => setDetailPanelMapPointId(null)}
           />
         </div>
@@ -1337,6 +1382,7 @@ export function MapWorkspaceSplitView() {
         onClose={() => setCaptureDraft(null)}
         onSave={handleCaptureSave}
       />
+      <AppStatusToast message={statusMessage} onDismiss={() => setStatusMessage(null)} />
     </div>
   );
 }

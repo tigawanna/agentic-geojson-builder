@@ -7,18 +7,20 @@ import { segmentGroupColor } from "@renderer/features/maps/lib/segment-utils";
 import { isMapDataExplorerSelectionEqual } from "@renderer/features/maps/hooks/useMapDataExplorerFocus";
 import { useMapDataExplorerPageStore } from "@renderer/features/maps/store/map-data-explorer-page-store";
 import type { MapDataExplorerSelection } from "@renderer/features/maps/types/map-data-explorer.types";
-import { MapDataExplorerBuildSegmentsPanel } from "@renderer/features/maps/components/MapDataExplorerBuildSegmentsPanel";
+import { MapLinkComposerPanel } from "@renderer/features/maps/components/MapLinkComposerPanel";
 import { MapDataExplorerCreateTrailForm } from "@renderer/features/maps/components/MapDataExplorerCreateTrailForm";
 import { MapDataExplorerRoutePanel } from "@renderer/features/maps/components/MapDataExplorerRoutePanel";
 import { MapPointsExplorerTable } from "@renderer/features/maps/components/MapPointsExplorerTable";
 import type { GeoSegmentRecord } from "@shared/geo-segments.types";
 import type { MapLinkRecord } from "@shared/map-links.types";
+import type { MarkerNeighborRecord } from "@shared/marker-neighbors.types";
 import type { MapPointRecord } from "@shared/map-points.types";
 import type { TrailRecord } from "@shared/trails.types";
 
 type MapDataExplorerTablesProps = {
   mapId: number;
   mapPoints: MapPointRecord[];
+  markerNeighbors: MarkerNeighborRecord[];
   geoSegments: GeoSegmentRecord[];
   mapLinks: MapLinkRecord[];
   trails: TrailRecord[];
@@ -53,6 +55,7 @@ function selectRowClass(isSelected: boolean) {
 export function MapDataExplorerTables({
   mapId,
   mapPoints,
+  markerNeighbors,
   geoSegments,
   mapLinks,
   trails,
@@ -61,6 +64,14 @@ export function MapDataExplorerTables({
   const tab = useMapDataExplorerPageStore((state) => state.tab);
   const selection = useMapDataExplorerPageStore((state) => state.selection);
   const setSelection = useMapDataExplorerPageStore((state) => state.setSelection);
+  const setStatusMessage = useMapDataExplorerPageStore((state) => state.setStatusMessage);
+  const linkChain = useMapDataExplorerPageStore((state) => state.linkChain);
+  const appendLinkChainPoint = useMapDataExplorerPageStore((state) => state.appendLinkChainPoint);
+  const removeLinkChainPointAt = useMapDataExplorerPageStore(
+    (state) => state.removeLinkChainPointAt,
+  );
+  const clearLinkChain = useMapDataExplorerPageStore((state) => state.clearLinkChain);
+  const reorderLinkChain = useMapDataExplorerPageStore((state) => state.reorderLinkChain);
   const pathGroups = groupSegmentsByPath(geoSegments);
 
   function selectRow(next: MapDataExplorerSelection | null) {
@@ -228,7 +239,20 @@ export function MapDataExplorerTables({
 
   return (
     <>
-      <MapDataExplorerBuildSegmentsPanel mapId={mapId} geoSegments={geoSegments} />
+      <MapLinkComposerPanel
+        embedded
+        mapId={mapId}
+        mapPoints={mapPoints}
+        markerNeighbors={markerNeighbors}
+        geoSegments={geoSegments}
+        mapLinks={mapLinks}
+        linkChain={linkChain}
+        onAppendToChain={appendLinkChainPoint}
+        onRemoveFromChain={removeLinkChainPointAt}
+        onReorderChain={reorderLinkChain}
+        onClearChain={clearLinkChain}
+        onStatusMessage={setStatusMessage}
+      />
       <ExplorerTable
         isEmpty={mapLinks.length === 0}
         emptyMessage={t("maps.workspace.dataExplorer.emptyLinks")}

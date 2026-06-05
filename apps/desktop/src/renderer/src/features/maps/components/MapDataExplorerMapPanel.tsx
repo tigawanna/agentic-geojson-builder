@@ -6,6 +6,7 @@ import { useControlPointsQuery } from "@renderer/features/maps/hooks/useControlP
 import { useGeoSegmentsQuery } from "@renderer/features/maps/hooks/useGeoSegmentsQuery";
 import { useMapBaseRendererQuery } from "@renderer/features/maps/hooks/useMapBaseRenderer";
 import { useMapPointsQuery } from "@renderer/features/maps/hooks/useMapPointsQuery";
+import { useMarkerNeighborsQuery } from "@renderer/features/maps/hooks/useMarkerNeighborsQuery";
 import { useReferenceGeoJsonQuery } from "@renderer/features/maps/hooks/useReferenceGeoJsonQuery";
 import { useTileCacheStatusQuery } from "@renderer/features/maps/hooks/useTileCacheStatusQuery";
 import { resolveLocalTileUrl } from "@renderer/features/maps/hooks/tile-cache-api";
@@ -28,11 +29,18 @@ import {
   toNearbyElevationPointsFromControlPoints,
   toNearbyElevationPointsFromMapPoints,
 } from "@renderer/features/maps/lib/resolve-inspect-elevation";
+import { isPickModifierEvent } from "@renderer/features/maps/lib/pick-modifier";
+import { resolveMapPointLinkRef } from "@shared/map-point-link-ref";
+import { useMapLinksQuery } from "@renderer/features/maps/hooks/useMapLinksQuery";
+import { resolveLinkComposerSuggestionPointIds } from "@renderer/features/maps/components/MapLinkComposerPanel";
 import { useMapDataExplorerPageStore } from "@renderer/features/maps/store/map-data-explorer-page-store";
+import { MapNeighborCoverageLegend } from "@renderer/features/maps/components/MapNeighborCoverageLegend";
 import {
   useMapWorkspacePhase,
   useMapWorkspaceState,
+  useMapWorkspaceUiState,
 } from "@renderer/features/maps/store/MapWorkspaceProvider";
+import { buildMarkerIdsWithNeighborLinks } from "@shared/marker-neighbor-coverage";
 import type { MapDataExplorerSelection } from "@renderer/features/maps/types/map-data-explorer.types";
 
 type MapDataExplorerMapPanelProps = {
@@ -73,10 +81,19 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
   );
   const mapboxInspectMode = useMapDataExplorerPageStore((state) => state.mapboxInspectMode);
   const setStatusMessage = useMapDataExplorerPageStore((state) => state.setStatusMessage);
+  const linkChain = useMapDataExplorerPageStore((state) => state.linkChain);
+  const appendLinkChainPoint = useMapDataExplorerPageStore((state) => state.appendLinkChainPoint);
+  const removeLinkChainPointAt = useMapDataExplorerPageStore(
+    (state) => state.removeLinkChainPointAt,
+  );
+  const reorderLinkChain = useMapDataExplorerPageStore((state) => state.reorderLinkChain);
+  const setLinkPathSlug = useMapDataExplorerPageStore((state) => state.setLinkPathSlug);
+  const mapLinksQuery = useMapLinksQuery(mapId);
   const mapPointDragModifierHeld = usePickModifierHeld();
 
   const controlPointsQuery = useControlPointsQuery(mapId);
   const mapPointsQuery = useMapPointsQuery(mapId);
+  const markerNeighborsQuery = useMarkerNeighborsQuery(mapId);
   const geoSegmentsQuery = useGeoSegmentsQuery(mapId);
   const referenceGeoJsonQuery = useReferenceGeoJsonQuery(mapId);
   const tileCache = useTileCacheStatusQuery(mapId);
@@ -89,7 +106,14 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
 
   const controlPoints = controlPointsQuery.data?.controlPoints ?? [];
   const mapPoints = mapPointsQuery.data?.points ?? [];
+  const markerNeighbors = markerNeighborsQuery.data?.neighbors ?? [];
+  const markerIdsWithNeighborLinks = useMemo(
+    () => buildMarkerIdsWithNeighborLinks(markerNeighbors),
+    [markerNeighbors],
+  );
+  const showNeighborCoverage = useMapWorkspaceUiState((state) => state.showNeighborCoverage);
   const geoSegments = geoSegmentsQuery.data?.segments ?? [];
+  const mapLinks = mapLinksQuery.data?.links ?? [];
   const referenceOverlay = useMemo(() => {
     const layers = referenceGeoJsonQuery.data?.layers ?? [];
     const visibleCollections = layers
@@ -112,6 +136,20 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
     }
     return resolveVisibleMapPointsForExplorer(mapPoints, checkedMapPointIds, selection);
   }, [tab, mapPoints, checkedMapPointIds, selection]);
+
+  const linkComposerActive = tab === "links";
+  const linkFromPointId = linkComposerActive ? (linkChain.at(-1) ?? null) : null;
+  const linkSuggestionPointIds = useMemo(
+    () =>
+      linkComposerActive
+        ? resolveLinkComposerSuggestionPointIds({
+            mapPoints,
+            chainPointIds: linkChain,
+            markerNeighbors,
+          })
+        : [],
+    [linkChain, linkComposerActive, mapPoints, markerNeighbors],
+  );
 
   const mapHighlight = selectionToMapHighlight(selection);
   const mapboxGlActive = baseRenderer === "mapbox-gl";
@@ -145,10 +183,35 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
   );
 
   const handleMapPointClick = useCallback(
-    (pointId: number) => {
+    (pointId: number, modifiers: { ctrlKey: boolean; metaKey: boolean }) => {
+      if (linkComposerActive) {
+        const clicked = mapPoints.find((point) => point.id === pointId);
+        if (!isPickModifierEvent(modifiers)) {
+          setSelection({ kind: "map-point", id: pointId });
+          return;
+        }
+        if (linkChain.includes(pointId)) {
+          return;
+        }
+        appendLinkChainPoint(pointId);
+        setStatusMessage(
+          t("maps.workspace.linkComposer.addedToChain", {
+            ref: clicked ? resolveMapPointLinkRef(clicked) : "",
+          }),
+        );
+        return;
+      }
       setSelection({ kind: "map-point", id: pointId });
     },
-    [setSelection],
+    [
+      appendLinkChainPoint,
+      linkChain,
+      linkComposerActive,
+      mapPoints,
+      setSelection,
+      setStatusMessage,
+      t,
+    ],
   );
 
   const handleViewportCommand = useCallback(
@@ -217,7 +280,11 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
     geoSegments,
     mapPoints: visibleMapPoints,
     selectedMapPointId: mapHighlight.selectedMapPointId,
-    linkFromPointId: null,
+    linkMode: linkComposerActive,
+    linkFromPointId,
+    linkChainPointIds: linkChain,
+    linkSuggestionPointIds: linkSuggestionPointIds,
+    pathSegmentLinks: linkComposerActive ? mapLinks : [],
     pendingMapPoint: null,
     pendingTracePoints: [],
     canPickMapPoint: false,
@@ -235,6 +302,8 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
     onCoordinateSelect: noopViewport,
     onMapPointClick: handleMapPointClick,
     onMapPointMapMove: handleMapPointMapMove,
+    showNeighborCoverage,
+    markerIdsWithNeighborLinks,
   };
 
   return (
@@ -254,6 +323,7 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
         />
       </Activity>
       <MapDataExplorerMapToolbar mapId={mapId} />
+      {showNeighborCoverage ? <MapNeighborCoverageLegend /> : null}
       {tab === "points" ? (
         <div className="pointer-events-none absolute right-2 bottom-2 max-w-[16rem] rounded-md bg-base-100/90 px-2 py-1 text-[10px] text-base-content/55 shadow-sm">
           {mapPointDragModifierHeld

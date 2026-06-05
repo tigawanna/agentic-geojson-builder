@@ -6,8 +6,10 @@ import { formatElevation } from "@renderer/features/map-playground/lib/analyze-t
 import type { ControlPointRecord } from "@shared/control-points.types";
 import type { GeoSegmentRecord } from "@shared/geo-segments.types";
 import type { MapLinkRecord } from "@shared/map-links.types";
+import type { MarkerNeighborRecord } from "@shared/marker-neighbors.types";
 import type { MapPointRecord } from "@shared/map-points.types";
 import type { TrailRecord } from "@shared/trails.types";
+import { MapMarkerNeighborsSection } from "@renderer/features/maps/components/MapMarkerNeighborsSection";
 import { MapDataExplorerElevationChart } from "@renderer/features/maps/components/MapDataExplorerElevationChart";
 import { formatMapCoordinates } from "@renderer/features/maps/lib/copy-map-coordinates";
 import { buildElevationProfileFromCoordinates } from "@renderer/features/maps/lib/elevation-profile";
@@ -19,9 +21,11 @@ import { useMapDataExplorerPageStore } from "@renderer/features/maps/store/map-d
 import type { MapDataExplorerSelection } from "@renderer/features/maps/types/map-data-explorer.types";
 
 type MapDataExplorerDetailsPanelProps = {
+  mapId: number;
   selection: MapDataExplorerSelection | null;
   controlPoints: ControlPointRecord[];
   mapPoints: MapPointRecord[];
+  markerNeighbors: MarkerNeighborRecord[];
   geoSegments: GeoSegmentRecord[];
   mapLinks: MapLinkRecord[];
   trails: TrailRecord[];
@@ -88,9 +92,11 @@ function CoordinateRow({
 }
 
 export function MapDataExplorerDetailsPanel({
+  mapId,
   selection,
   controlPoints,
   mapPoints,
+  markerNeighbors,
   geoSegments,
   mapLinks,
   trails,
@@ -241,6 +247,12 @@ export function MapDataExplorerDetailsPanel({
             ) : null}
           </dl>
         </PreviewSection>
+        <MapMarkerNeighborsSection
+          mapId={mapId}
+          point={point}
+          mapPoints={mapPoints}
+          neighbors={markerNeighbors}
+        />
       </div>
     );
   }

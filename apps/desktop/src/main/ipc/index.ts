@@ -8,6 +8,7 @@ import { tileCacheHandlers } from "@main/ipc/tile-cache.js";
 import { controlPointsHandlers } from "@main/ipc/control-points.js";
 import { geoSegmentsHandlers } from "@main/ipc/geo-segments.js";
 import { mapPointsHandlers } from "@main/ipc/map-points.js";
+import { markerNeighborsHandlers } from "@main/ipc/marker-neighbors.js";
 import { mapboxCapturesHandlers } from "@main/ipc/mapbox-captures.js";
 import { mapLinksHandlers } from "@main/ipc/map-links.js";
 import { segmentsHandlers } from "@main/ipc/segments.js";
@@ -119,6 +120,7 @@ export function registerIpcHandlers(): void {
     ...controlPointsHandlers,
     ...geoSegmentsHandlers,
     ...mapPointsHandlers,
+    ...markerNeighborsHandlers,
     ...mapboxCapturesHandlers,
     ...mapLinksHandlers,
     ...segmentsHandlers,

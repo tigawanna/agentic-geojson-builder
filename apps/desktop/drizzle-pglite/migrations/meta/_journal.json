@@ -71,6 +71,20 @@
       "when": 1779902700000,
       "tag": "0009_segments_and_trails",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1779902800000,
+      "tag": "0010_marker_neighbor",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1779902900000,
+      "tag": "0011_marker_neighbor_undirected",
+      "breakpoints": true
     }
   ]
 }

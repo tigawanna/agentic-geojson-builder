@@ -1,3 +1,5 @@
+import type { GeoCoordinate } from "@repo/isomorphic/elevation-at-point";
+
 export function segmentGroupColor(segmentGroupId: string) {
   let hash = 0;
   for (let index = 0; index < segmentGroupId.length; index += 1) {
@@ -7,6 +9,6 @@ export function segmentGroupColor(segmentGroupId: string) {
   return `hsl(${hue} 72% 42%)`;
 }
 
-export function lineStringToLatLngs(coordinates: [number, number][]) {
+export function lineStringToLatLngs(coordinates: GeoCoordinate[]) {
   return coordinates.map(([longitude, latitude]) => ({ lat: latitude, lng: longitude }));
 }

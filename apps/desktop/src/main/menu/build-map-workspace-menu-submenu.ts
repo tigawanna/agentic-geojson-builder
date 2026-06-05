@@ -69,6 +69,13 @@ export function buildMapWorkspaceMenuSubmenu(): MenuItemConstructorOptions[] {
       checked: state.controlPointDragEnabled,
       click: menuClick("control-point-drag"),
     },
+    {
+      label: "Show Neighbor Coverage",
+      type: "checkbox",
+      checked: state.showNeighborCoverage,
+      enabled: state.routeActive,
+      click: menuClick("neighbor-coverage"),
+    },
     { type: "separator" },
     {
       label: "Base Map Renderer",

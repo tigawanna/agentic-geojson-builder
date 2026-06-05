@@ -21,6 +21,8 @@ type MapDataExplorerPageState = {
   editTarget: MapDataExplorerEditTarget | null;
   statusMessage: string | null;
   checkedMapPointIds: number[];
+  linkChain: number[];
+  linkPathSlug: string;
   setTab: (tab: MapDataExplorerTab) => void;
   setSelection: (selection: MapDataExplorerSelection | null) => void;
   setHighlightedSegmentId: (segmentId: number | null) => void;
@@ -32,6 +34,11 @@ type MapDataExplorerPageState = {
   setEditTarget: (target: MapDataExplorerEditTarget | null) => void;
   setStatusMessage: (message: string | null) => void;
   setCheckedMapPointIds: (ids: number[]) => void;
+  appendLinkChainPoint: (pointId: number) => void;
+  removeLinkChainPointAt: (index: number) => void;
+  reorderLinkChain: (fromIndex: number, toIndex: number) => void;
+  clearLinkChain: () => void;
+  setLinkPathSlug: (pathSlug: string) => void;
   reset: () => void;
 };
 
@@ -46,11 +53,17 @@ const initialState = {
   editTarget: null as MapDataExplorerEditTarget | null,
   statusMessage: null as string | null,
   checkedMapPointIds: [] as number[],
+  linkChain: [] as number[],
+  linkPathSlug: "" as string,
 };
 
 export const useMapDataExplorerPageStore = create<MapDataExplorerPageState>((set) => ({
   ...initialState,
-  setTab: (tab) => set({ tab }),
+  setTab: (tab) =>
+    set((state) => ({
+      tab,
+      linkChain: tab === "links" ? state.linkChain : [],
+    })),
   setSelection: (selection) => set({ selection }),
   setHighlightedSegmentId: (highlightedSegmentId) =>
     set({ highlightedSegmentId, highlightedPathGroupId: null }),
@@ -64,5 +77,28 @@ export const useMapDataExplorerPageStore = create<MapDataExplorerPageState>((set
   setEditTarget: (editTarget) => set({ editTarget }),
   setStatusMessage: (statusMessage) => set({ statusMessage }),
   setCheckedMapPointIds: (checkedMapPointIds) => set({ checkedMapPointIds }),
+  appendLinkChainPoint: (pointId) =>
+    set((state) => {
+      if (state.linkChain.includes(pointId)) {
+        return state;
+      }
+      return { linkChain: [...state.linkChain, pointId] };
+    }),
+  removeLinkChainPointAt: (index) =>
+    set((state) => ({
+      linkChain: state.linkChain.filter((_, pointIndex) => pointIndex !== index),
+    })),
+  reorderLinkChain: (fromIndex, toIndex) =>
+    set((state) => {
+      const linkChain = [...state.linkChain];
+      const [moved] = linkChain.splice(fromIndex, 1);
+      if (moved === undefined) {
+        return state;
+      }
+      linkChain.splice(toIndex, 0, moved);
+      return { linkChain };
+    }),
+  clearLinkChain: () => set({ linkChain: [] }),
+  setLinkPathSlug: (linkPathSlug) => set({ linkPathSlug }),
   reset: () => set(initialState),
 }));

@@ -9,6 +9,7 @@ import {
   ResizablePanel,
   ResizablePanelGroup,
 } from "@renderer/components/common/Resizable";
+import { AppStatusToast } from "@renderer/components/common/AppStatusToast";
 import { MapDataExplorerDetailsPanel } from "@renderer/features/maps/components/MapDataExplorerDetailsPanel";
 import { MapDataExplorerEditDialog } from "@renderer/features/maps/components/MapDataExplorerEditDialog";
 import { MapDataExplorerMapPanel } from "@renderer/features/maps/components/MapDataExplorerMapPanel";
@@ -20,12 +21,13 @@ import { useGeoSegmentsQuery } from "@renderer/features/maps/hooks/useGeoSegment
 import { useMapDataExplorerFocus } from "@renderer/features/maps/hooks/useMapDataExplorerFocus";
 import { useMapLinksQuery } from "@renderer/features/maps/hooks/useMapLinksQuery";
 import { useMapPointsQuery } from "@renderer/features/maps/hooks/useMapPointsQuery";
+import { useMarkerNeighborsQuery } from "@renderer/features/maps/hooks/useMarkerNeighborsQuery";
 import { useTrailsQuery } from "@renderer/features/maps/hooks/useTrailsQuery";
 import { useHydrateMapWorkspace } from "@renderer/features/maps/hooks/useHydrateMapWorkspace";
-import {
-  DATA_EXPLORER_STATUS_TOAST_MS,
-  useMapDataExplorerPageStore,
-} from "@renderer/features/maps/store/map-data-explorer-page-store";
+import { useMapWorkspaceMenuActions } from "@renderer/features/maps/hooks/useMapWorkspaceMenuActions";
+import { usePersistedNeighborCoveragePreference } from "@renderer/features/maps/hooks/usePersistedNeighborCoveragePreference";
+import { MapWorkspaceMenuSyncBridge } from "@renderer/features/maps/components/MapWorkspaceMenuSyncBridge";
+import { useMapDataExplorerPageStore } from "@renderer/features/maps/store/map-data-explorer-page-store";
 import {
   MapWorkspaceProvider,
   useMapWorkspacePhase,
@@ -54,28 +56,30 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
   const setStatusMessage = useMapDataExplorerPageStore((state) => state.setStatusMessage);
   const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!statusMessage) {
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      setStatusMessage(null);
-    }, DATA_EXPLORER_STATUS_TOAST_MS);
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [setStatusMessage, statusMessage]);
-
   useDataExplorerInspectCopyShortcut();
   useDataExplorerInspectViewHotkeys();
+  usePersistedNeighborCoveragePreference();
+  useMapWorkspaceMenuActions({
+    mapId,
+    hasSourceFile: false,
+    onPreviewGeoJson: () => {},
+    onExportGeoJson: () => {},
+    onOpenControls: () => {},
+    onOpenHistory: () => {},
+    onOpenGuide: () => {},
+    onHardReload: () => void window.api.invoke("app:hardReload", undefined),
+    onSetMapboxGlStyle: () => {},
+  });
 
   const controlPointsQuery = useControlPointsQuery(mapId);
   const mapPointsQuery = useMapPointsQuery(mapId);
+  const markerNeighborsQuery = useMarkerNeighborsQuery(mapId);
   const geoSegmentsQuery = useGeoSegmentsQuery(mapId);
   const mapLinksQuery = useMapLinksQuery(mapId);
   const trailsQuery = useTrailsQuery(mapId);
   const controlPoints = controlPointsQuery.data?.controlPoints ?? [];
   const mapPoints = mapPointsQuery.data?.points ?? [];
+  const markerNeighbors = markerNeighborsQuery.data?.neighbors ?? [];
   const geoSegments = geoSegmentsQuery.data?.segments ?? [];
   const mapLinks = mapLinksQuery.data?.links ?? [];
   const trails = trailsQuery.data?.trails ?? [];
@@ -128,6 +132,11 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
 
   return (
     <div className="flex h-full min-h-0 flex-col" data-test="map-data-explorer-page">
+      <MapWorkspaceMenuSyncBridge
+        hasSourceFile={false}
+        segmentCount={geoSegments.length}
+        exportPending={false}
+      />
       <header className="drag-region flex shrink-0 items-center gap-3 border-b border-base-content/10 bg-base-100/80 px-3 py-2">
         <Link
           to="/data"
@@ -182,6 +191,7 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
                 <MapDataExplorerTables
                   mapId={mapId}
                   mapPoints={mapPoints}
+                  markerNeighbors={markerNeighbors}
                   geoSegments={geoSegments}
                   mapLinks={mapLinks}
                   trails={trails}
@@ -198,9 +208,11 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
                 <ResizablePanel defaultSize={42} minSize={20}>
                   <div className="h-full overflow-hidden border-t border-base-content/10 bg-base-200/30">
                     <MapDataExplorerDetailsPanel
+                      mapId={mapId}
                       selection={selection}
                       controlPoints={controlPoints}
                       mapPoints={mapPoints}
+                      markerNeighbors={markerNeighbors}
                       geoSegments={geoSegments}
                       mapLinks={mapLinks}
                       trails={trails}
@@ -216,6 +228,7 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
             <MapDataExplorerTables
               mapId={mapId}
               mapPoints={mapPoints}
+              markerNeighbors={markerNeighbors}
               geoSegments={geoSegments}
               mapLinks={mapLinks}
               trails={trails}
@@ -224,11 +237,7 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
         )}
       </div>
 
-      {statusMessage ? (
-        <div className="pointer-events-none fixed bottom-4 left-1/2 z-1400 max-w-lg -translate-x-1/2 rounded-lg bg-base-content px-4 py-2 text-center text-xs text-base-100 shadow-lg">
-          {statusMessage}
-        </div>
-      ) : null}
+      <AppStatusToast message={statusMessage} onDismiss={() => setStatusMessage(null)} />
 
       {editTarget ? (
         <MapDataExplorerEditDialog

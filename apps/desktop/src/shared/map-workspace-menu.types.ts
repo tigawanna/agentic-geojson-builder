@@ -15,6 +15,7 @@ export type MapWorkspaceMenuSyncState = {
   baseRenderer: MapBaseRenderer;
   mapboxGlStyle: MapboxGlStyleId;
   mapboxInspectMode: boolean;
+  showNeighborCoverage: boolean;
   mapboxTokenAvailable: boolean;
   segmentCount: number;
   exportPending: boolean;
@@ -34,6 +35,7 @@ export const DEFAULT_MAP_WORKSPACE_MENU_SYNC_STATE: MapWorkspaceMenuSyncState = 
   baseRenderer: "leaflet",
   mapboxGlStyle: "outdoors",
   mapboxInspectMode: false,
+  showNeighborCoverage: false,
   mapboxTokenAvailable: false,
   segmentCount: 0,
   exportPending: false,
