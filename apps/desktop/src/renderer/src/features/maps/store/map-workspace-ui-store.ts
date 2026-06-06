@@ -36,6 +36,7 @@ type MapWorkspaceUiState = {
   segmentName: string;
   segmentPathKind: GeoSegmentPathKind;
   markerMode: boolean;
+  addMarkerPlacementMode: boolean;
   linkMode: boolean;
   linkChain: number[];
   linkPathSlug: string;
@@ -80,6 +81,7 @@ type MapWorkspaceUiActions = {
   setSegmentName: (name: string) => void;
   setSegmentPathKind: (pathKind: GeoSegmentPathKind) => void;
   setMarkerMode: (enabled: boolean) => void;
+  setAddMarkerPlacementMode: (enabled: boolean) => void;
   setLinkMode: (enabled: boolean) => void;
   setLinkChain: (pointIds: number[]) => void;
   appendLinkChainPoint: (pointId: number) => void;
@@ -93,6 +95,7 @@ type MapWorkspaceUiActions = {
   setHighlightedSegmentId: (segmentId: number | null) => void;
   setHighlightedPathGroupId: (groupId: string | null) => void;
   stopMarkerMode: () => void;
+  stopAddMarkerPlacementMode: () => void;
   stopLinkMode: () => void;
   stopReferenceMode: () => void;
   stopTraceMode: () => void;
@@ -127,6 +130,7 @@ const initialState: MapWorkspaceUiState = {
   segmentName: "",
   segmentPathKind: "walking-trail",
   markerMode: false,
+  addMarkerPlacementMode: false,
   linkMode: false,
   linkChain: [],
   linkPathSlug: "",
@@ -184,7 +188,16 @@ export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
     setSegmentGroupId: (segmentGroupId) => set({ segmentGroupId }),
     setSegmentName: (segmentName) => set({ segmentName }),
     setSegmentPathKind: (segmentPathKind) => set({ segmentPathKind }),
-    setMarkerMode: (markerMode) => set({ markerMode }),
+    setMarkerMode: (markerMode) =>
+      set((state) => ({
+        markerMode,
+        addMarkerPlacementMode: markerMode ? false : state.addMarkerPlacementMode,
+      })),
+    setAddMarkerPlacementMode: (addMarkerPlacementMode) =>
+      set((state) => ({
+        addMarkerPlacementMode,
+        markerMode: addMarkerPlacementMode ? false : state.markerMode,
+      })),
     setLinkMode: (linkMode) =>
       set((state) => ({
         linkMode,
@@ -227,6 +240,7 @@ export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
     setHighlightedPathGroupId: (highlightedPathGroupId) =>
       set({ highlightedPathGroupId, highlightedSegmentId: null }),
     stopMarkerMode: () => set({ markerMode: false }),
+    stopAddMarkerPlacementMode: () => set({ addMarkerPlacementMode: false }),
     stopLinkMode: () =>
       set({ linkMode: false, linkFromPointId: null, linkChain: [], linkPathSlug: "" }),
     stopReferenceMode: () =>

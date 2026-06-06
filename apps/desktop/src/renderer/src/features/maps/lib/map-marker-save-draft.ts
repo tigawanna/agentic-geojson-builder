@@ -93,6 +93,35 @@ export function formatMapMarkerCaptureDescription(input: {
   return `Captured at ${coords}${elevationSuffix}`;
 }
 
+export function buildMapMarkerDraftFromCoordinates(input: {
+  latitude: number;
+  longitude: number;
+  trailContext?: MapMarkerDraftTrailContext;
+  elevationMeters?: number | null;
+  baseMapStyle?: string | null;
+}): MapMarkerSaveDraft {
+  const trailName = inferTrailNameAtCapture(input.latitude, input.longitude, input.trailContext);
+  const elevation = input.elevationMeters ?? null;
+  const description = formatMapMarkerCaptureDescription({
+    trailName,
+    latitude: input.latitude,
+    longitude: input.longitude,
+    elevationMeters: elevation,
+  });
+
+  return {
+    name: trailName ?? "Map position",
+    description,
+    latitude: input.latitude,
+    longitude: input.longitude,
+    elevation,
+    featureTags: {},
+    layerId: null,
+    sourceLayer: null,
+    baseMapStyle: input.baseMapStyle ?? null,
+  };
+}
+
 export function buildMapMarkerDraftFromProbe(
   probe: NonNullable<MapboxFeatureProbe>,
   styleId: MapboxGlStyleId,

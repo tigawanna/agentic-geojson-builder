@@ -311,6 +311,8 @@
       "export": "Export",
       "openExport": "Open export screen",
       "addMarker": "Marker",
+      "addNewMarker": "Add new marker",
+      "addMarkerPlacementHint": "Click the map to place a new marker.",
       "markerHint": "Ctrl+click the map to drop a marker.",
       "mapboxTokenModal": {
         "title": "Mapbox access token required",
@@ -542,6 +544,7 @@
         "name": "Name",
         "coordinates": "Coordinates",
         "category": "Category",
+        "markerType": "Type",
         "pathGroup": "Path group",
         "vertices": "Vertices",
         "verticesLabel": "pts",

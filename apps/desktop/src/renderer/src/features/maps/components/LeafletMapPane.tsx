@@ -77,6 +77,7 @@ export type LeafletMapPaneProps = {
   canPickMapPoint?: boolean;
   canPickTracePoint?: boolean;
   canPlaceMapPoint?: boolean;
+  canCaptureMapPoint?: boolean;
   controlPointDragEnabled?: boolean;
   editingSegmentId?: number | null;
   selectedControlPointId?: number | null;
@@ -88,6 +89,7 @@ export type LeafletMapPaneProps = {
   onMapLocationPick?: (latitude: number, longitude: number) => void;
   onTracePointAdd?: (latitude: number, longitude: number) => void;
   onMapPointPlace?: (latitude: number, longitude: number, elevationMeters?: number | null) => void;
+  onMapMarkerCapture?: (latitude: number, longitude: number) => void;
   onMapPointClick?: (pointId: number, modifiers: { ctrlKey: boolean; metaKey: boolean }) => void;
   onPendingTracePointMove?: (index: number, latitude: number, longitude: number) => void;
   onControlPointMapMove?: (controlPointId: number, latitude: number, longitude: number) => void;
@@ -122,6 +124,7 @@ export function LeafletMapPane({
   canPickMapPoint = false,
   canPickTracePoint = false,
   canPlaceMapPoint = false,
+  canCaptureMapPoint = false,
   controlPointDragEnabled = false,
   mapPointDragEnabled = false,
   editingSegmentId = null,
@@ -134,6 +137,7 @@ export function LeafletMapPane({
   onMapLocationPick,
   onTracePointAdd,
   onMapPointPlace,
+  onMapMarkerCapture,
   onMapPointClick,
   onPendingTracePointMove,
   onControlPointMapMove,
@@ -162,6 +166,7 @@ export function LeafletMapPane({
   const onMapLocationPickRef = useRef(onMapLocationPick);
   const onTracePointAddRef = useRef(onTracePointAdd);
   const onMapPointPlaceRef = useRef(onMapPointPlace);
+  const onMapMarkerCaptureRef = useRef(onMapMarkerCapture);
   const onMapPointClickRef = useRef(onMapPointClick);
   const onPendingTracePointMoveRef = useRef(onPendingTracePointMove);
   const onControlPointMapMoveRef = useRef(onControlPointMapMove);
@@ -188,6 +193,7 @@ export function LeafletMapPane({
   onMapLocationPickRef.current = onMapLocationPick;
   onTracePointAddRef.current = onTracePointAdd;
   onMapPointPlaceRef.current = onMapPointPlace;
+  onMapMarkerCaptureRef.current = onMapMarkerCapture;
   onMapPointClickRef.current = onMapPointClick;
   onPendingTracePointMoveRef.current = onPendingTracePointMove;
   onControlPointMapMoveRef.current = onControlPointMapMove;
@@ -801,7 +807,15 @@ export function LeafletMapPane({
 
     function handleClick(event: import("leaflet").LeafletMouseEvent) {
       const domEvent = event.originalEvent;
-      if (!isPickModifierEvent(domEvent)) {
+      const modifier = isPickModifierEvent(domEvent);
+
+      if (canCaptureMapPoint && !modifier) {
+        domEvent.preventDefault();
+        onMapMarkerCaptureRef.current?.(event.latlng.lat, event.latlng.lng);
+        return;
+      }
+
+      if (!modifier) {
         return;
       }
 
@@ -813,7 +827,7 @@ export function LeafletMapPane({
 
       mapClickTimerRef.current = window.setTimeout(() => {
         if (canPlaceMapPoint) {
-          onMapPointPlaceRef.current?.(event.latlng.lat, event.latlng.lng);
+          onMapMarkerCaptureRef.current?.(event.latlng.lat, event.latlng.lng);
           return;
         }
 
@@ -830,7 +844,8 @@ export function LeafletMapPane({
 
     map.on("click", handleClick);
     const activePickMode =
-      (canPickMapPoint || canPickTracePoint || canPlaceMapPoint) && pickModifierHeld;
+      canCaptureMapPoint ||
+      ((canPickMapPoint || canPickTracePoint || canPlaceMapPoint) && pickModifierHeld);
     if (containerRef.current) {
       containerRef.current.style.cursor = activePickMode ? "crosshair" : "";
     }
@@ -844,7 +859,7 @@ export function LeafletMapPane({
         containerRef.current.style.cursor = "";
       }
     };
-  }, [canPickMapPoint, canPickTracePoint, canPlaceMapPoint, pickModifierHeld]);
+  }, [canPickMapPoint, canPickTracePoint, canPlaceMapPoint, canCaptureMapPoint, pickModifierHeld]);
 
   return (
     <div className="absolute inset-0">
@@ -862,6 +877,11 @@ export function LeafletMapPane({
       {canPlaceMapPoint ? (
         <div className="pointer-events-none absolute bottom-3 left-3 z-1000 rounded-box bg-base-100/90 px-2 py-1 text-xs text-base-content/70">
           Ctrl+click to drop a marker
+        </div>
+      ) : null}
+      {canCaptureMapPoint ? (
+        <div className="pointer-events-none absolute bottom-3 left-3 z-1000 rounded-box bg-base-100/90 px-2 py-1 text-xs text-base-content/70">
+          Click the map to place a new marker
         </div>
       ) : null}
       {linkMode ? (

@@ -140,6 +140,9 @@ export const MapMarkerNeighborsSection = forwardRef<
   );
 
   function toggleCandidate(markerId: number) {
+    if (searchQuery.trim()) {
+      setSearchQuery("");
+    }
     setSelectedIds((current) => {
       const next = new Set(current);
       if (next.has(markerId)) {

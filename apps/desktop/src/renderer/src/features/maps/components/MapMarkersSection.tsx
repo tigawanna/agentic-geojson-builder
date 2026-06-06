@@ -6,6 +6,7 @@ import { groupSegmentsByPath } from "@renderer/features/maps/lib/group-segments-
 import { useGeoSegmentsQuery } from "@renderer/features/maps/hooks/useGeoSegmentsQuery";
 import { useMapLinksQuery } from "@renderer/features/maps/hooks/useMapLinksQuery";
 import { useMapPointsQuery } from "@renderer/features/maps/hooks/useMapPointsQuery";
+import { resolveMapPointTypeFromRecord } from "@shared/map-point-type";
 import { useMapWorkspaceUiActions } from "@renderer/features/maps/store/MapWorkspaceProvider";
 
 type MapMarkersSectionProps = {
@@ -181,8 +182,7 @@ export function MapMarkersSection({ mapId }: MapMarkersSectionProps) {
                     {point.ref ?? point.name ?? `Marker #${point.id}`}
                   </span>
                   <span className="shrink-0 rounded-full bg-base-content/10 px-1.5 py-0.5 text-[10px] text-base-content/60">
-                    {point.category}
-                    {point.nodeRole ? ` · ${point.nodeRole}` : ""}
+                    {resolveMapPointTypeFromRecord(point)}
                   </span>
                 </button>
                 <button

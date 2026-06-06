@@ -3,6 +3,7 @@ export type MapPointMetadata = Record<string, string>;
 export type MapPointCategory =
   | "junction"
   | "gate"
+  | "bridge"
   | "viewpoint"
   | "water"
   | "cave"
@@ -13,6 +14,7 @@ export type MapPointCategory =
 export const MAP_POINT_CATEGORIES: MapPointCategory[] = [
   "junction",
   "gate",
+  "bridge",
   "viewpoint",
   "water",
   "cave",

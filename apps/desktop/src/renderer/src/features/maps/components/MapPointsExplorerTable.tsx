@@ -13,6 +13,7 @@ import { isMapDataExplorerSelectionEqual } from "@renderer/features/maps/hooks/u
 import { useMapDataExplorerPageStore } from "@renderer/features/maps/store/map-data-explorer-page-store";
 import type { MapDataExplorerSelection } from "@renderer/features/maps/types/map-data-explorer.types";
 import type { MapPointRecord } from "@shared/map-points.types";
+import { resolveMapPointTypeFromRecord } from "@shared/map-point-type";
 
 type MapPointsExplorerTableProps = {
   mapId: number;
@@ -327,7 +328,7 @@ export function MapPointsExplorerTable({
                 <th>ref</th>
                 <th>{t("maps.workspace.dataExplorer.name")}</th>
                 <th>{t("maps.workspace.dataExplorer.altitude")}</th>
-                <th>{t("maps.workspace.dataExplorer.category")}</th>
+                <th>{t("maps.workspace.dataExplorer.markerType")}</th>
                 <th className="w-20" />
               </tr>
             </thead>
@@ -366,7 +367,7 @@ export function MapPointsExplorerTable({
                     <td className="font-mono text-xs">
                       {point.elevation !== null ? `${point.elevation.toFixed(0)} m` : "—"}
                     </td>
-                    <td>{point.category}</td>
+                    <td>{resolveMapPointTypeFromRecord(point)}</td>
                     <td>
                       <div className="flex justify-end gap-0.5 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
                         <button

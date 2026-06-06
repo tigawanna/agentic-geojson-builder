@@ -59,10 +59,17 @@ import {
 import type { MapboxGlStyleId } from "@renderer/features/maps/lib/mapbox-gl-styles";
 import { MapMarkerDraftDialog } from "@renderer/features/maps/components/MapboxCaptureDraftDialog";
 import { useMapMarkerDraftEscape } from "@renderer/features/maps/hooks/useMapMarkerDraftEscape";
+import { buildTrailElevationGuides } from "@renderer/features/maps/lib/build-trail-elevation-guides";
 import {
+  buildMapMarkerDraftFromCoordinates,
   mapMarkerDraftToCreateInput,
   type MapMarkerSaveDraft,
 } from "@renderer/features/maps/lib/map-marker-save-draft";
+import {
+  resolveInspectElevation,
+  toNearbyElevationPointsFromControlPoints,
+  toNearbyElevationPointsFromMapPoints,
+} from "@renderer/features/maps/lib/resolve-inspect-elevation";
 import { MapTileCacheBoundsModal } from "@renderer/features/maps/components/MapTileCacheBoundsModal";
 import { MapWorkspaceControlsModal } from "@renderer/features/maps/components/MapWorkspaceControlsModal";
 import { MapWorkspaceHeader } from "@renderer/features/maps/components/MapWorkspaceHeader";
@@ -185,6 +192,7 @@ export function MapWorkspaceSplitView() {
     reorderLinkChain,
     clearLinkChain,
     stopLinkMode,
+    stopAddMarkerPlacementMode,
   } = useMapWorkspaceUiActions();
   const homeViewport = useMapWorkspaceUiState((state) => state.homeViewport);
   const referenceMode = useMapWorkspaceUiState((state) => state.referenceMode);
@@ -209,6 +217,7 @@ export function MapWorkspaceSplitView() {
     (state) => state.detailPanelControlPointId,
   );
   const markerMode = useMapWorkspaceUiState((state) => state.markerMode);
+  const addMarkerPlacementMode = useMapWorkspaceUiState((state) => state.addMarkerPlacementMode);
   const linkMode = useMapWorkspaceUiState((state) => state.linkMode);
   const linkChain = useMapWorkspaceUiState((state) => state.linkChain);
   const mapboxInspectMode = useMapWorkspaceUiState((state) => state.mapboxInspectMode);
@@ -445,6 +454,11 @@ export function MapWorkspaceSplitView() {
   }, [referenceGeoJsonQuery.data?.layers]);
 
   const referenceOverlayFeatureCount = referenceOverlay?.features.length ?? 0;
+
+  const trailElevationGuides = useMemo(
+    () => buildTrailElevationGuides({ geoSegments, referenceOverlay }),
+    [geoSegments, referenceOverlay],
+  );
 
   const captureOverlays = useMemo(
     () => ({
@@ -733,25 +747,26 @@ export function MapWorkspaceSplitView() {
     [setPendingTracePoints],
   );
 
-  const handleMapPointPlace = useCallback(
-    (latitude: number, longitude: number, elevationMeters?: number | null) => {
-      if (!workspace) {
-        return;
-      }
-      void createMapPoint
-        .mutateAsync({
-          mapId: workspace.id,
+  const handleMapMarkerCaptureFromCoordinates = useCallback(
+    (latitude: number, longitude: number) => {
+      const elevation = resolveInspectElevation({
+        latitude,
+        longitude,
+        trailGuides: trailElevationGuides,
+        controlPoints: toNearbyElevationPointsFromControlPoints(controlPoints),
+        mapPoints: toNearbyElevationPointsFromMapPoints(mapPoints),
+      });
+      setCaptureDraft(
+        buildMapMarkerDraftFromCoordinates({
           latitude,
           longitude,
-          category: "custom",
-          elevation: elevationMeters ?? null,
-          elevationSource: elevationMeters != null ? "inferred_from_path" : null,
-        })
-        .then((result) => {
-          setDetailPanelMapPointId(result.point.id);
-        });
+          trailContext: { trailGuides: trailElevationGuides },
+          elevationMeters: elevation?.elevationMeters ?? null,
+          baseMapStyle: workspace?.baseMapStyle ?? null,
+        }),
+      );
     },
-    [createMapPoint, setDetailPanelMapPointId, workspace],
+    [controlPoints, mapPoints, trailElevationGuides, workspace?.baseMapStyle],
   );
 
   const handleMapPointClick = useCallback(
@@ -985,6 +1000,7 @@ export function MapWorkspaceSplitView() {
         .mutateAsync(mapMarkerDraftToCreateInput(workspace.id, draft))
         .then((result) => {
           setCaptureDraft(null);
+          stopAddMarkerPlacementMode();
           setDetailPanelMapPointId(result.point.id);
           setStatusMessage(
             t("maps.workspace.mapMarkerSaved", { name: result.point.name ?? draft.name }),
@@ -993,7 +1009,14 @@ export function MapWorkspaceSplitView() {
           statusTimerRef.current = window.setTimeout(() => setStatusMessage(null), 2500);
         });
     },
-    [createMapPoint, setDetailPanelMapPointId, setStatusMessage, t, workspace],
+    [
+      createMapPoint,
+      setDetailPanelMapPointId,
+      setStatusMessage,
+      stopAddMarkerPlacementMode,
+      t,
+      workspace,
+    ],
   );
 
   useMapWorkspaceMenuActions({
@@ -1063,6 +1086,7 @@ export function MapWorkspaceSplitView() {
     canPickMapPoint: referenceMode && pendingMapPoint === null,
     canPickTracePoint: traceMode,
     canPlaceMapPoint: markerMode,
+    canCaptureMapPoint: addMarkerPlacementMode && !linkMode && !referenceMode && !traceMode,
     controlPointDragEnabled: allowControlPointDrag,
     editingSegmentId,
     selectedControlPointId,
@@ -1075,7 +1099,7 @@ export function MapWorkspaceSplitView() {
     },
     onMapLocationPick: handleMapLocationPick,
     onTracePointAdd: handleTracePointAdd,
-    onMapPointPlace: handleMapPointPlace,
+    onMapMarkerCapture: handleMapMarkerCaptureFromCoordinates,
     onMapPointClick: handleMapPointClick,
     onPendingTracePointMove: handlePendingTracePointMove,
     onControlPointMapMove: handleControlPointMapMove,
@@ -1344,7 +1368,10 @@ export function MapWorkspaceSplitView() {
             mapId={workspace.id}
             mapPoints={mapPoints}
             markerNeighbors={markerNeighbors}
-            onClose={() => setDetailPanelMapPointId(null)}
+            onClose={() => {
+              stopAddMarkerPlacementMode();
+              setDetailPanelMapPointId(null);
+            }}
           />
         </div>
       ) : null}
@@ -1379,7 +1406,12 @@ export function MapWorkspaceSplitView() {
       <MapMarkerDraftDialog
         draft={captureDraft}
         savePending={createMapPoint.isPending}
-        onClose={() => setCaptureDraft(null)}
+        onClose={() => {
+          setCaptureDraft(null);
+          if (addMarkerPlacementMode) {
+            setStatusMessage(t("maps.workspace.addMarkerPlacementHint"));
+          }
+        }}
         onSave={handleCaptureSave}
       />
       <AppStatusToast message={statusMessage} onDismiss={() => setStatusMessage(null)} />

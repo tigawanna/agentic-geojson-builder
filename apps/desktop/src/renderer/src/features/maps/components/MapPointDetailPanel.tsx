@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { Trash2, X } from "lucide-react";
+import { MapPinPlus, Trash2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import type { MapPointRecord } from "@shared/map-points.types";
 import {
-  MAP_POINT_CATEGORIES,
-  MAP_POINT_NODE_ROLES,
-  type MapPointCategory,
-  type MapPointNodeRole,
-  type MapPointRecord,
-} from "@shared/map-points.types";
+  MAP_POINT_TYPES,
+  mapPointTypeToFields,
+  resolveMapPointTypeFromRecord,
+  type MapPointType,
+} from "@shared/map-point-type";
 import type { MarkerNeighborRecord } from "@shared/marker-neighbors.types";
 import { resolveMapPointLinkRef } from "@shared/map-point-link-ref";
 import { useIpcMutation } from "@renderer/hooks/useIpc";
@@ -15,7 +15,10 @@ import {
   MapMarkerNeighborsSection,
   type MapMarkerNeighborsSectionHandle,
 } from "@renderer/features/maps/components/MapMarkerNeighborsSection";
-import { useMapWorkspaceUiActions } from "@renderer/features/maps/store/MapWorkspaceProvider";
+import {
+  useMapWorkspaceUiActions,
+  useMapWorkspaceUiState,
+} from "@renderer/features/maps/store/MapWorkspaceProvider";
 
 type MapPointDetailPanelProps = {
   point: MapPointRecord;
@@ -33,7 +36,9 @@ export function MapPointDetailPanel({
   onClose,
 }: MapPointDetailPanelProps) {
   const { t } = useTranslation();
-  const { setStatusMessage } = useMapWorkspaceUiActions();
+  const addMarkerPlacementMode = useMapWorkspaceUiState((state) => state.addMarkerPlacementMode);
+  const { setStatusMessage, setAddMarkerPlacementMode, stopAddMarkerPlacementMode } =
+    useMapWorkspaceUiActions();
   const updatePoint = useIpcMutation("mapPoints:update");
   const deletePoint = useIpcMutation("mapPoints:delete");
   const neighborsRef = useRef<MapMarkerNeighborsSectionHandle>(null);
@@ -41,8 +46,7 @@ export function MapPointDetailPanel({
 
   const [ref, setRef] = useState("");
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<MapPointCategory>("custom");
-  const [nodeRole, setNodeRole] = useState<MapPointNodeRole | "">("");
+  const [pointType, setPointType] = useState<MapPointType>("custom");
   const [elevation, setElevation] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -50,8 +54,7 @@ export function MapPointDetailPanel({
   useEffect(() => {
     setRef(point.ref ?? "");
     setName(point.name ?? "");
-    setCategory(point.category);
-    setNodeRole(point.nodeRole ?? "");
+    setPointType(resolveMapPointTypeFromRecord(point));
     setElevation(point.elevation !== null ? String(point.elevation) : "");
     setDescription(point.description ?? "");
     setError(null);
@@ -67,13 +70,14 @@ export function MapPointDetailPanel({
 
     setSaving(true);
     try {
+      const { category, nodeRole } = mapPointTypeToFields(pointType);
       await updatePoint.mutateAsync({
         mapId,
         pointId: point.id,
         ref: ref.trim() || null,
         name: name.trim() || null,
         category,
-        nodeRole: nodeRole === "" ? null : nodeRole,
+        nodeRole,
         elevation: parsedElevation,
         elevationSource: parsedElevation !== null ? "manual" : null,
         description: description.trim() || null,
@@ -127,30 +131,14 @@ export function MapPointDetailPanel({
         </label>
 
         <label className="form-control gap-1.5">
-          <span className="label-text text-xs font-medium">Category</span>
+          <span className="label-text text-xs font-medium">Type</span>
           <select
             className="select-bordered select w-full select-sm"
-            value={category}
-            onChange={(event) => setCategory(event.target.value as MapPointCategory)}
+            value={pointType}
+            onChange={(event) => setPointType(event.target.value as MapPointType)}
+            data-test="map-point-type"
           >
-            {MAP_POINT_CATEGORIES.map((value) => (
-              <option key={value} value={value}>
-                {value}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="form-control gap-1.5">
-          <span className="label-text text-xs font-medium">Node role (routing)</span>
-          <select
-            className="select-bordered select w-full select-sm"
-            value={nodeRole}
-            onChange={(event) => setNodeRole(event.target.value as MapPointNodeRole | "")}
-            data-test="map-point-node-role"
-          >
-            <option value="">—</option>
-            {MAP_POINT_NODE_ROLES.map((value) => (
+            {MAP_POINT_TYPES.map((value) => (
               <option key={value} value={value}>
                 {value}
               </option>
@@ -187,6 +175,28 @@ export function MapPointDetailPanel({
           compact
           hideSaveButton
         />
+
+        <button
+          type="button"
+          className={
+            addMarkerPlacementMode
+              ? "btn w-full btn-sm btn-primary"
+              : "btn w-full btn-outline btn-sm"
+          }
+          onClick={() => {
+            if (addMarkerPlacementMode) {
+              stopAddMarkerPlacementMode();
+              setStatusMessage(null);
+              return;
+            }
+            setAddMarkerPlacementMode(true);
+            setStatusMessage(t("maps.workspace.addMarkerPlacementHint"));
+          }}
+          data-test="map-point-add-new-marker"
+        >
+          <MapPinPlus className="size-4" />
+          {t("maps.workspace.addNewMarker")}
+        </button>
 
         <p className="font-mono text-xs text-base-content/50">
           {point.latitude.toFixed(6)}, {point.longitude.toFixed(6)}

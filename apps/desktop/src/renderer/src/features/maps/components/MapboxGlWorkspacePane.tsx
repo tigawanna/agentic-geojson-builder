@@ -101,6 +101,7 @@ export function MapboxGlWorkspacePane({
   canPickMapPoint = false,
   canPickTracePoint = false,
   canPlaceMapPoint = false,
+  canCaptureMapPoint = false,
   controlPointDragEnabled = false,
   mapPointDragEnabled = false,
   editingSegmentId = null,
@@ -249,6 +250,7 @@ export function MapboxGlWorkspacePane({
     canPickMapPoint,
     canPickTracePoint,
     canPlaceMapPoint,
+    canCaptureMapPoint,
     inspectMode,
     pinnedProbe,
   });
@@ -276,6 +278,7 @@ export function MapboxGlWorkspacePane({
     canPickMapPoint,
     canPickTracePoint,
     canPlaceMapPoint,
+    canCaptureMapPoint,
     inspectMode,
     pinnedProbe,
   };
@@ -741,10 +744,12 @@ export function MapboxGlWorkspacePane({
         setReferenceInspectCopyTarget(null);
       }
 
-      if (data.inspectMode) {
+      if (data.inspectMode || data.canCaptureMapPoint) {
         map.getCanvas().style.cursor = "crosshair";
-        const probe = buildProbe(event, referenceInspectHoverRef.current);
-        setHoverProbe(probe);
+        if (data.inspectMode) {
+          const probe = buildProbe(event, referenceInspectHoverRef.current);
+          setHoverProbe(probe);
+        }
       }
     });
 
@@ -774,13 +779,8 @@ export function MapboxGlWorkspacePane({
         mapClickTimerRef.current = window.setTimeout(() => {
           const current = dataRef.current;
           if (current.canPlaceMapPoint) {
-            const features = map.queryRenderedFeatures(event.point);
-            const resolved = resolveElevationForEvent(
-              event,
-              referenceInspectHoverRef.current,
-              features,
-            );
-            onMapPointPlaceRef.current?.(lat, lng, resolved?.elevationMeters ?? null);
+            const probe = buildProbe(event, referenceInspectHoverRef.current);
+            emitCaptureRef.current(probe, referenceInspectHoverRef.current);
             return;
           }
           if (current.canPickTracePoint) {
@@ -791,6 +791,12 @@ export function MapboxGlWorkspacePane({
             onMapLocationPickRef.current?.(lat, lng);
           }
         }, 250);
+        return;
+      }
+
+      if (data.canCaptureMapPoint && !modifier) {
+        const probe = buildProbe(event, referenceInspectHoverRef.current);
+        emitCaptureRef.current(probe, referenceInspectHoverRef.current);
         return;
       }
 
@@ -807,7 +813,7 @@ export function MapboxGlWorkspacePane({
 
     map.on("click", SEGMENT_LAYER_ID, (event) => {
       const data = dataRef.current;
-      if (isPickMode(data) || data.inspectMode) {
+      if (isPickMode(data) || data.inspectMode || data.canCaptureMapPoint) {
         return;
       }
       const feature = event.features?.[0];
@@ -1075,6 +1081,11 @@ export function MapboxGlWorkspacePane({
           Ctrl+click to drop a marker
         </div>
       ) : null}
+      {canCaptureMapPoint ? (
+        <div className="pointer-events-none absolute bottom-3 left-3 z-1000 rounded-box bg-base-100/90 px-2 py-1 text-xs text-base-content/70">
+          Click the map to place a new marker
+        </div>
+      ) : null}
       {linkMode ? (
         <div className="pointer-events-none absolute bottom-3 left-3 z-1000 max-w-xs rounded-box bg-info/90 px-2 py-1 text-xs text-info-content">
           Ctrl+click markers to add to segment chain. Drag list items to reorder.
@@ -1126,8 +1137,13 @@ type PickModeFlags = {
   canPlaceMapPoint: boolean;
 };
 
-function isPickMode(flags: PickModeFlags): boolean {
-  return flags.canPickMapPoint || flags.canPickTracePoint || flags.canPlaceMapPoint;
+function isPickMode(flags: PickModeFlags & { canCaptureMapPoint?: boolean }): boolean {
+  return (
+    flags.canPickMapPoint ||
+    flags.canPickTracePoint ||
+    flags.canPlaceMapPoint ||
+    Boolean(flags.canCaptureMapPoint)
+  );
 }
 
 function upsertGeoJsonSource(map: mapboxgl.Map, sourceId: string, data: GeoJSON.FeatureCollection) {

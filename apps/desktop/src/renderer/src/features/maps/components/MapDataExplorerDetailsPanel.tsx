@@ -8,6 +8,7 @@ import type { GeoSegmentRecord } from "@shared/geo-segments.types";
 import type { MapLinkRecord } from "@shared/map-links.types";
 import type { MarkerNeighborRecord } from "@shared/marker-neighbors.types";
 import type { MapPointRecord } from "@shared/map-points.types";
+import { resolveMapPointTypeFromRecord } from "@shared/map-point-type";
 import type { TrailRecord } from "@shared/trails.types";
 import { MapMarkerNeighborsSection } from "@renderer/features/maps/components/MapMarkerNeighborsSection";
 import { MapDataExplorerElevationChart } from "@renderer/features/maps/components/MapDataExplorerElevationChart";
@@ -228,17 +229,11 @@ export function MapDataExplorerDetailsPanel({
               <dd className="font-mono">{point.id}</dd>
             </div>
             <div className="flex justify-between gap-2">
-              <dt className="text-base-content/55">{t("maps.workspace.dataExplorer.category")}</dt>
-              <dd>{point.category}</dd>
+              <dt className="text-base-content/55">
+                {t("maps.workspace.dataExplorer.markerType")}
+              </dt>
+              <dd>{resolveMapPointTypeFromRecord(point)}</dd>
             </div>
-            {point.nodeRole ? (
-              <div className="flex justify-between gap-2">
-                <dt className="text-base-content/55">
-                  {t("maps.workspace.dataExplorer.nodeRole")}
-                </dt>
-                <dd>{point.nodeRole}</dd>
-              </div>
-            ) : null}
             {point.ref ? (
               <div className="flex justify-between gap-2">
                 <dt className="text-base-content/55">ref</dt>

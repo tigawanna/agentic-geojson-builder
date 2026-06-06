@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { ClipboardPaste, Mountain, RefreshCw, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import type { MapPointRecord } from "@shared/map-points.types";
 import {
-  MAP_POINT_CATEGORIES,
-  MAP_POINT_NODE_ROLES,
-  type MapPointCategory,
-  type MapPointNodeRole,
-  type MapPointRecord,
-} from "@shared/map-points.types";
+  MAP_POINT_TYPES,
+  mapPointTypeToFields,
+  resolveMapPointTypeFromRecord,
+  type MapPointType,
+} from "@shared/map-point-type";
 import type { ControlPointRecord } from "@shared/control-points.types";
 import { CoordinateTripleInput } from "@renderer/features/maps/components/CoordinateTripleInput";
 import { useIpcMutation } from "@renderer/hooks/useIpc";
@@ -63,8 +63,7 @@ export function MapDataExplorerEditDialog({
   const [poleNumber, setPoleNumber] = useState("");
   const [name, setName] = useState("");
   const [ref, setRef] = useState("");
-  const [category, setCategory] = useState<MapPointCategory>("custom");
-  const [nodeRole, setNodeRole] = useState<MapPointNodeRole | "">("");
+  const [pointType, setPointType] = useState<MapPointType>("custom");
   const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -81,8 +80,7 @@ export function MapDataExplorerEditDialog({
       setCoordinates(toTriple(mapPoint.latitude, mapPoint.longitude, mapPoint.elevation));
       setName(mapPoint.name ?? "");
       setRef(mapPoint.ref ?? "");
-      setCategory(mapPoint.category);
-      setNodeRole(mapPoint.nodeRole ?? "");
+      setPointType(resolveMapPointTypeFromRecord(mapPoint));
       setSaveError(null);
     }
   }, [controlPoint, mapPoint, target]);
@@ -144,6 +142,7 @@ export function MapDataExplorerEditDialog({
     }
 
     if (target.kind === "map-point" && mapPoint) {
+      const { category, nodeRole } = mapPointTypeToFields(pointType);
       updateMapPoint.mutate(
         {
           mapId,
@@ -155,7 +154,7 @@ export function MapDataExplorerEditDialog({
           name: name.trim() || null,
           ref: ref.trim() || null,
           category,
-          nodeRole: nodeRole === "" ? null : nodeRole,
+          nodeRole,
         },
         {
           onSuccess: () => {
@@ -288,15 +287,15 @@ export function MapDataExplorerEditDialog({
                 </label>
                 <label className="form-control gap-1">
                   <span className="text-xs font-medium text-base-content/60">
-                    {t("maps.workspace.dataExplorer.category")}
+                    {t("maps.workspace.dataExplorer.markerType")}
                   </span>
                   <select
                     className="select-bordered select w-full select-sm"
-                    value={category}
-                    onChange={(event) => setCategory(event.target.value as MapPointCategory)}
+                    value={pointType}
+                    onChange={(event) => setPointType(event.target.value as MapPointType)}
                     disabled={pending}
                   >
-                    {MAP_POINT_CATEGORIES.map((value) => (
+                    {MAP_POINT_TYPES.map((value) => (
                       <option key={value} value={value}>
                         {value}
                       </option>
@@ -304,24 +303,6 @@ export function MapDataExplorerEditDialog({
                   </select>
                 </label>
               </div>
-              <label className="form-control gap-1">
-                <span className="text-xs font-medium text-base-content/60">
-                  {t("maps.workspace.dataExplorer.nodeRole")}
-                </span>
-                <select
-                  className="select-bordered select w-full select-sm"
-                  value={nodeRole}
-                  onChange={(event) => setNodeRole(event.target.value as MapPointNodeRole | "")}
-                  disabled={pending}
-                >
-                  <option value="">—</option>
-                  {MAP_POINT_NODE_ROLES.map((value) => (
-                    <option key={value} value={value}>
-                      {value}
-                    </option>
-                  ))}
-                </select>
-              </label>
             </section>
           )}
 
