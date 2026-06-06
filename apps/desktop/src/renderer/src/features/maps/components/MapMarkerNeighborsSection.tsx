@@ -1,5 +1,5 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@renderer/lib/utils";
 import { useIpcMutation } from "@renderer/hooks/useIpc";
@@ -38,6 +38,8 @@ type MapMarkerNeighborsSectionProps = {
   neighbors: MarkerNeighborRecord[];
   compact?: boolean;
   hideSaveButton?: boolean;
+  addMarkerPlacementMode?: boolean;
+  onToggleAddMarker?: () => void;
   onSaved?: () => void;
 };
 
@@ -69,7 +71,17 @@ export const MapMarkerNeighborsSection = forwardRef<
   MapMarkerNeighborsSectionHandle,
   MapMarkerNeighborsSectionProps
 >(function MapMarkerNeighborsSection(
-  { mapId, point, mapPoints, neighbors, compact = false, hideSaveButton = false, onSaved },
+  {
+    mapId,
+    point,
+    mapPoints,
+    neighbors,
+    compact = false,
+    hideSaveButton = false,
+    addMarkerPlacementMode = false,
+    onToggleAddMarker,
+    onSaved,
+  },
   ref,
 ) {
   const { t } = useTranslation();
@@ -189,15 +201,32 @@ export const MapMarkerNeighborsSection = forwardRef<
           ? t("maps.workspace.dataExplorer.neighbors.searchTitle")
           : t("maps.workspace.dataExplorer.neighbors.nearbyTitle")}
       </p>
-      <label className="input-bordered input input-xs flex w-full items-center gap-2">
-        <Search className="size-3 shrink-0 text-base-content/45" />
-        <input
-          className="grow bg-transparent text-xs outline-none"
-          value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder={t("maps.workspace.dataExplorer.neighbors.searchPlaceholder")}
-        />
-      </label>
+      <div className="flex items-center gap-1.5">
+        <label className="input-bordered input input-xs flex min-w-0 flex-[4] items-center gap-2">
+          <Search className="size-3 shrink-0 text-base-content/45" />
+          <input
+            className="grow bg-transparent text-xs outline-none"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder={t("maps.workspace.dataExplorer.neighbors.searchPlaceholder")}
+          />
+        </label>
+        {onToggleAddMarker ? (
+          <button
+            type="button"
+            className={cn(
+              "btn btn-square min-w-0 flex-1 shrink-0 btn-xs",
+              addMarkerPlacementMode ? "btn-primary" : "btn-outline",
+            )}
+            onClick={onToggleAddMarker}
+            aria-label={t("maps.workspace.addNewMarker")}
+            title={t("maps.workspace.addNewMarker")}
+            data-test="map-point-add-new-marker"
+          >
+            <Plus className="size-3.5" />
+          </button>
+        ) : null}
+      </div>
       <ul className="max-h-44 space-y-1 overflow-y-auto rounded-lg border border-base-content/10 bg-base-100/40 p-1">
         {candidates.length === 0 ? (
           <li className="px-2 py-3 text-center text-[11px] text-base-content/45">

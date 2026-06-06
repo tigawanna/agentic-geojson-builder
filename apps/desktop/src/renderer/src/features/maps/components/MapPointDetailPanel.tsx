@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPinPlus, Trash2, X } from "lucide-react";
+import { Trash2, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { MapPointRecord } from "@shared/map-points.types";
 import {
@@ -25,6 +25,9 @@ type MapPointDetailPanelProps = {
   mapId: number;
   mapPoints: MapPointRecord[];
   markerNeighbors: MarkerNeighborRecord[];
+  draftPosition: { latitude: number; longitude: number } | null;
+  onResolveElevation: (latitude: number, longitude: number) => number | null;
+  onPositionSaved: () => void;
   onClose: () => void;
 };
 
@@ -33,6 +36,9 @@ export function MapPointDetailPanel({
   mapId,
   mapPoints,
   markerNeighbors,
+  draftPosition,
+  onResolveElevation,
+  onPositionSaved,
   onClose,
 }: MapPointDetailPanelProps) {
   const { t } = useTranslation();
@@ -50,6 +56,14 @@ export function MapPointDetailPanel({
   const [elevation, setElevation] = useState("");
   const [description, setDescription] = useState("");
   const [error, setError] = useState<string | null>(null);
+
+  const displayPoint =
+    draftPosition !== null
+      ? { ...point, latitude: draftPosition.latitude, longitude: draftPosition.longitude }
+      : point;
+  const positionDirty =
+    draftPosition !== null &&
+    (draftPosition.latitude !== point.latitude || draftPosition.longitude !== point.longitude);
 
   useEffect(() => {
     setRef(point.ref ?? "");
@@ -71,6 +85,17 @@ export function MapPointDetailPanel({
     setSaving(true);
     try {
       const { category, nodeRole } = mapPointTypeToFields(pointType);
+      const latitude = draftPosition?.latitude ?? point.latitude;
+      const longitude = draftPosition?.longitude ?? point.longitude;
+      let elevationToSave = parsedElevation;
+      let elevationSource: "manual" | "inferred_from_path" | null =
+        parsedElevation !== null ? "manual" : null;
+      if (positionDirty && parsedElevation === null) {
+        const inferredElevation = onResolveElevation(latitude, longitude);
+        elevationToSave = inferredElevation;
+        elevationSource = inferredElevation !== null ? "inferred_from_path" : null;
+      }
+
       await updatePoint.mutateAsync({
         mapId,
         pointId: point.id,
@@ -78,11 +103,13 @@ export function MapPointDetailPanel({
         name: name.trim() || null,
         category,
         nodeRole,
-        elevation: parsedElevation,
-        elevationSource: parsedElevation !== null ? "manual" : null,
+        ...(positionDirty ? { latitude, longitude } : {}),
+        elevation: elevationToSave,
+        elevationSource,
         description: description.trim() || null,
       });
       await neighborsRef.current?.saveIfDirty();
+      onPositionSaved();
       setStatusMessage(
         t("maps.workspace.markerUpdated", {
           name: name.trim() || ref.trim() || resolveMapPointLinkRef(point),
@@ -169,21 +196,13 @@ export function MapPointDetailPanel({
         <MapMarkerNeighborsSection
           ref={neighborsRef}
           mapId={mapId}
-          point={point}
+          point={displayPoint}
           mapPoints={mapPoints}
           neighbors={markerNeighbors}
           compact
           hideSaveButton
-        />
-
-        <button
-          type="button"
-          className={
-            addMarkerPlacementMode
-              ? "btn w-full btn-sm btn-primary"
-              : "btn w-full btn-outline btn-sm"
-          }
-          onClick={() => {
+          addMarkerPlacementMode={addMarkerPlacementMode}
+          onToggleAddMarker={() => {
             if (addMarkerPlacementMode) {
               stopAddMarkerPlacementMode();
               setStatusMessage(null);
@@ -192,14 +211,15 @@ export function MapPointDetailPanel({
             setAddMarkerPlacementMode(true);
             setStatusMessage(t("maps.workspace.addMarkerPlacementHint"));
           }}
-          data-test="map-point-add-new-marker"
-        >
-          <MapPinPlus className="size-4" />
-          {t("maps.workspace.addNewMarker")}
-        </button>
+        />
 
         <p className="font-mono text-xs text-base-content/50">
-          {point.latitude.toFixed(6)}, {point.longitude.toFixed(6)}
+          {displayPoint.latitude.toFixed(6)}, {displayPoint.longitude.toFixed(6)}
+          {positionDirty ? (
+            <span className="ml-1 text-base-content/40">
+              ({t("maps.workspace.markerDragUnsaved")})
+            </span>
+          ) : null}
         </p>
 
         {error ? <p className="text-xs text-error">{error}</p> : null}

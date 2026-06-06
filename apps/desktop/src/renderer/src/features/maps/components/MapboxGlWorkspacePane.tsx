@@ -37,6 +37,7 @@ import { isPickModifierEvent } from "@renderer/features/maps/lib/pick-modifier";
 import { useMapboxTokenQuery } from "@renderer/features/maps/hooks/useMapboxToken";
 import { useMapboxTokenInvalid } from "@renderer/features/maps/hooks/useMapboxTokenInvalid";
 import { attachMapboxUnauthorizedListener } from "@renderer/features/maps/lib/attach-mapbox-unauthorized-listener";
+import type { VirtualPreviewEdge } from "@renderer/features/maps/lib/virtual-graph-preview.types";
 import { segmentGroupColor } from "@renderer/features/maps/lib/segment-utils";
 import type { LeafletMapPaneProps } from "@renderer/features/maps/components/LeafletMapPane";
 import {
@@ -68,6 +69,8 @@ const TRACE_LAYER_ID = "workspace-pending-trace-layer";
 const CACHE_BOUNDS_SOURCE_ID = "workspace-cache-bounds";
 const CACHE_BOUNDS_FILL_ID = "workspace-cache-bounds-fill";
 const CACHE_BOUNDS_LINE_ID = "workspace-cache-bounds-line";
+const VIRTUAL_PREVIEW_SOURCE_ID = "workspace-virtual-preview";
+const VIRTUAL_PREVIEW_LAYER_ID = "workspace-virtual-preview-layer";
 
 type ReferenceInspectPointer = {
   hover: ReferenceInspectHover;
@@ -79,6 +82,7 @@ export type MapboxGlWorkspacePaneProps = LeafletMapPaneProps & {
   inspectMode?: boolean;
   capturePending?: boolean;
   onCapture?: (draft: MapMarkerSaveDraft) => void;
+  virtualPreviewEdges?: VirtualPreviewEdge[];
 };
 
 export function MapboxGlWorkspacePane({
@@ -104,6 +108,7 @@ export function MapboxGlWorkspacePane({
   canCaptureMapPoint = false,
   controlPointDragEnabled = false,
   mapPointDragEnabled = false,
+  draggableMapPointId = null,
   editingSegmentId = null,
   selectedControlPointId = null,
   selectedSegmentId = null,
@@ -127,6 +132,7 @@ export function MapboxGlWorkspacePane({
   onCapture,
   showNeighborCoverage = false,
   markerIdsWithNeighborLinks = [],
+  virtualPreviewEdges = [],
 }: MapboxGlWorkspacePaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -253,6 +259,7 @@ export function MapboxGlWorkspacePane({
     canCaptureMapPoint,
     inspectMode,
     pinnedProbe,
+    virtualPreviewEdges,
   });
   dataRef.current = {
     referenceOverlay,
@@ -281,6 +288,7 @@ export function MapboxGlWorkspacePane({
     canCaptureMapPoint,
     inspectMode,
     pinnedProbe,
+    virtualPreviewEdges,
   };
 
   useEffect(() => {
@@ -612,6 +620,36 @@ export function MapboxGlWorkspacePane({
           paint: { "line-color": "#2563eb", "line-width": 2, "line-dasharray": [3, 2] },
         });
       }
+
+      const virtualPreviewCollection: GeoJSON.FeatureCollection = {
+        type: "FeatureCollection",
+        features: data.virtualPreviewEdges
+          .filter((edge) => edge.geometry.coordinates.length >= 2)
+          .map((edge, index) => ({
+            type: "Feature" as const,
+            geometry: edge.geometry,
+            properties: {
+              id: -(index + 1),
+              color: segmentGroupColor(edge.pathSlug),
+              width: 5,
+            },
+          })),
+      };
+      upsertGeoJsonSource(map, VIRTUAL_PREVIEW_SOURCE_ID, virtualPreviewCollection);
+      if (!map.getLayer(VIRTUAL_PREVIEW_LAYER_ID)) {
+        map.addLayer({
+          id: VIRTUAL_PREVIEW_LAYER_ID,
+          type: "line",
+          source: VIRTUAL_PREVIEW_SOURCE_ID,
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-color": ["get", "color"],
+            "line-width": ["get", "width"],
+            "line-opacity": 0.82,
+            "line-dasharray": [2, 1.5],
+          },
+        });
+      }
     }
 
     syncSourcesRef.current = syncSources;
@@ -905,6 +943,8 @@ export function MapboxGlWorkspacePane({
     editingSegmentId,
     pendingTracePoints,
     tileCacheOverlay,
+    pathSegmentLinks,
+    virtualPreviewEdges,
   ]);
 
   useEffect(() => {
@@ -969,18 +1009,19 @@ export function MapboxGlWorkspacePane({
         const label =
           chainIndex !== undefined && baseLabel ? `${chainIndex}:${baseLabel}` : baseLabel;
         const element = document.createElement("div");
-        const markerCursor = mapPointDragEnabled ? "grab" : "pointer";
+        const pointDraggable = mapPointDragEnabled || point.id === draggableMapPointId;
+        const markerCursor = pointDraggable ? "grab" : "pointer";
         const halo = resolveMapPointMarkerHalo(ring, appearanceInput);
         element.style.cssText = `display:flex;align-items:center;gap:4px;cursor:${markerCursor};`;
         element.innerHTML = `<div style="width:${pinSize}px;height:${pinSize}px;transform:rotate(45deg);border:2px solid ${ring};background:${color};${halo}"></div>${label ? `<span style="transform:translateY(-1px);font-size:${linkMode ? 11 : 10}px;font-weight:700;color:#0f172a;background:rgba(255,255,255,0.9);border-radius:4px;padding:0 4px;white-space:nowrap;">${label}</span>` : ""}`;
         const marker = new mapboxgl.Marker({
           element,
           anchor: "center",
-          draggable: mapPointDragEnabled,
+          draggable: pointDraggable,
         })
           .setLngLat([point.longitude, point.latitude])
           .addTo(map);
-        if (mapPointDragEnabled) {
+        if (pointDraggable) {
           marker.on("dragend", () => {
             const lngLat = marker.getLngLat();
             onMapPointMapMoveRef.current?.(point.id, lngLat.lat, lngLat.lng);
@@ -1027,6 +1068,7 @@ export function MapboxGlWorkspacePane({
   }, [
     controlPoints,
     controlPointDragEnabled,
+    draggableMapPointId,
     mapPointDragEnabled,
     mapPoints,
     selectedMapPointId,

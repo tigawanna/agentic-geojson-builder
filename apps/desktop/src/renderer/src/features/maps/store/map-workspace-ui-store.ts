@@ -45,6 +45,8 @@ type MapWorkspaceUiState = {
   linkFromPointId: number | null;
   highlightedSegmentId: number | null;
   highlightedPathGroupId: string | null;
+  graphPreviewOpen: boolean;
+  graphPreviewVisibleSlugs: string[];
 };
 
 type MapWorkspaceUiActions = {
@@ -94,6 +96,10 @@ type MapWorkspaceUiActions = {
   setLinkFromPointId: (pointId: number | null) => void;
   setHighlightedSegmentId: (segmentId: number | null) => void;
   setHighlightedPathGroupId: (groupId: string | null) => void;
+  openGraphPreview: (pathSlugs: string[]) => void;
+  closeGraphPreview: () => void;
+  toggleGraphPreviewSlug: (pathSlug: string) => void;
+  setGraphPreviewVisibleSlugs: (pathSlugs: string[]) => void;
   stopMarkerMode: () => void;
   stopAddMarkerPlacementMode: () => void;
   stopLinkMode: () => void;
@@ -139,6 +145,8 @@ const initialState: MapWorkspaceUiState = {
   linkFromPointId: null,
   highlightedSegmentId: null,
   highlightedPathGroupId: null,
+  graphPreviewOpen: false,
+  graphPreviewVisibleSlugs: [],
 };
 
 export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
@@ -239,6 +247,28 @@ export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
       set({ highlightedSegmentId, highlightedPathGroupId: null }),
     setHighlightedPathGroupId: (highlightedPathGroupId) =>
       set({ highlightedPathGroupId, highlightedSegmentId: null }),
+    openGraphPreview: (pathSlugs) =>
+      set({
+        graphPreviewOpen: true,
+        graphPreviewVisibleSlugs: [...new Set(pathSlugs)],
+      }),
+    closeGraphPreview: () =>
+      set({
+        graphPreviewOpen: false,
+        graphPreviewVisibleSlugs: [],
+      }),
+    toggleGraphPreviewSlug: (pathSlug) =>
+      set((state) => {
+        const visible = new Set(state.graphPreviewVisibleSlugs);
+        if (visible.has(pathSlug)) {
+          visible.delete(pathSlug);
+        } else {
+          visible.add(pathSlug);
+        }
+        return { graphPreviewVisibleSlugs: [...visible] };
+      }),
+    setGraphPreviewVisibleSlugs: (graphPreviewVisibleSlugs) =>
+      set({ graphPreviewVisibleSlugs: [...new Set(graphPreviewVisibleSlugs)] }),
     stopMarkerMode: () => set({ markerMode: false }),
     stopAddMarkerPlacementMode: () => set({ addMarkerPlacementMode: false }),
     stopLinkMode: () =>

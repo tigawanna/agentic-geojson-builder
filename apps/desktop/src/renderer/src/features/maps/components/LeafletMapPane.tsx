@@ -32,6 +32,7 @@ import {
   resolveMapPointMarkerHalo,
   resolveMapPointMarkerRing,
 } from "@renderer/features/maps/lib/map-point-marker-appearance";
+import type { VirtualPreviewEdge } from "@renderer/features/maps/lib/virtual-graph-preview.types";
 import { lineStringToLatLngs, segmentGroupColor } from "@renderer/features/maps/lib/segment-utils";
 
 const MAP_POINT_CATEGORY_COLORS: Record<string, string> = {
@@ -96,11 +97,13 @@ export type LeafletMapPaneProps = {
   onMapPointMapMove?: (pointId: number, latitude: number, longitude: number) => void;
   onControlPointClick?: (controlPointId: number) => void;
   mapPointDragEnabled?: boolean;
+  draggableMapPointId?: number | null;
   onSegmentClick?: (segmentId: number) => void;
   selectedSegmentId?: number | null;
   highlightedPathGroupId?: string | null;
   showNeighborCoverage?: boolean;
   markerIdsWithNeighborLinks?: number[];
+  virtualPreviewEdges?: VirtualPreviewEdge[];
 };
 
 export function LeafletMapPane({
@@ -127,6 +130,7 @@ export function LeafletMapPane({
   canCaptureMapPoint = false,
   controlPointDragEnabled = false,
   mapPointDragEnabled = false,
+  draggableMapPointId = null,
   editingSegmentId = null,
   selectedControlPointId = null,
   onReady,
@@ -148,6 +152,7 @@ export function LeafletMapPane({
   highlightedPathGroupId = null,
   showNeighborCoverage = false,
   markerIdsWithNeighborLinks = [],
+  virtualPreviewEdges = [],
 }: LeafletMapPaneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<import("leaflet").Map | null>(null);
@@ -634,6 +639,23 @@ export function LeafletMapPane({
           .bindTooltip(`${link.fromRef} → ${link.toRef}`)
           .addTo(segmentsLayer);
       }
+
+      for (const edge of virtualPreviewEdges) {
+        const coordinates = edge.geometry.coordinates;
+        if (coordinates.length < 2) {
+          continue;
+        }
+        L.polyline(lineStringToLatLngs(coordinates), {
+          color: segmentGroupColor(edge.pathSlug),
+          weight: 5,
+          opacity: 0.82,
+          dashArray: "7 5",
+          lineCap: "round",
+          lineJoin: "round",
+        })
+          .bindTooltip(`${edge.fromRef} → ${edge.toRef}`)
+          .addTo(segmentsLayer);
+      }
     })();
   }, [
     editingSegmentId,
@@ -643,6 +665,7 @@ export function LeafletMapPane({
     pathSegmentLinks,
     pendingTracePoints,
     selectedSegmentId,
+    virtualPreviewEdges,
   ]);
 
   useEffect(() => {
@@ -729,10 +752,11 @@ export function LeafletMapPane({
       const baseLabel = point.ref ?? point.name ?? "";
       const label =
         chainIndex !== undefined && baseLabel ? `${chainIndex}:${baseLabel}` : baseLabel;
-      const markerCursor = mapPointDragEnabled ? "grab" : "pointer";
+      const pointDraggable = mapPointDragEnabled || point.id === draggableMapPointId;
+      const markerCursor = pointDraggable ? "grab" : "pointer";
       const halo = resolveMapPointMarkerHalo(ring, appearanceInput);
       const marker = L.marker([point.latitude, point.longitude], {
-        draggable: mapPointDragEnabled,
+        draggable: pointDraggable,
         icon: L.divIcon({
           className: "",
           html: `<div style="margin-left:${pinOffset}px;margin-top:${pinOffset}px;display:flex;align-items:center;gap:4px;cursor:${markerCursor};"><div style="width:${pinSize}px;height:${pinSize}px;transform:rotate(45deg);border:2px solid ${ring};background:${color};${halo}"></div>${label ? `<span style="transform:translateY(-1px);font-size:${linkMode ? 11 : 10}px;font-weight:700;color:#0f172a;background:rgba(255,255,255,0.9);border-radius:4px;padding:0 4px;white-space:nowrap;">${label}</span>` : ""}</div>`,
@@ -740,7 +764,7 @@ export function LeafletMapPane({
         }),
       }).addTo(markersLayer);
 
-      if (mapPointDragEnabled) {
+      if (pointDraggable) {
         marker.on("dragend", () => {
           const { lat, lng } = marker.getLatLng();
           onMapPointMapMoveRef.current?.(point.id, lat, lng);
@@ -784,6 +808,7 @@ export function LeafletMapPane({
   }, [
     controlPointDragEnabled,
     controlPoints,
+    draggableMapPointId,
     mapPointDragEnabled,
     mapPoints,
     selectedMapPointId,

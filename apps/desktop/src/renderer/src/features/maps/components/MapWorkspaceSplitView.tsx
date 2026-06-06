@@ -59,7 +59,11 @@ import {
 import type { MapboxGlStyleId } from "@renderer/features/maps/lib/mapbox-gl-styles";
 import { MapMarkerDraftDialog } from "@renderer/features/maps/components/MapboxCaptureDraftDialog";
 import { useMapMarkerDraftEscape } from "@renderer/features/maps/hooks/useMapMarkerDraftEscape";
+import { MapGraphPreviewPanel } from "@renderer/features/maps/components/MapGraphPreviewPanel";
 import { buildTrailElevationGuides } from "@renderer/features/maps/lib/build-trail-elevation-guides";
+import { groupSegmentsByPath } from "@renderer/features/maps/lib/group-segments-by-path";
+import { flattenVirtualPreviewEdges } from "@renderer/features/maps/lib/virtual-graph-preview.types";
+import { useVirtualGraphPreview } from "@renderer/features/maps/hooks/useVirtualGraphPreview";
 import {
   buildMapMarkerDraftFromCoordinates,
   mapMarkerDraftToCreateInput,
@@ -193,6 +197,8 @@ export function MapWorkspaceSplitView() {
     clearLinkChain,
     stopLinkMode,
     stopAddMarkerPlacementMode,
+    openGraphPreview,
+    closeGraphPreview,
   } = useMapWorkspaceUiActions();
   const homeViewport = useMapWorkspaceUiState((state) => state.homeViewport);
   const referenceMode = useMapWorkspaceUiState((state) => state.referenceMode);
@@ -218,6 +224,10 @@ export function MapWorkspaceSplitView() {
   );
   const markerMode = useMapWorkspaceUiState((state) => state.markerMode);
   const addMarkerPlacementMode = useMapWorkspaceUiState((state) => state.addMarkerPlacementMode);
+  const graphPreviewOpen = useMapWorkspaceUiState((state) => state.graphPreviewOpen);
+  const graphPreviewVisibleSlugs = useMapWorkspaceUiState(
+    (state) => state.graphPreviewVisibleSlugs,
+  );
   const linkMode = useMapWorkspaceUiState((state) => state.linkMode);
   const linkChain = useMapWorkspaceUiState((state) => state.linkChain);
   const mapboxInspectMode = useMapWorkspaceUiState((state) => state.mapboxInspectMode);
@@ -251,6 +261,10 @@ export function MapWorkspaceSplitView() {
   const { setHighlightedSegmentId } = useMapWorkspaceUiActions();
   const [auditLogOpen, setAuditLogOpen] = useState(false);
   const [captureDraft, setCaptureDraft] = useState<MapMarkerSaveDraft | null>(null);
+  const [detailPanelDraftPosition, setDetailPanelDraftPosition] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
   const [geoJsonPreviewOpen, setGeoJsonPreviewOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const checkedOnboardingRef = useRef(false);
@@ -306,6 +320,25 @@ export function MapWorkspaceSplitView() {
     detailPanelMapPointId !== null
       ? (mapPoints.find((point) => point.id === detailPanelMapPointId) ?? null)
       : null;
+
+  useEffect(() => {
+    setDetailPanelDraftPosition(null);
+  }, [detailPanelMapPointId]);
+
+  const workspaceMapPoints = useMemo(() => {
+    if (detailPanelMapPointId === null || detailPanelDraftPosition === null) {
+      return mapPoints;
+    }
+    return mapPoints.map((point) =>
+      point.id === detailPanelMapPointId
+        ? {
+            ...point,
+            latitude: detailPanelDraftPosition.latitude,
+            longitude: detailPanelDraftPosition.longitude,
+          }
+        : point,
+    );
+  }, [detailPanelDraftPosition, detailPanelMapPointId, mapPoints]);
 
   useWorkspaceUiSyncPublisher(workspace?.id ?? null);
   useWorkspaceMapsChangedRefresh(workspace?.id ?? null);
@@ -459,6 +492,46 @@ export function MapWorkspaceSplitView() {
     () => buildTrailElevationGuides({ geoSegments, referenceOverlay }),
     [geoSegments, referenceOverlay],
   );
+
+  const resolveDetailPanelElevation = useCallback(
+    (latitude: number, longitude: number) =>
+      resolveInspectElevation({
+        latitude,
+        longitude,
+        trailGuides: trailElevationGuides,
+        controlPoints: toNearbyElevationPointsFromControlPoints(controlPoints),
+        mapPoints: toNearbyElevationPointsFromMapPoints(mapPoints),
+      })?.elevationMeters ?? null,
+    [controlPoints, mapPoints, trailElevationGuides],
+  );
+
+  const pathGroups = useMemo(() => groupSegmentsByPath(geoSegments), [geoSegments]);
+  const pathSlugs = useMemo(() => pathGroups.map((group) => group.groupId), [pathGroups]);
+  const {
+    previews: graphPreviews,
+    loading: graphPreviewLoading,
+    error: graphPreviewError,
+    reload: reloadGraphPreview,
+  } = useVirtualGraphPreview(workspace?.id ?? 0, pathSlugs, graphPreviewOpen);
+
+  const virtualPreviewEdges = useMemo(() => {
+    if (!graphPreviewOpen) {
+      return [];
+    }
+    return flattenVirtualPreviewEdges(graphPreviews, new Set(graphPreviewVisibleSlugs));
+  }, [graphPreviewOpen, graphPreviewVisibleSlugs, graphPreviews]);
+
+  const handleOpenGraphPreview = useCallback(() => {
+    openGraphPreview(pathSlugs);
+  }, [openGraphPreview, pathSlugs]);
+
+  const handleToggleGraphPreview = useCallback(() => {
+    if (graphPreviewOpen) {
+      closeGraphPreview();
+      return;
+    }
+    openGraphPreview(pathSlugs);
+  }, [closeGraphPreview, graphPreviewOpen, openGraphPreview, pathSlugs]);
 
   const captureOverlays = useMemo(
     () => ({
@@ -807,6 +880,16 @@ export function MapWorkspaceSplitView() {
     ],
   );
 
+  const handleMapPointMapMove = useCallback(
+    (pointId: number, latitude: number, longitude: number) => {
+      if (pointId !== detailPanelMapPointId) {
+        return;
+      }
+      setDetailPanelDraftPosition({ latitude, longitude });
+    },
+    [detailPanelMapPointId],
+  );
+
   const handleControlPointClick = useCallback(
     (controlPointId: number) => {
       if (linkMode) {
@@ -1044,6 +1127,15 @@ export function MapWorkspaceSplitView() {
   });
 
   const allowControlPointDrag = controlPointDragEnabled && !referenceMode && !traceMode;
+  const draggableMapPointId =
+    detailPanelMapPointId !== null &&
+    !referenceMode &&
+    !traceMode &&
+    !linkMode &&
+    !addMarkerPlacementMode &&
+    !controlPointDragEnabled
+      ? detailPanelMapPointId
+      : null;
   const mapboxGlActive = baseRenderer === "mapbox-gl";
 
   useMapWorkspaceHotkeys({
@@ -1086,7 +1178,7 @@ export function MapWorkspaceSplitView() {
     showReferenceInspectTooltip,
     controlPoints,
     geoSegments,
-    mapPoints,
+    mapPoints: workspaceMapPoints,
     selectedMapPointId,
     linkMode,
     linkFromPointId,
@@ -1100,6 +1192,7 @@ export function MapWorkspaceSplitView() {
     canPlaceMapPoint: markerMode,
     canCaptureMapPoint: addMarkerPlacementMode && !referenceMode && !traceMode,
     controlPointDragEnabled: allowControlPointDrag,
+    draggableMapPointId,
     editingSegmentId,
     selectedControlPointId,
     onInitialViewportReady: setHomeViewport,
@@ -1115,17 +1208,22 @@ export function MapWorkspaceSplitView() {
     onMapPointClick: handleMapPointClick,
     onPendingTracePointMove: handlePendingTracePointMove,
     onControlPointMapMove: handleControlPointMapMove,
+    onMapPointMapMove: handleMapPointMapMove,
     onControlPointClick: handleControlPointClick,
     onSegmentClick: handleSegmentClick,
     selectedSegmentId: highlightedSegmentId,
     highlightedPathGroupId,
     showNeighborCoverage,
     markerIdsWithNeighborLinks,
+    virtualPreviewEdges,
   };
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <MapWorkspaceHeader hasSourceFile={Boolean(sourceFile)} />
+      <MapWorkspaceHeader
+        hasSourceFile={Boolean(sourceFile)}
+        onToggleGraphPreview={handleToggleGraphPreview}
+      />
 
       <MapWorkspaceMenuSyncBridge
         hasSourceFile={Boolean(sourceFile)}
@@ -1266,6 +1364,20 @@ export function MapWorkspaceSplitView() {
                 </Activity>
               </div>
               {showNeighborCoverage ? <MapNeighborCoverageLegend /> : null}
+              {draggableMapPointId && !graphPreviewOpen ? (
+                <div
+                  className={`pointer-events-none absolute left-3 z-1000 max-w-[16rem] rounded-md bg-base-100/92 px-2.5 py-1.5 text-[10px] text-base-content/65 shadow-sm ${showNeighborCoverage ? "bottom-12" : "bottom-3"}`}
+                >
+                  {t("maps.workspace.markerDragHint")}
+                </div>
+              ) : null}
+              {graphPreviewOpen ? (
+                <div
+                  className={`pointer-events-none absolute left-3 z-1000 max-w-[18rem] rounded-md bg-base-100/92 px-2.5 py-1.5 text-[10px] text-base-content/65 shadow-sm ${showNeighborCoverage ? "bottom-12" : "bottom-3"}`}
+                >
+                  {t("maps.workspace.graphPreview.mapLegend")}
+                </div>
+              ) : null}
               {highlightedSegmentId && !traceMode && !highlightedPathGroupId ? (
                 <div className="absolute right-3 bottom-3 z-1000 flex items-center gap-1 rounded-box bg-base-100/95 px-2 py-1.5 shadow-lg">
                   <span className="mr-1 text-xs text-base-content/70">
@@ -1364,6 +1476,7 @@ export function MapWorkspaceSplitView() {
             onRemoveFromChain={removeLinkChainPointAt}
             onReorderChain={reorderLinkChain}
             onClearChain={clearLinkChain}
+            onOpenGraphPreview={handleOpenGraphPreview}
             onClose={() => {
               stopLinkMode();
               setStatusMessage(null);
@@ -1373,15 +1486,32 @@ export function MapWorkspaceSplitView() {
         </div>
       ) : null}
 
+      {graphPreviewOpen ? (
+        <div className="absolute inset-y-0 right-0 z-1150 w-96 shadow-xl">
+          <MapGraphPreviewPanel
+            pathGroups={pathGroups}
+            previews={graphPreviews}
+            loading={graphPreviewLoading}
+            error={graphPreviewError}
+            onReload={reloadGraphPreview}
+            onClose={closeGraphPreview}
+          />
+        </div>
+      ) : null}
+
       {detailPanelMapPoint ? (
         <div className="absolute inset-y-0 right-0 z-1200 w-80 shadow-xl">
           <MapPointDetailPanel
             point={detailPanelMapPoint}
             mapId={workspace.id}
-            mapPoints={mapPoints}
+            mapPoints={workspaceMapPoints}
             markerNeighbors={markerNeighbors}
+            draftPosition={detailPanelDraftPosition}
+            onResolveElevation={resolveDetailPanelElevation}
+            onPositionSaved={() => setDetailPanelDraftPosition(null)}
             onClose={() => {
               stopAddMarkerPlacementMode();
+              setDetailPanelDraftPosition(null);
               setDetailPanelMapPointId(null);
             }}
           />

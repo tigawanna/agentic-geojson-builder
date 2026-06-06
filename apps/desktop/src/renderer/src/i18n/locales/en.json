@@ -332,6 +332,20 @@
       "linkError": "Could not create link.",
       "linkNeedsRef": "This marker has no ref. Open it and set Ref (e.g. 23) before linking.",
       "linkReferencePoint": "Reference points (green circles) are for PDF alignment only. Use the pin tool for routing markers, or Build segments from path below.",
+      "graphPreview": {
+        "title": "Graph preview",
+        "visualize": "Visualize graph",
+        "hint": "In-memory preview only — nothing is saved until you build segments. Toggle paths to compare possible segment graphs.",
+        "loading": "Computing previews…",
+        "stats": "{{visibleEdges}} of {{totalEdges}} edges visible",
+        "refresh": "Refresh",
+        "showAll": "Show all",
+        "hideAll": "Hide all",
+        "noPaths": "Trace a path first to preview segment graphs.",
+        "edgeCount": "{{count}} edges",
+        "skipped": "{{count}} marker(s) skipped on this path",
+        "mapLegend": "Dashed colored lines = virtual segment preview (not saved)"
+      },
       "linkComposer": {
         "title": "Segment composer",
         "hint": "Pick markers in order, drag to reorder, then save. Ref is optional — name or id is used if ref is empty.",
@@ -679,6 +693,8 @@
       },
       "mapMarkerSaved": "Saved map marker “{{name}}”",
       "markerUpdated": "Saved “{{name}}”",
+      "markerDragHint": "Drag the marker on the map, then Save to keep the new position.",
+      "markerDragUnsaved": "unsaved",
       "neighborsSaved": "Neighbors saved for “{{name}}”",
       "neighborCoverageLegend": "Green ring = neighbors linked · Amber glow = still needs neighbors",
       "mapMarkerDialog": {

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, Link2, MapPin, PanelRightOpen, Pencil } from "lucide-react";
+import { ArrowLeft, Link2, MapPin, Network, PanelRightOpen, Pencil } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { DashboardSidebarTrigger } from "@renderer/components/sidebar/DashboardSidebar";
 import { useSidebar } from "@renderer/components/sidebar/SidebarProvider";
@@ -12,6 +12,7 @@ import {
 
 type MapWorkspaceHeaderProps = {
   hasSourceFile: boolean;
+  onToggleGraphPreview?: () => void;
 };
 
 const toolButtonClass =
@@ -21,7 +22,10 @@ function inactiveToolClass() {
   return `${toolButtonClass} text-base-content/55 hover:bg-base-content/8 hover:text-base-content`;
 }
 
-export function MapWorkspaceHeader({ hasSourceFile }: MapWorkspaceHeaderProps) {
+export function MapWorkspaceHeader({
+  hasSourceFile,
+  onToggleGraphPreview,
+}: MapWorkspaceHeaderProps) {
   const { t } = useTranslation();
   const { toggleSidebar, isCollapsed } = useSidebar();
   const workspace = useMapWorkspaceState((state) => state.workspace);
@@ -31,6 +35,7 @@ export function MapWorkspaceHeader({ hasSourceFile }: MapWorkspaceHeaderProps) {
   const traceMode = useMapWorkspaceUiState((state) => state.traceMode);
   const markerMode = useMapWorkspaceUiState((state) => state.markerMode);
   const linkMode = useMapWorkspaceUiState((state) => state.linkMode);
+  const graphPreviewOpen = useMapWorkspaceUiState((state) => state.graphPreviewOpen);
   const toolsPanelOpen = useMapWorkspaceUiState((state) => state.toolsPanelOpen);
   const {
     setReferenceMode,
@@ -175,6 +180,24 @@ export function MapWorkspaceHeader({ hasSourceFile }: MapWorkspaceHeaderProps) {
         >
           <Link2 className="size-3.5" />
         </button>
+
+        {onToggleGraphPreview ? (
+          <button
+            type="button"
+            className={
+              graphPreviewOpen
+                ? `${toolButtonClass} bg-secondary text-secondary-content`
+                : inactiveToolClass()
+            }
+            disabled={referenceMode || traceMode}
+            title={t("maps.workspace.graphPreview.visualize")}
+            aria-label={t("maps.workspace.graphPreview.visualize")}
+            onClick={onToggleGraphPreview}
+            data-test="graph-preview-toggle"
+          >
+            <Network className="size-3.5" />
+          </button>
+        ) : null}
       </div>
 
       <button

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link2, MapPinPlus, Search, X } from "lucide-react";
+import { Link2, MapPinPlus, Network, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@renderer/lib/utils";
 import { useIpcMutation } from "@renderer/hooks/useIpc";
@@ -31,6 +31,7 @@ type MapLinkComposerPanelProps = {
   onReorderChain: (fromIndex: number, toIndex: number) => void;
   onClearChain: () => void;
   onClose?: () => void;
+  onOpenGraphPreview?: () => void;
   onStatusMessage?: (message: string | null) => void;
   embedded?: boolean;
 };
@@ -47,6 +48,7 @@ export function MapLinkComposerPanel({
   onReorderChain,
   onClearChain,
   onClose,
+  onOpenGraphPreview,
   onStatusMessage,
   embedded = false,
 }: MapLinkComposerPanelProps) {
@@ -151,6 +153,18 @@ export function MapLinkComposerPanel({
         <p className="rounded-box bg-info/10 px-3 py-2 text-xs text-base-content/75">
           {t("maps.workspace.linkComposer.mapHint")}
         </p>
+
+        {!embedded && onOpenGraphPreview ? (
+          <button
+            type="button"
+            className="btn w-full btn-outline btn-sm"
+            onClick={onOpenGraphPreview}
+            data-test="link-composer-visualize-graph"
+          >
+            <Network className="size-4" />
+            {t("maps.workspace.graphPreview.visualize")}
+          </button>
+        ) : null}
 
         <div className="space-y-2">
           <p className="text-xs font-medium tracking-wide text-base-content/50 uppercase">
