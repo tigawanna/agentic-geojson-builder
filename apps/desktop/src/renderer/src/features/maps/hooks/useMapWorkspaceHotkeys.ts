@@ -8,6 +8,7 @@ import {
   useMapWorkspaceUiStore,
 } from "@renderer/features/maps/store/MapWorkspaceProvider";
 import { useAppShortcut } from "@renderer/shortcuts/useAppShortcut";
+import { useTranslation } from "react-i18next";
 
 const REFERENCE_INSPECT_TOOLTIP_STORE_KEY = "maps.referenceInspectTooltip";
 
@@ -28,8 +29,10 @@ export function useMapWorkspaceHotkeys({
   onClearSegmentSelection,
   highlightedSegmentId,
 }: UseMapWorkspaceHotkeysOptions) {
+  const { t } = useTranslation();
   const controlsOpen = useMapWorkspaceUiState((state) => state.controlsOpen);
   const toolsPanelOpen = useMapWorkspaceUiState((state) => state.toolsPanelOpen);
+  const detailPanelMapPointId = useMapWorkspaceUiState((state) => state.detailPanelMapPointId);
   const uiStore = useMapWorkspaceUiStore();
   const {
     openControls,
@@ -37,6 +40,9 @@ export function useMapWorkspaceHotkeys({
     toggleToolsPanel,
     closeToolsPanel,
     toggleMapboxInspectMode,
+    closeDetailPanelMapPoint,
+    setDetailPanelMapPointId,
+    setStatusMessage,
   } = useMapWorkspaceUiActions();
 
   useAppShortcut(
@@ -70,6 +76,22 @@ export function useMapWorkspaceHotkeys({
 
   useAppShortcut(SHORTCUT_IDS.toggleToolsPanel, () => toggleToolsPanel(), { enabled });
 
+  useAppShortcut(
+    SHORTCUT_IDS.openMarkerEditor,
+    () => {
+      const state = uiStore.getState();
+      if (state.detailPanelMapPointId !== null) {
+        return;
+      }
+      if (state.selectedMapPointId === null) {
+        setStatusMessage(t("maps.workspace.markerEditorShortcutNoSelection"));
+        return;
+      }
+      setDetailPanelMapPointId(state.selectedMapPointId);
+    },
+    { enabled },
+  );
+
   useAppShortcut(SHORTCUT_IDS.deleteSelectedSegment, onDeleteSelectedSegment, {
     enabled: enabled && highlightedSegmentId !== null,
   });
@@ -85,12 +107,21 @@ export function useMapWorkspaceHotkeys({
         closeToolsPanel();
         return;
       }
+      if (detailPanelMapPointId !== null) {
+        closeDetailPanelMapPoint();
+        return;
+      }
       if (highlightedSegmentId !== null) {
         onClearSegmentSelection();
       }
     },
     {
-      enabled: enabled && (controlsOpen || toolsPanelOpen || highlightedSegmentId !== null),
+      enabled:
+        enabled &&
+        (controlsOpen ||
+          toolsPanelOpen ||
+          detailPanelMapPointId !== null ||
+          highlightedSegmentId !== null),
     },
   );
 }

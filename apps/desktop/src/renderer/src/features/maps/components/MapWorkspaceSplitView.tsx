@@ -191,6 +191,7 @@ export function MapWorkspaceSplitView() {
     stopReferenceMode,
     stopTraceMode,
     setDetailPanelMapPointId,
+    closeDetailPanelMapPoint,
     appendLinkChainPoint,
     removeLinkChainPointAt,
     reorderLinkChain,
@@ -1511,8 +1512,7 @@ export function MapWorkspaceSplitView() {
             onPositionSaved={() => setDetailPanelDraftPosition(null)}
             onClose={() => {
               stopAddMarkerPlacementMode();
-              setDetailPanelDraftPosition(null);
-              setDetailPanelMapPointId(null);
+              closeDetailPanelMapPoint();
             }}
           />
         </div>

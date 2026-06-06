@@ -31,6 +31,7 @@
       "mapSettings": "Map settings",
       "openChangeHistory": "Change history",
       "toggleToolsPanel": "Toggle tools panel",
+      "openMarkerEditor": "Open marker editor",
       "mapboxInspect": "Toggle Mapbox inspect mode",
       "toggleTrailInspect": "Toggle trail inspect tooltip",
       "mapboxPinInspect": "Pin Mapbox inspect panel (Inspect mode on)",
@@ -695,6 +696,7 @@
       "markerUpdated": "Saved “{{name}}”",
       "markerDragHint": "Drag the marker on the map, then Save to keep the new position.",
       "markerDragUnsaved": "unsaved",
+      "markerEditorShortcutNoSelection": "Click a marker on the map first, then press Ctrl+Shift+E to edit it.",
       "neighborsSaved": "Neighbors saved for “{{name}}”",
       "neighborCoverageLegend": "Green ring = neighbors linked · Amber glow = still needs neighbors",
       "mapMarkerDialog": {

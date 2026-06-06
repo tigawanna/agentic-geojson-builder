@@ -93,6 +93,7 @@ type MapWorkspaceUiActions = {
   setLinkPathSlug: (pathSlug: string) => void;
   setSelectedMapPointId: (pointId: number | null) => void;
   setDetailPanelMapPointId: (pointId: number | null) => void;
+  closeDetailPanelMapPoint: () => void;
   setLinkFromPointId: (pointId: number | null) => void;
   setHighlightedSegmentId: (segmentId: number | null) => void;
   setHighlightedPathGroupId: (groupId: string | null) => void;
@@ -241,7 +242,12 @@ export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
     setLinkPathSlug: (linkPathSlug) => set({ linkPathSlug }),
     setSelectedMapPointId: (selectedMapPointId) => set({ selectedMapPointId }),
     setDetailPanelMapPointId: (detailPanelMapPointId) =>
-      set({ detailPanelMapPointId, selectedMapPointId: detailPanelMapPointId }),
+      set((state) => ({
+        detailPanelMapPointId,
+        selectedMapPointId:
+          detailPanelMapPointId === null ? state.selectedMapPointId : detailPanelMapPointId,
+      })),
+    closeDetailPanelMapPoint: () => set({ detailPanelMapPointId: null }),
     setLinkFromPointId: (linkFromPointId) => set({ linkFromPointId }),
     setHighlightedSegmentId: (highlightedSegmentId) =>
       set({ highlightedSegmentId, highlightedPathGroupId: null }),
