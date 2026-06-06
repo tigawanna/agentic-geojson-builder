@@ -1,10 +1,15 @@
 import { useMemo, useState } from "react";
-import { Link2, X } from "lucide-react";
+import { Link2, MapPinPlus, Search, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@renderer/lib/utils";
 import { useIpcMutation } from "@renderer/hooks/useIpc";
 import { groupSegmentsByPath } from "@renderer/features/maps/lib/group-segments-by-path";
 import { listComposerMarkers } from "@renderer/features/maps/lib/list-composer-markers";
+import { filterMapPointsBySearch } from "@renderer/features/maps/lib/map-points-list-filter";
+import {
+  useMapWorkspaceUiActions,
+  useMapWorkspaceUiState,
+} from "@renderer/features/maps/store/MapWorkspaceProvider";
 import { suggestLinkChainMarkers } from "@renderer/features/maps/lib/suggest-link-chain-markers";
 import { MapLinkComposerChainList } from "@renderer/features/maps/components/MapLinkComposerChainList";
 import { MapLinkComposerMarkerRow } from "@renderer/features/maps/components/MapLinkComposerMarkerRow";
@@ -48,19 +53,27 @@ export function MapLinkComposerPanel({
   const { t } = useTranslation();
   const pathGroups = groupSegmentsByPath(geoSegments);
   const createChain = useIpcMutation("segments:createChainFromPoints");
+  const addMarkerPlacementMode = useMapWorkspaceUiState((state) => state.addMarkerPlacementMode);
+  const workspaceUiActions = useMapWorkspaceUiActions();
   const [message, setMessage] = useState<string | null>(null);
+  const [markerSearchQuery, setMarkerSearchQuery] = useState("");
   const [autoBuildOpen, setAutoBuildOpen] = useState(false);
   const [segmentGroupLabel, setSegmentGroupLabel] = useState("manual-segments");
+
+  const searchableMapPoints = useMemo(
+    () => filterMapPointsBySearch(mapPoints, markerSearchQuery),
+    [mapPoints, markerSearchQuery],
+  );
 
   const markerRows = useMemo(
     () =>
       listComposerMarkers({
-        mapPoints,
+        mapPoints: searchableMapPoints,
         chainPointIds: linkChain,
         mapLinks,
         markerNeighbors,
       }),
-    [linkChain, mapLinks, mapPoints, markerNeighbors],
+    [linkChain, mapLinks, markerNeighbors, searchableMapPoints],
   );
 
   const suggestions = useMemo(
@@ -235,11 +248,45 @@ export function MapLinkComposerPanel({
         ) : null}
 
         <div className="space-y-2">
-          <p className="text-xs font-medium tracking-wide text-base-content/50 uppercase">
-            {linkChain.length > 0
-              ? t("maps.workspace.linkComposer.markersNearHead")
-              : t("maps.workspace.linkComposer.allMarkers")}
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-medium tracking-wide text-base-content/50 uppercase">
+              {markerSearchQuery.trim()
+                ? t("maps.workspace.linkComposer.searchResults")
+                : linkChain.length > 0
+                  ? t("maps.workspace.linkComposer.markersNearHead")
+                  : t("maps.workspace.linkComposer.allMarkers")}
+            </p>
+            {!embedded ? (
+              <button
+                type="button"
+                className={
+                  addMarkerPlacementMode ? "btn btn-xs btn-primary" : "btn btn-outline btn-xs"
+                }
+                onClick={() => {
+                  if (addMarkerPlacementMode) {
+                    workspaceUiActions.stopAddMarkerPlacementMode();
+                    workspaceUiActions.setStatusMessage(null);
+                    return;
+                  }
+                  workspaceUiActions.setAddMarkerPlacementMode(true);
+                  workspaceUiActions.setStatusMessage(t("maps.workspace.addMarkerPlacementHint"));
+                }}
+                data-test="link-composer-add-marker"
+              >
+                <MapPinPlus className="size-3.5" />
+                {t("maps.workspace.addNewMarker")}
+              </button>
+            ) : null}
+          </div>
+          <label className="input-bordered input input-xs flex w-full items-center gap-2">
+            <Search className="size-3 shrink-0 text-base-content/45" />
+            <input
+              className="grow bg-transparent text-xs outline-none"
+              value={markerSearchQuery}
+              onChange={(event) => setMarkerSearchQuery(event.target.value)}
+              placeholder={t("maps.workspace.linkComposer.searchPlaceholder")}
+            />
+          </label>
           {markerRows.length === 0 ? (
             <p className="text-xs text-base-content/55">
               {t("maps.workspace.linkComposer.noMarkers")}
@@ -257,7 +304,12 @@ export function MapLinkComposerPanel({
                     mapId={mapId}
                     point={point}
                     row={row}
-                    onAppendToChain={onAppendToChain}
+                    onAppendToChain={(pointId) => {
+                      if (markerSearchQuery.trim()) {
+                        setMarkerSearchQuery("");
+                      }
+                      onAppendToChain(pointId);
+                    }}
                   />
                 );
               })}

@@ -335,7 +335,10 @@
       "linkComposer": {
         "title": "Segment composer",
         "hint": "Pick markers in order, drag to reorder, then save. Ref is optional — name or id is used if ref is empty.",
-        "mapHint": "Ctrl+click a marker on the map to add it to the chain. Set neighbor hints on the Points tab; expand a marker below to edit ref.",
+        "mapHint": "Ctrl+click a marker on the map to add it to the chain. Use Add new marker to place one mid-route, then drag the chain to reorder before saving.",
+        "searchPlaceholder": "Search markers…",
+        "searchResults": "Search results",
+        "addedNewMarker": "Added “{{name}}” to chain — drag to reorder if needed.",
         "chain": "Segment chain (drag to reorder)",
         "emptyChain": "No markers in chain yet. Ctrl+click on the map or use + on a marker below.",
         "clearChain": "Clear",

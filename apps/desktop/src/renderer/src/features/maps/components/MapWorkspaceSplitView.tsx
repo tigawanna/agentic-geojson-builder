@@ -1002,15 +1002,27 @@ export function MapWorkspaceSplitView() {
           setCaptureDraft(null);
           stopAddMarkerPlacementMode();
           setDetailPanelMapPointId(result.point.id);
-          setStatusMessage(
-            t("maps.workspace.mapMarkerSaved", { name: result.point.name ?? draft.name }),
-          );
+          if (linkMode && !linkChain.includes(result.point.id)) {
+            appendLinkChainPoint(result.point.id);
+            setStatusMessage(
+              t("maps.workspace.linkComposer.addedNewMarker", {
+                name: result.point.name ?? draft.name,
+              }),
+            );
+          } else {
+            setStatusMessage(
+              t("maps.workspace.mapMarkerSaved", { name: result.point.name ?? draft.name }),
+            );
+          }
           window.clearTimeout(statusTimerRef.current);
           statusTimerRef.current = window.setTimeout(() => setStatusMessage(null), 2500);
         });
     },
     [
+      appendLinkChainPoint,
       createMapPoint,
+      linkChain,
+      linkMode,
       setDetailPanelMapPointId,
       setStatusMessage,
       stopAddMarkerPlacementMode,
@@ -1086,7 +1098,7 @@ export function MapWorkspaceSplitView() {
     canPickMapPoint: referenceMode && pendingMapPoint === null,
     canPickTracePoint: traceMode,
     canPlaceMapPoint: markerMode,
-    canCaptureMapPoint: addMarkerPlacementMode && !linkMode && !referenceMode && !traceMode,
+    canCaptureMapPoint: addMarkerPlacementMode && !referenceMode && !traceMode,
     controlPointDragEnabled: allowControlPointDrag,
     editingSegmentId,
     selectedControlPointId,
@@ -1361,8 +1373,8 @@ export function MapWorkspaceSplitView() {
         </div>
       ) : null}
 
-      {detailPanelMapPoint && !linkMode ? (
-        <div className="absolute inset-y-0 right-0 z-1100 w-80 shadow-xl">
+      {detailPanelMapPoint ? (
+        <div className="absolute inset-y-0 right-0 z-1200 w-80 shadow-xl">
           <MapPointDetailPanel
             point={detailPanelMapPoint}
             mapId={workspace.id}
