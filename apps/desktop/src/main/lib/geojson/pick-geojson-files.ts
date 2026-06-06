@@ -21,7 +21,7 @@ export function readLastGeoJsonDirectory() {
 }
 
 export function rememberGeoJsonDirectory(filePath: string) {
-  storage.set(LAST_GEOJSON_DIRECTORY_KEY, dirname(filePath));
+  void storage.set(LAST_GEOJSON_DIRECTORY_KEY, dirname(filePath));
 }
 
 export async function pickGeoJsonFilePaths(window: BrowserWindow | null | undefined) {

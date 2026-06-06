@@ -25,6 +25,7 @@ type MapWorkspaceUiState = {
   controlPointDragEnabled: boolean;
   mapboxInspectMode: boolean;
   showNeighborCoverage: boolean;
+  showNeighborLinkArrows: boolean;
   sourcePanelPresentation: SourcePanelPresentation;
   mapPanelCollapsed: boolean;
   pendingMapPoint: MapCoordinates | null;
@@ -70,6 +71,8 @@ type MapWorkspaceUiActions = {
   toggleMapboxInspectMode: () => void;
   setShowNeighborCoverage: (enabled: boolean) => void;
   toggleShowNeighborCoverage: () => void;
+  setShowNeighborLinkArrows: (enabled: boolean) => void;
+  toggleShowNeighborLinkArrows: () => void;
   setSourcePanelPresentation: (presentation: SourcePanelPresentation) => void;
   setMapPanelCollapsed: (collapsed: boolean) => void;
   setPendingMapPoint: (point: MapCoordinates | null) => void;
@@ -126,6 +129,7 @@ const initialState: MapWorkspaceUiState = {
   controlPointDragEnabled: false,
   mapboxInspectMode: false,
   showNeighborCoverage: false,
+  showNeighborLinkArrows: false,
   sourcePanelPresentation: "docked",
   mapPanelCollapsed: false,
   pendingMapPoint: null,
@@ -180,6 +184,9 @@ export function createMapWorkspaceUiStore(): MapWorkspaceUiStore {
     setShowNeighborCoverage: (showNeighborCoverage) => set({ showNeighborCoverage }),
     toggleShowNeighborCoverage: () =>
       set((state) => ({ showNeighborCoverage: !state.showNeighborCoverage })),
+    setShowNeighborLinkArrows: (showNeighborLinkArrows) => set({ showNeighborLinkArrows }),
+    toggleShowNeighborLinkArrows: () =>
+      set((state) => ({ showNeighborLinkArrows: !state.showNeighborLinkArrows })),
     setSourcePanelPresentation: (sourcePanelPresentation) => set({ sourcePanelPresentation }),
     setMapPanelCollapsed: (mapPanelCollapsed) => set({ mapPanelCollapsed }),
     setPendingMapPoint: (pendingMapPoint) => set({ pendingMapPoint }),

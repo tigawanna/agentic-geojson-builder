@@ -46,7 +46,7 @@ export function MapPlayground() {
     }
     checkedOnboardingRef.current = true;
 
-    ipcInvoke("store:get", { key: ONBOARDING_STORE_KEY }).then((value) => {
+    void ipcInvoke("store:get", { key: ONBOARDING_STORE_KEY }).then((value) => {
       if (!value) {
         setOnboardingOpen(true);
       }

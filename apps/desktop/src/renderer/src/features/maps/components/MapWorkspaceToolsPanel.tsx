@@ -13,7 +13,6 @@ import {
 import { useTranslation } from "react-i18next";
 import { MapTraceTrailBar } from "@renderer/features/maps/components/MapTraceTrailBar";
 import { MapWorkspaceViewOptionsSection } from "@renderer/features/maps/components/MapWorkspaceViewOptionsSection";
-import { useMapBaseRendererQuery } from "@renderer/features/maps/hooks/useMapBaseRenderer";
 import {
   useMapWorkspaceState,
   useMapWorkspaceUiActions,
@@ -55,7 +54,6 @@ export function MapWorkspaceToolsPanel({
 }: MapWorkspaceToolsPanelProps) {
   const { t } = useTranslation();
   const workspace = useMapWorkspaceState((state) => state.workspace);
-  const baseRenderer = useMapBaseRendererQuery().data ?? "leaflet";
   const toolsPanelOpen = useMapWorkspaceUiState((state) => state.toolsPanelOpen);
   const traceMode = useMapWorkspaceUiState((state) => state.traceMode);
   const statusMessage = useMapWorkspaceUiState((state) => state.statusMessage);

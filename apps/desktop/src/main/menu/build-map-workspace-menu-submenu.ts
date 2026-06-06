@@ -76,6 +76,13 @@ export function buildMapWorkspaceMenuSubmenu(): MenuItemConstructorOptions[] {
       enabled: state.routeActive,
       click: menuClick("neighbor-coverage"),
     },
+    {
+      label: "Show Neighbor Link Arrows",
+      type: "checkbox",
+      checked: state.showNeighborLinkArrows,
+      enabled: state.routeActive && state.linkMode,
+      click: menuClick("neighbor-link-arrows"),
+    },
     { type: "separator" },
     {
       label: "Base Map Renderer",

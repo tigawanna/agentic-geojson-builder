@@ -7,12 +7,24 @@ export type MapPointMarkerAppearanceInput = {
   inChain: boolean;
   isLinkHead: boolean;
   isSuggestion: boolean;
+  isRouteStart?: boolean;
+  isRouteEnd?: boolean;
+  isRouteVia?: boolean;
   showNeighborCoverage: boolean;
   markerIdsWithNeighborLinks: ReadonlySet<number>;
 };
 
 export function resolveMapPointMarkerRing(input: MapPointMarkerAppearanceInput): string {
   if (input.linkMode) {
+    if (input.isRouteStart) {
+      return "#10b981";
+    }
+    if (input.isRouteEnd) {
+      return "#ef4444";
+    }
+    if (input.isRouteVia) {
+      return "#a855f7";
+    }
     if (input.isLinkHead) {
       return "#f59e0b";
     }
@@ -42,7 +54,15 @@ export function resolveMapPointMarkerHalo(
   ring: string,
   input: MapPointMarkerAppearanceInput,
 ): string {
-  if (input.linkMode && (input.inChain || input.isSuggestion || input.isLinkHead)) {
+  if (
+    input.linkMode &&
+    (input.inChain ||
+      input.isSuggestion ||
+      input.isLinkHead ||
+      input.isRouteStart ||
+      input.isRouteEnd ||
+      input.isRouteVia)
+  ) {
     return `box-shadow:0 0 0 4px ${ring}55;`;
   }
 

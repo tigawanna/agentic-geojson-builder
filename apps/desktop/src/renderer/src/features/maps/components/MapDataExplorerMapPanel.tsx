@@ -31,8 +31,10 @@ import {
 } from "@renderer/features/maps/lib/resolve-inspect-elevation";
 import { isPickModifierEvent } from "@renderer/features/maps/lib/pick-modifier";
 import { resolveMapPointLinkRef } from "@shared/map-point-link-ref";
+import { buildNeighborLinkOverlayEdges } from "@shared/neighbor-link-overlay";
 import { useMapLinksQuery } from "@renderer/features/maps/hooks/useMapLinksQuery";
 import { resolveLinkComposerSuggestionPointIds } from "@renderer/features/maps/components/MapLinkComposerPanel";
+import type { useLinkRoutePlanner } from "@renderer/features/maps/hooks/useLinkRoutePlanner";
 import { useMapDataExplorerPageStore } from "@renderer/features/maps/store/map-data-explorer-page-store";
 import { MapNeighborCoverageLegend } from "@renderer/features/maps/components/MapNeighborCoverageLegend";
 import {
@@ -45,6 +47,7 @@ import type { MapDataExplorerSelection } from "@renderer/features/maps/types/map
 
 type MapDataExplorerMapPanelProps = {
   mapId: number;
+  routePlanner?: ReturnType<typeof useLinkRoutePlanner>;
 };
 
 function selectionToMapHighlight(selection: MapDataExplorerSelection | null) {
@@ -63,7 +66,7 @@ function selectionToMapHighlight(selection: MapDataExplorerSelection | null) {
   return { selectedControlPointId: null, selectedMapPointId: null };
 }
 
-export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps) {
+export function MapDataExplorerMapPanel({ mapId, routePlanner }: MapDataExplorerMapPanelProps) {
   const { t } = useTranslation();
   const phase = useMapWorkspacePhase();
   const workspace = useMapWorkspaceState((state) => state.workspace);
@@ -83,11 +86,6 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
   const setStatusMessage = useMapDataExplorerPageStore((state) => state.setStatusMessage);
   const linkChain = useMapDataExplorerPageStore((state) => state.linkChain);
   const appendLinkChainPoint = useMapDataExplorerPageStore((state) => state.appendLinkChainPoint);
-  const removeLinkChainPointAt = useMapDataExplorerPageStore(
-    (state) => state.removeLinkChainPointAt,
-  );
-  const reorderLinkChain = useMapDataExplorerPageStore((state) => state.reorderLinkChain);
-  const setLinkPathSlug = useMapDataExplorerPageStore((state) => state.setLinkPathSlug);
   const mapLinksQuery = useMapLinksQuery(mapId);
   const mapPointDragModifierHeld = usePickModifierHeld();
 
@@ -112,6 +110,7 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
     [markerNeighbors],
   );
   const showNeighborCoverage = useMapWorkspaceUiState((state) => state.showNeighborCoverage);
+  const showNeighborLinkArrows = useMapWorkspaceUiState((state) => state.showNeighborLinkArrows);
   const geoSegments = geoSegmentsQuery.data?.segments ?? [];
   const mapLinks = mapLinksQuery.data?.links ?? [];
   const referenceOverlay = useMemo(() => {
@@ -150,6 +149,16 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
         : [],
     [linkChain, linkComposerActive, mapPoints, markerNeighbors],
   );
+  const neighborLinkOverlayEdges = useMemo(() => {
+    if (!linkComposerActive || !showNeighborLinkArrows) {
+      return [];
+    }
+    return buildNeighborLinkOverlayEdges({
+      mapPoints,
+      neighbors: markerNeighbors,
+      resolveRef: resolveMapPointLinkRef,
+    });
+  }, [linkComposerActive, mapPoints, markerNeighbors, showNeighborLinkArrows]);
 
   const mapHighlight = selectionToMapHighlight(selection);
   const mapboxGlActive = baseRenderer === "mapbox-gl";
@@ -185,6 +194,9 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
   const handleMapPointClick = useCallback(
     (pointId: number, modifiers: { ctrlKey: boolean; metaKey: boolean }) => {
       if (linkComposerActive) {
+        if (routePlanner?.handleMapPointClickForRoutePick(pointId)) {
+          return;
+        }
         const clicked = mapPoints.find((point) => point.id === pointId);
         if (!isPickModifierEvent(modifiers)) {
           setSelection({ kind: "map-point", id: pointId });
@@ -208,6 +220,7 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
       linkChain,
       linkComposerActive,
       mapPoints,
+      routePlanner,
       setSelection,
       setStatusMessage,
       t,
@@ -284,6 +297,9 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
     linkFromPointId,
     linkChainPointIds: linkChain,
     linkSuggestionPointIds: linkSuggestionPointIds,
+    linkRouteStartId: linkComposerActive ? (routePlanner?.startId ?? null) : null,
+    linkRouteEndId: linkComposerActive ? (routePlanner?.endId ?? null) : null,
+    linkRouteViaIds: linkComposerActive ? (routePlanner?.viaIds ?? []) : [],
     pathSegmentLinks: linkComposerActive ? mapLinks : [],
     pendingMapPoint: null,
     pendingTracePoints: [],
@@ -303,6 +319,7 @@ export function MapDataExplorerMapPanel({ mapId }: MapDataExplorerMapPanelProps)
     onMapPointClick: handleMapPointClick,
     onMapPointMapMove: handleMapPointMapMove,
     showNeighborCoverage,
+    neighborLinkOverlayEdges,
     markerIdsWithNeighborLinks,
   };
 

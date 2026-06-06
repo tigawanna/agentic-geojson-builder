@@ -8,6 +8,7 @@ import { isMapDataExplorerSelectionEqual } from "@renderer/features/maps/hooks/u
 import { useMapDataExplorerPageStore } from "@renderer/features/maps/store/map-data-explorer-page-store";
 import type { MapDataExplorerSelection } from "@renderer/features/maps/types/map-data-explorer.types";
 import { MapLinkComposerPanel } from "@renderer/features/maps/components/MapLinkComposerPanel";
+import type { useLinkRoutePlanner } from "@renderer/features/maps/hooks/useLinkRoutePlanner";
 import { MapDataExplorerCreateTrailForm } from "@renderer/features/maps/components/MapDataExplorerCreateTrailForm";
 import { MapDataExplorerRoutePanel } from "@renderer/features/maps/components/MapDataExplorerRoutePanel";
 import { MapPointsExplorerTable } from "@renderer/features/maps/components/MapPointsExplorerTable";
@@ -24,6 +25,7 @@ type MapDataExplorerTablesProps = {
   geoSegments: GeoSegmentRecord[];
   mapLinks: MapLinkRecord[];
   trails: TrailRecord[];
+  routePlanner?: ReturnType<typeof useLinkRoutePlanner>;
 };
 
 function ExplorerTable({
@@ -59,6 +61,7 @@ export function MapDataExplorerTables({
   geoSegments,
   mapLinks,
   trails,
+  routePlanner,
 }: MapDataExplorerTablesProps) {
   const { t } = useTranslation();
   const tab = useMapDataExplorerPageStore((state) => state.tab);
@@ -252,6 +255,7 @@ export function MapDataExplorerTables({
         onReorderChain={reorderLinkChain}
         onClearChain={clearLinkChain}
         onStatusMessage={setStatusMessage}
+        routePlanner={routePlanner}
       />
       <ExplorerTable
         isEmpty={mapLinks.length === 0}

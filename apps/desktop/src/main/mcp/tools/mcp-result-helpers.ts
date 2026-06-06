@@ -13,6 +13,12 @@ export function jsonToolResult(data: Record<string, unknown>): CallToolResult {
   };
 }
 
+export function textToolResult(text: string): CallToolResult {
+  return {
+    content: [{ type: "text", text }],
+  };
+}
+
 export function mapSectorToolResult(data: MapSectorViewResult): CallToolResult {
   const { imageBase64, ...summary } = data;
   return {

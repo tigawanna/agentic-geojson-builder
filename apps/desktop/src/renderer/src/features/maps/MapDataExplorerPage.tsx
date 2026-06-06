@@ -19,6 +19,7 @@ import { useDataExplorerInspectViewHotkeys } from "@renderer/features/maps/hooks
 import { useControlPointsQuery } from "@renderer/features/maps/hooks/useControlPointsQuery";
 import { useGeoSegmentsQuery } from "@renderer/features/maps/hooks/useGeoSegmentsQuery";
 import { useMapDataExplorerFocus } from "@renderer/features/maps/hooks/useMapDataExplorerFocus";
+import { useLinkRoutePlanner } from "@renderer/features/maps/hooks/useLinkRoutePlanner";
 import { useMapLinksQuery } from "@renderer/features/maps/hooks/useMapLinksQuery";
 import { useMapPointsQuery } from "@renderer/features/maps/hooks/useMapPointsQuery";
 import { useMarkerNeighborsQuery } from "@renderer/features/maps/hooks/useMarkerNeighborsQuery";
@@ -54,6 +55,7 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
   const setEditTarget = useMapDataExplorerPageStore((state) => state.setEditTarget);
   const statusMessage = useMapDataExplorerPageStore((state) => state.statusMessage);
   const setStatusMessage = useMapDataExplorerPageStore((state) => state.setStatusMessage);
+  const setLinkChain = useMapDataExplorerPageStore((state) => state.setLinkChain);
   const queryClient = useQueryClient();
 
   useDataExplorerInspectCopyShortcut();
@@ -95,6 +97,14 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
     geoSegments,
     mapLinks,
     trails,
+  });
+
+  const routePlanner = useLinkRoutePlanner({
+    mapPoints,
+    markerNeighbors,
+    onApplyChain: setLinkChain,
+    onStatusMessage: setStatusMessage,
+    t,
   });
 
   const showMapPane = tab !== "history";
@@ -195,6 +205,7 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
                   geoSegments={geoSegments}
                   mapLinks={mapLinks}
                   trails={trails}
+                  routePlanner={routePlanner}
                 />
               </div>
             </ResizablePanel>
@@ -202,7 +213,7 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
             <ResizablePanel defaultSize={32} minSize={22}>
               <ResizablePanelGroup direction="vertical" className="h-full">
                 <ResizablePanel defaultSize={58} minSize={30}>
-                  <MapDataExplorerMapPanel mapId={mapId} />
+                  <MapDataExplorerMapPanel mapId={mapId} routePlanner={routePlanner} />
                 </ResizablePanel>
                 <ResizableHandle withHandle />
                 <ResizablePanel defaultSize={42} minSize={20}>
@@ -232,6 +243,7 @@ function MapDataExplorerContent({ mapId }: MapDataExplorerPageProps) {
               geoSegments={geoSegments}
               mapLinks={mapLinks}
               trails={trails}
+              routePlanner={routePlanner}
             />
           </div>
         )}

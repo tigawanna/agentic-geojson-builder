@@ -58,7 +58,7 @@
   }
 }
 
-[data-style="slides"]::view-transition-new(root) {
+[data-style="slides"][data-view-transition="theme"]::view-transition-new(root) {
   clip-path: polygon(
     /*	1st column */ 0 100%,
     0 calc(var(--column-one) * 1%),
@@ -83,7 +83,7 @@
   );
 }
 
-[data-style="slides"]::view-transition-new(root) {
+[data-style="slides"][data-view-transition="theme"]::view-transition-new(root) {
   --speed: 0.625;
   --columns: 5;
   animation:
@@ -114,6 +114,6 @@
   z-index: 2;
 }
 
-[data-style="slides"]::view-transition-old(root) {
+[data-style="slides"][data-view-transition="theme"]::view-transition-old(root) {
   animation: none;
 }

@@ -37,6 +37,7 @@ type MapDataExplorerPageState = {
   appendLinkChainPoint: (pointId: number) => void;
   removeLinkChainPointAt: (index: number) => void;
   reorderLinkChain: (fromIndex: number, toIndex: number) => void;
+  setLinkChain: (pointIds: number[]) => void;
   clearLinkChain: () => void;
   setLinkPathSlug: (pathSlug: string) => void;
   reset: () => void;
@@ -98,6 +99,7 @@ export const useMapDataExplorerPageStore = create<MapDataExplorerPageState>((set
       linkChain.splice(toIndex, 0, moved);
       return { linkChain };
     }),
+  setLinkChain: (linkChain) => set({ linkChain }),
   clearLinkChain: () => set({ linkChain: [] }),
   setLinkPathSlug: (linkPathSlug) => set({ linkPathSlug }),
   reset: () => set(initialState),

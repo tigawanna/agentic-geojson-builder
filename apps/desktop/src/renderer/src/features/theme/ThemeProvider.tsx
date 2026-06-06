@@ -1,9 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { ipcInvoke } from "@renderer/hooks/useIpc";
-import {
-  runWithOptionalViewTransition,
-  useMotionPreferences,
-} from "@renderer/features/motion/MotionPreferencesProvider";
+import { useMotionPreferences } from "@renderer/features/motion/MotionPreferencesProvider";
 import {
   getThemeColorScheme,
   type ThemeColorScheme,
@@ -97,7 +94,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const { animationsEnabled } = useMotionPreferences();
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       let stored = await ipcInvoke("store:get", { key: STORAGE_KEY }).catch(() => null);
 
       if (!stored) {
@@ -138,7 +135,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         void ipcInvoke("store:set", { key: STORAGE_KEY, value: next });
       };
 
-      runWithOptionalViewTransition(apply, animationsEnabled);
+      if (!animationsEnabled || !document.startViewTransition) {
+        apply();
+        return;
+      }
+
+      const root = document.documentElement;
+      root.dataset.viewTransition = "theme";
+      const transition = document.startViewTransition(apply);
+      void transition.finished.finally(() => {
+        delete root.dataset.viewTransition;
+      });
     },
     [animationsEnabled],
   );

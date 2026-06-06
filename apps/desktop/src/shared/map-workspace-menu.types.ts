@@ -16,6 +16,7 @@ export type MapWorkspaceMenuSyncState = {
   mapboxGlStyle: MapboxGlStyleId;
   mapboxInspectMode: boolean;
   showNeighborCoverage: boolean;
+  showNeighborLinkArrows: boolean;
   mapboxTokenAvailable: boolean;
   segmentCount: number;
   exportPending: boolean;
@@ -36,6 +37,7 @@ export const DEFAULT_MAP_WORKSPACE_MENU_SYNC_STATE: MapWorkspaceMenuSyncState = 
   mapboxGlStyle: "outdoors",
   mapboxInspectMode: false,
   showNeighborCoverage: false,
+  showNeighborLinkArrows: false,
   mapboxTokenAvailable: false,
   segmentCount: 0,
   exportPending: false,

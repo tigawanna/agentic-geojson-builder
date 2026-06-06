@@ -1,17 +1,17 @@
-[data-style="wipe"]::view-transition-group(root) {
+[data-style="wipe"][data-view-transition="theme"]::view-transition-group(root) {
   animation-duration: 1.25s;
 }
 
-[data-style="wipe"]::view-transition-new(root) {
+[data-style="wipe"][data-view-transition="theme"]::view-transition-new(root) {
   animation-name: reveal-light;
 }
 
-[data-style="wipe"]::view-transition-old(root),
-[data-style="wipe"][data-theme="dark"]::view-transition-old(root) {
+[data-style="wipe"][data-view-transition="theme"]::view-transition-old(root),
+[data-style="wipe"][data-view-transition="theme"][data-theme="dark"]::view-transition-old(root) {
   animation: none;
 }
 
-[data-style="wipe"][data-theme="dark"]::view-transition-new(root) {
+[data-style="wipe"][data-view-transition="theme"][data-theme="dark"]::view-transition-new(root) {
   animation-name: reveal-dark;
 }
 

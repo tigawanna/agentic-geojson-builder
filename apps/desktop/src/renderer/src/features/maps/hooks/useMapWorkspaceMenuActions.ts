@@ -129,6 +129,11 @@ export function useMapWorkspaceMenuActions(handlers: MapWorkspaceMenuHandlers) {
       return;
     }
 
+    if (action.id === "neighbor-link-arrows") {
+      state.toggleShowNeighborLinkArrows();
+      return;
+    }
+
     if (action.id.startsWith("mapbox-style:")) {
       const styleId = action.id.slice("mapbox-style:".length);
       if ((MAPBOX_GL_STYLE_ORDER as readonly string[]).includes(styleId)) {

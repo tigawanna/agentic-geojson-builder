@@ -39,6 +39,7 @@ export function MapWorkspaceMenuSyncBridge({
   const controlPointDragEnabled = useMapWorkspaceUiState((state) => state.controlPointDragEnabled);
   const mapboxInspectMode = useMapWorkspaceUiState((state) => state.mapboxInspectMode);
   const showNeighborCoverage = useMapWorkspaceUiState((state) => state.showNeighborCoverage);
+  const showNeighborLinkArrows = useMapWorkspaceUiState((state) => state.showNeighborLinkArrows);
   const referenceGeoJsonQuery = useReferenceGeoJsonQuery(workspace?.id ?? null);
   const hasReferenceGeoJson = (referenceGeoJsonQuery.data?.layers.length ?? 0) > 0;
   const mapboxTokenAvailable = (useMapboxTokenQuery().data ?? null) !== null;
@@ -65,6 +66,7 @@ export function MapWorkspaceMenuSyncBridge({
       mapboxGlStyle,
       mapboxInspectMode,
       showNeighborCoverage,
+      showNeighborLinkArrows,
       mapboxTokenAvailable,
       segmentCount,
       exportPending,
@@ -86,6 +88,7 @@ export function MapWorkspaceMenuSyncBridge({
     mapboxGlStyle,
     mapboxInspectMode,
     showNeighborCoverage,
+    showNeighborLinkArrows,
     mapboxTokenAvailable,
     segmentCount,
     exportPending,

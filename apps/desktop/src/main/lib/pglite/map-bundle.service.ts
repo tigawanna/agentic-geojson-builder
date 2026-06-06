@@ -58,7 +58,14 @@ function buildPathFeatures(geojson: {
   features: Array<{ geometry: { coordinates: number[][] }; properties: Record<string, unknown> }>;
 }): BundleLineStringFeature[] {
   return geojson.features.map((feature) => {
-    const slug = String(feature.properties.segmentGroupId ?? feature.properties.id ?? "path");
+    const segmentGroupId = feature.properties.segmentGroupId;
+    const featureId = feature.properties.id;
+    const slug =
+      typeof segmentGroupId === "string" || typeof segmentGroupId === "number"
+        ? String(segmentGroupId)
+        : typeof featureId === "string" || typeof featureId === "number"
+          ? String(featureId)
+          : "path";
     const pathKindValue = feature.properties.pathKind;
     return {
       type: "Feature" as const,

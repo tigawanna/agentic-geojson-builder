@@ -45,7 +45,7 @@ export function useInheritControlPointAltitude(mapId: number) {
             continue;
           }
           guides.push({
-            id: `ref-${layer.id}-${String(feature.properties?.name ?? "")}`,
+            id: `ref-${layer.id}-${typeof feature.properties?.name === "string" ? feature.properties.name : ""}`,
             name: (feature.properties?.name as string) ?? layer.name,
             coordinates: feature.geometry.coordinates as GeoCoordinate[],
           });

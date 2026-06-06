@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Trash2, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { mergeReferenceGeoJsonCollections } from "@repo/isomorphic/reference-geojson";
 import { ipcInvoke, useIpcMutation } from "@renderer/hooks/useIpc";
 import { useReferenceGeoJsonQuery } from "@renderer/features/maps/hooks/useReferenceGeoJsonQuery";
 
@@ -35,10 +34,6 @@ export function MapReferenceGeoJsonSection({ mapId }: MapReferenceGeoJsonSection
   const setVisibility = useIpcMutation("referenceGeoJson:setVisibility");
 
   const layers = layersQuery.data?.layers ?? [];
-  const visibleFeatureCount =
-    mergeReferenceGeoJsonCollections(
-      layers.filter((layer) => layer.visible).map((layer) => layer.collection),
-    )?.features.length ?? 0;
 
   async function importDroppedFiles(files: File[]) {
     const geoJsonFiles = files.filter(isGeoJsonFile);

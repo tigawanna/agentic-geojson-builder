@@ -13,7 +13,9 @@ import {
 import { suggestLinkChainMarkers } from "@renderer/features/maps/lib/suggest-link-chain-markers";
 import { MapLinkComposerChainList } from "@renderer/features/maps/components/MapLinkComposerChainList";
 import { MapLinkComposerMarkerRow } from "@renderer/features/maps/components/MapLinkComposerMarkerRow";
+import { MapLinkComposerRoutePlanner } from "@renderer/features/maps/components/MapLinkComposerRoutePlanner";
 import { SegmentBuildFromPathPanel } from "@renderer/features/maps/components/SegmentBuildFromPathPanel";
+import type { useLinkRoutePlanner } from "@renderer/features/maps/hooks/useLinkRoutePlanner";
 import type { GeoSegmentRecord } from "@shared/geo-segments.types";
 import type { MapLinkRecord } from "@shared/map-links.types";
 import type { MarkerNeighborRecord } from "@shared/marker-neighbors.types";
@@ -33,6 +35,7 @@ type MapLinkComposerPanelProps = {
   onClose?: () => void;
   onOpenGraphPreview?: () => void;
   onStatusMessage?: (message: string | null) => void;
+  routePlanner?: ReturnType<typeof useLinkRoutePlanner>;
   embedded?: boolean;
 };
 
@@ -50,6 +53,7 @@ export function MapLinkComposerPanel({
   onClose,
   onOpenGraphPreview,
   onStatusMessage,
+  routePlanner,
   embedded = false,
 }: MapLinkComposerPanelProps) {
   const { t } = useTranslation();
@@ -164,6 +168,10 @@ export function MapLinkComposerPanel({
             <Network className="size-4" />
             {t("maps.workspace.graphPreview.visualize")}
           </button>
+        ) : null}
+
+        {routePlanner ? (
+          <MapLinkComposerRoutePlanner mapPoints={mapPoints} routePlanner={routePlanner} />
         ) : null}
 
         <div className="space-y-2">

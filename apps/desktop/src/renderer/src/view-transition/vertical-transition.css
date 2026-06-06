@@ -1,10 +1,10 @@
-[data-style="vertical"]::view-transition-new(root) {
+[data-style="vertical"][data-view-transition="theme"]::view-transition-new(root) {
   animation: reveal 1s;
   clip-path: inset(0 0 0 0);
   z-index: 2;
 }
 
-[data-style="vertical"]::view-transition-old(root) {
+[data-style="vertical"][data-view-transition="theme"]::view-transition-old(root) {
   z-index: -1;
   animation: none;
 }

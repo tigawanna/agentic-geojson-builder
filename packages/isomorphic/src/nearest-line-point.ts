@@ -31,8 +31,7 @@ export function haversineDistanceMeters(
   const lat1 = toRadians(latitudeA);
   const lat2 = toRadians(latitudeB);
   const a =
-    Math.sin(deltaLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) ** 2;
+    Math.sin(deltaLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) ** 2;
   return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(a));
 }
 

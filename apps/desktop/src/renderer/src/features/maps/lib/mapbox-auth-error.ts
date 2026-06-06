@@ -17,7 +17,7 @@ function readErrorMessage(error: unknown): string {
       return message;
     }
   }
-  return String(error ?? "");
+  return typeof error === "string" ? error : "";
 }
 
 function readErrorStatus(error: unknown): number | undefined {

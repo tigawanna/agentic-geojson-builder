@@ -39,6 +39,7 @@ import { useMapboxTokenInvalid } from "@renderer/features/maps/hooks/useMapboxTo
 import { attachMapboxUnauthorizedListener } from "@renderer/features/maps/lib/attach-mapbox-unauthorized-listener";
 import type { VirtualPreviewEdge } from "@renderer/features/maps/lib/virtual-graph-preview.types";
 import { segmentGroupColor } from "@renderer/features/maps/lib/segment-utils";
+import { neighborLinkOverlayColor } from "@shared/neighbor-link-overlay";
 import type { LeafletMapPaneProps } from "@renderer/features/maps/components/LeafletMapPane";
 import {
   resolveMapPointMarkerHalo,
@@ -71,6 +72,10 @@ const CACHE_BOUNDS_FILL_ID = "workspace-cache-bounds-fill";
 const CACHE_BOUNDS_LINE_ID = "workspace-cache-bounds-line";
 const VIRTUAL_PREVIEW_SOURCE_ID = "workspace-virtual-preview";
 const VIRTUAL_PREVIEW_LAYER_ID = "workspace-virtual-preview-layer";
+const NEIGHBOR_LINKS_SOURCE_ID = "workspace-neighbor-links";
+const NEIGHBOR_LINKS_LAYER_ID = "workspace-neighbor-links-layer";
+const NEIGHBOR_LINK_ARROWS_SOURCE_ID = "workspace-neighbor-link-arrows";
+const NEIGHBOR_LINK_ARROWS_LAYER_ID = "workspace-neighbor-link-arrows-layer";
 
 type ReferenceInspectPointer = {
   hover: ReferenceInspectHover;
@@ -99,6 +104,9 @@ export function MapboxGlWorkspacePane({
   linkFromPointId = null,
   linkChainPointIds = [],
   linkSuggestionPointIds = [],
+  linkRouteStartId = null,
+  linkRouteEndId = null,
+  linkRouteViaIds = [],
   pathSegmentLinks = [],
   pendingMapPoint = null,
   pendingTracePoints = [],
@@ -131,6 +139,7 @@ export function MapboxGlWorkspacePane({
   onSegmentClick,
   onCapture,
   showNeighborCoverage = false,
+  neighborLinkOverlayEdges = [],
   markerIdsWithNeighborLinks = [],
   virtualPreviewEdges = [],
 }: MapboxGlWorkspacePaneProps) {
@@ -260,6 +269,7 @@ export function MapboxGlWorkspacePane({
     inspectMode,
     pinnedProbe,
     virtualPreviewEdges,
+    neighborLinkOverlayEdges,
   });
   dataRef.current = {
     referenceOverlay,
@@ -289,6 +299,7 @@ export function MapboxGlWorkspacePane({
     inspectMode,
     pinnedProbe,
     virtualPreviewEdges,
+    neighborLinkOverlayEdges,
   };
 
   useEffect(() => {
@@ -650,6 +661,78 @@ export function MapboxGlWorkspacePane({
           },
         });
       }
+
+      const neighborLinkLineFeatures = data.neighborLinkOverlayEdges.map((edge, index) => ({
+        type: "Feature" as const,
+        geometry: {
+          type: "LineString" as const,
+          coordinates: edge.coordinates,
+        },
+        properties: {
+          id: index + 1,
+          color: neighborLinkOverlayColor(edge.isLongJump),
+          width: edge.isLongJump ? 3 : 2,
+          dash: edge.isLongJump ? [2, 1.5] : [1, 0],
+        },
+      }));
+
+      const neighborLinkArrowFeatures = data.neighborLinkOverlayEdges.map((edge, index) => ({
+        type: "Feature" as const,
+        geometry: {
+          type: "Point" as const,
+          coordinates: edge.arrowCoordinate,
+        },
+        properties: {
+          id: index + 1,
+          color: neighborLinkOverlayColor(edge.isLongJump),
+          bearing: edge.arrowBearing,
+        },
+      }));
+
+      const neighborLinksCollection: GeoJSON.FeatureCollection = {
+        type: "FeatureCollection",
+        features: neighborLinkLineFeatures,
+      };
+      upsertGeoJsonSource(map, NEIGHBOR_LINKS_SOURCE_ID, neighborLinksCollection);
+      if (!map.getLayer(NEIGHBOR_LINKS_LAYER_ID)) {
+        map.addLayer({
+          id: NEIGHBOR_LINKS_LAYER_ID,
+          type: "line",
+          source: NEIGHBOR_LINKS_SOURCE_ID,
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-color": ["get", "color"],
+            "line-width": ["get", "width"],
+            "line-opacity": 0.82,
+            "line-dasharray": ["get", "dash"],
+          },
+        });
+      }
+
+      const neighborLinkArrowsCollection: GeoJSON.FeatureCollection = {
+        type: "FeatureCollection",
+        features: neighborLinkArrowFeatures,
+      };
+      upsertGeoJsonSource(map, NEIGHBOR_LINK_ARROWS_SOURCE_ID, neighborLinkArrowsCollection);
+      if (!map.getLayer(NEIGHBOR_LINK_ARROWS_LAYER_ID)) {
+        map.addLayer({
+          id: NEIGHBOR_LINK_ARROWS_LAYER_ID,
+          type: "symbol",
+          source: NEIGHBOR_LINK_ARROWS_SOURCE_ID,
+          layout: {
+            "text-field": "▶",
+            "text-size": 13,
+            "text-rotate": ["get", "bearing"],
+            "text-rotation-alignment": "map",
+            "text-allow-overlap": true,
+            "text-ignore-placement": true,
+          },
+          paint: {
+            "text-color": ["get", "color"],
+            "text-opacity": 0.95,
+          },
+        });
+      }
     }
 
     syncSourcesRef.current = syncSources;
@@ -945,6 +1028,7 @@ export function MapboxGlWorkspacePane({
     tileCacheOverlay,
     pathSegmentLinks,
     virtualPreviewEdges,
+    neighborLinkOverlayEdges,
   ]);
 
   useEffect(() => {
@@ -984,6 +1068,7 @@ export function MapboxGlWorkspacePane({
         linkChainPointIds.map((pointId, index) => [pointId, index + 1]),
       );
       const suggestionSet = new Set(linkSuggestionPointIds);
+      const routeViaSet = new Set(linkRouteViaIds);
       const neighborLinkSet = new Set(markerIdsWithNeighborLinks);
       const pinSize = linkMode ? 26 : 18;
 
@@ -1001,6 +1086,9 @@ export function MapboxGlWorkspacePane({
           inChain,
           isLinkHead,
           isSuggestion,
+          isRouteStart: point.id === linkRouteStartId,
+          isRouteEnd: point.id === linkRouteEndId,
+          isRouteVia: routeViaSet.has(point.id),
           showNeighborCoverage,
           markerIdsWithNeighborLinks: neighborLinkSet,
         };
@@ -1076,6 +1164,9 @@ export function MapboxGlWorkspacePane({
     linkFromPointId,
     linkMode,
     linkSuggestionPointIds,
+    linkRouteStartId,
+    linkRouteEndId,
+    linkRouteViaIds,
     selectedControlPointId,
     pendingMapPoint,
     pendingTracePoints,

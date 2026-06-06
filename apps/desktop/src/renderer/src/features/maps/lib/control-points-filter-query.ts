@@ -393,7 +393,7 @@ export function buildControlPointsFilterChips(state: ControlPointsFilterState): 
                     ? "sort:-label"
                     : state.sort === "label-asc"
                       ? "sort:label"
-                      : `sort:${state.sort}`;
+                      : "sort:default";
     chips.push({ id: "sort", label: sortToken });
   }
   return chips;
@@ -674,7 +674,7 @@ export function buildQueryFromDraft(draft: ControlPointsFilterDraft): string {
                     ? "sort:-label"
                     : draft.sort === "label-asc"
                       ? "sort:label"
-                      : `sort:${draft.sort}`;
+                      : "sort:default";
     tokens.push(sortToken);
   }
   return tokens.join(" ");

@@ -34,6 +34,10 @@ import {
 } from "@renderer/features/maps/lib/map-point-marker-appearance";
 import type { VirtualPreviewEdge } from "@renderer/features/maps/lib/virtual-graph-preview.types";
 import { lineStringToLatLngs, segmentGroupColor } from "@renderer/features/maps/lib/segment-utils";
+import {
+  neighborLinkOverlayColor,
+  type NeighborLinkOverlayEdge,
+} from "@shared/neighbor-link-overlay";
 
 const MAP_POINT_CATEGORY_COLORS: Record<string, string> = {
   junction: "#7c3aed",
@@ -72,6 +76,9 @@ export type LeafletMapPaneProps = {
   linkFromPointId?: number | null;
   linkChainPointIds?: number[];
   linkSuggestionPointIds?: number[];
+  linkRouteStartId?: number | null;
+  linkRouteEndId?: number | null;
+  linkRouteViaIds?: number[];
   pathSegmentLinks?: MapLinkRecord[];
   pendingMapPoint?: PendingMapPoint | null;
   pendingTracePoints?: PendingTracePoint[];
@@ -102,6 +109,7 @@ export type LeafletMapPaneProps = {
   selectedSegmentId?: number | null;
   highlightedPathGroupId?: string | null;
   showNeighborCoverage?: boolean;
+  neighborLinkOverlayEdges?: NeighborLinkOverlayEdge[];
   markerIdsWithNeighborLinks?: number[];
   virtualPreviewEdges?: VirtualPreviewEdge[];
 };
@@ -121,6 +129,9 @@ export function LeafletMapPane({
   linkFromPointId = null,
   linkChainPointIds = [],
   linkSuggestionPointIds = [],
+  linkRouteStartId = null,
+  linkRouteEndId = null,
+  linkRouteViaIds = [],
   pathSegmentLinks = [],
   pendingMapPoint = null,
   pendingTracePoints = [],
@@ -151,6 +162,7 @@ export function LeafletMapPane({
   selectedSegmentId = null,
   highlightedPathGroupId = null,
   showNeighborCoverage = false,
+  neighborLinkOverlayEdges = [],
   markerIdsWithNeighborLinks = [],
   virtualPreviewEdges = [],
 }: LeafletMapPaneProps) {
@@ -161,6 +173,7 @@ export function LeafletMapPane({
   const overlayRef = useRef<import("leaflet").Rectangle | null>(null);
   const referenceLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const segmentsLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
+  const neighborLinksLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const markersLayerRef = useRef<import("leaflet").LayerGroup | null>(null);
   const suppressViewportSyncRef = useRef(false);
   const onReadyRef = useRef(onReady);
@@ -214,6 +227,7 @@ export function LeafletMapPane({
       overlayRef.current = null;
       referenceLayerRef.current = null;
       segmentsLayerRef.current = null;
+      neighborLinksLayerRef.current = null;
       markersLayerRef.current = null;
       geocodedRef.current = false;
       initialViewportCapturedRef.current = false;
@@ -279,6 +293,7 @@ export function LeafletMapPane({
       ).addTo(map);
       referenceLayerRef.current = L.layerGroup().addTo(map);
       segmentsLayerRef.current = L.layerGroup().addTo(map);
+      neighborLinksLayerRef.current = L.layerGroup().addTo(map);
       markersLayerRef.current = L.layerGroup().addTo(map);
       mapRef.current = map;
       setMapReady(true);
@@ -377,6 +392,7 @@ export function LeafletMapPane({
       const L = await import("leaflet");
       const referenceLayer = referenceLayerRef.current;
       const segmentsLayer = segmentsLayerRef.current;
+      const neighborLinksLayer = neighborLinksLayerRef.current;
       const markersLayer = markersLayerRef.current;
 
       if (referenceLayer) {
@@ -384,6 +400,9 @@ export function LeafletMapPane({
       }
       if (segmentsLayer) {
         map.removeLayer(segmentsLayer);
+      }
+      if (neighborLinksLayer) {
+        map.removeLayer(neighborLinksLayer);
       }
       if (markersLayer) {
         map.removeLayer(markersLayer);
@@ -402,6 +421,9 @@ export function LeafletMapPane({
       }
       if (segmentsLayer) {
         segmentsLayer.addTo(map);
+      }
+      if (neighborLinksLayer) {
+        neighborLinksLayer.addTo(map);
       }
       if (markersLayer) {
         markersLayer.addTo(map);
@@ -673,6 +695,48 @@ export function LeafletMapPane({
       return;
     }
 
+    void (async () => {
+      const L = await import("leaflet");
+      const neighborLinksLayer = neighborLinksLayerRef.current;
+      if (!neighborLinksLayer) {
+        return;
+      }
+
+      neighborLinksLayer.clearLayers();
+
+      for (const edge of neighborLinkOverlayEdges) {
+        const color = neighborLinkOverlayColor(edge.isLongJump);
+        const latLngs = lineStringToLatLngs(edge.coordinates);
+        L.polyline(latLngs, {
+          color,
+          weight: edge.isLongJump ? 3 : 2,
+          opacity: edge.isLongJump ? 0.95 : 0.72,
+          dashArray: edge.isLongJump ? "6 4" : undefined,
+          lineCap: "round",
+          lineJoin: "round",
+        })
+          .bindTooltip(`${edge.fromRef} → ${edge.toRef} · ${Math.round(edge.distanceMeters)} m`)
+          .addTo(neighborLinksLayer);
+
+        const arrowLat = edge.arrowCoordinate[1];
+        const arrowLng = edge.arrowCoordinate[0];
+        L.marker([arrowLat, arrowLng], {
+          interactive: false,
+          icon: L.divIcon({
+            className: "",
+            html: `<div style="margin-left:-7px;margin-top:-7px;width:14px;height:14px;display:flex;align-items:center;justify-content:center;transform:rotate(${edge.arrowBearing}deg);color:${color};font-size:13px;line-height:1;font-weight:700;">▶</div>`,
+            iconSize: [14, 14],
+          }),
+        }).addTo(neighborLinksLayer);
+      }
+    })();
+  }, [mapReady, neighborLinkOverlayEdges]);
+
+  useEffect(() => {
+    if (!mapReady) {
+      return;
+    }
+
     const map = mapRef.current;
     const L = leafletRef.current;
     const markersLayer = markersLayerRef.current;
@@ -727,6 +791,7 @@ export function LeafletMapPane({
     const chainSet = new Set(linkChainPointIds);
     const chainIndexById = new Map(linkChainPointIds.map((pointId, index) => [pointId, index + 1]));
     const suggestionSet = new Set(linkSuggestionPointIds);
+    const routeViaSet = new Set(linkRouteViaIds);
     const neighborLinkSet = new Set(markerIdsWithNeighborLinks);
     const pinSize = linkMode ? 26 : 18;
     const pinOffset = linkMode ? -13 : -9;
@@ -745,6 +810,9 @@ export function LeafletMapPane({
         inChain,
         isLinkHead,
         isSuggestion,
+        isRouteStart: point.id === linkRouteStartId,
+        isRouteEnd: point.id === linkRouteEndId,
+        isRouteVia: routeViaSet.has(point.id),
         showNeighborCoverage,
         markerIdsWithNeighborLinks: neighborLinkSet,
       };
@@ -816,6 +884,9 @@ export function LeafletMapPane({
     linkFromPointId,
     linkMode,
     linkSuggestionPointIds,
+    linkRouteStartId,
+    linkRouteEndId,
+    linkRouteViaIds,
     mapReady,
     pendingMapPoint,
     pendingTracePoints,
