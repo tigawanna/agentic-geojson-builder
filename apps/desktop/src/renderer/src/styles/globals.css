@@ -332,3 +332,43 @@ textarea,
   font-size: 0.625rem;
   color: color-mix(in oklab, var(--color-base-content) 45%, transparent);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-motion-preference="allow"]) {
+    scroll-behavior: auto;
+  }
+
+  html:not([data-motion-preference="allow"]) *,
+  html:not([data-motion-preference="allow"]) *::before,
+  html:not([data-motion-preference="allow"]) *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  html:not([data-motion-preference="allow"]) ::view-transition-old(*),
+  html:not([data-motion-preference="allow"]) ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
+html[data-reduce-motion="true"] {
+  scroll-behavior: auto;
+}
+
+html[data-reduce-motion="true"] *,
+html[data-reduce-motion="true"] *::before,
+html[data-reduce-motion="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+html[data-reduce-motion="true"] ::view-transition-old(*),
+html[data-reduce-motion="true"] ::view-transition-new(*) {
+  animation: none !important;
+}
+
+html[data-page-transitions="off"] .animate-fade-in {
+  animation: none !important;
+}

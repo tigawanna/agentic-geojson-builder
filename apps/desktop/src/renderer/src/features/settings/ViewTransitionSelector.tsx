@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { cn } from "@renderer/lib/utils";
+import { useMotionPreferences } from "@renderer/features/motion/MotionPreferencesProvider";
 import { useViewTransition } from "@renderer/features/view-transition/ViewTransitionProvider";
 import {
   VIEW_TRANSITION_OPTIONS,
@@ -78,9 +79,12 @@ function TransitionPreview({ variant }: { variant: ViewTransitionStyle }) {
 export function ViewTransitionSelector() {
   const { t } = useTranslation();
   const { style, setStyle } = useViewTransition();
+  const { animationsEnabled } = useMotionPreferences();
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <div
+      className={cn("grid gap-3 sm:grid-cols-2 lg:grid-cols-3", !animationsEnabled && "opacity-50")}
+    >
       {VIEW_TRANSITION_OPTIONS.map((value) => {
         const selected = style === value;
 
@@ -89,6 +93,7 @@ export function ViewTransitionSelector() {
             key={value}
             type="button"
             aria-pressed={selected}
+            disabled={!animationsEnabled}
             onClick={() => setStyle(value)}
             className={cn(
               "flex flex-col gap-3 rounded-xl border p-3 text-left transition-all",
@@ -105,6 +110,11 @@ export function ViewTransitionSelector() {
           </button>
         );
       })}
+      {!animationsEnabled ? (
+        <p className="text-xs text-base-content/50 sm:col-span-2 lg:col-span-3">
+          {t("settings.motion.viewTransitionsDisabled")}
+        </p>
+      ) : null}
     </div>
   );
 }

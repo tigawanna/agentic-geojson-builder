@@ -7,6 +7,7 @@ import { ThemeModeSelector } from "@renderer/features/settings/ThemeSelector";
 import { ThemeGallery } from "@renderer/features/settings/ThemeGallery";
 import { ColorCustomizer } from "@renderer/features/settings/ColorCustomizer";
 import { ViewTransitionSelector } from "@renderer/features/settings/ViewTransitionSelector";
+import { MotionPreferenceSelector } from "@renderer/features/settings/MotionPreferenceSelector";
 
 export function SettingsPage() {
   const { t } = useTranslation();
@@ -24,6 +25,14 @@ export function SettingsPage() {
             <ThemeGallery />
             <ColorCustomizer />
           </div>
+        </article>
+
+        <article className="glass-card p-5">
+          <div className="mb-4">
+            <h3 className="text-base font-semibold">{t("settings.motion.heading")}</h3>
+            <p className="mt-1 text-sm text-base-content/55">{t("settings.motion.hint")}</p>
+          </div>
+          <MotionPreferenceSelector />
         </article>
 
         <article className="glass-card p-5">

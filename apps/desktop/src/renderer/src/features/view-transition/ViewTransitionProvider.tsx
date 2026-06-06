@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { ipcInvoke } from "@renderer/hooks/useIpc";
+import { useMotionPreferences } from "@renderer/features/motion/MotionPreferencesProvider";
 import {
   DEFAULT_VIEW_TRANSITION,
   parseViewTransitionStyle,
@@ -24,6 +25,7 @@ function applyViewTransitionStyle(style: ViewTransitionStyle) {
 }
 
 export function ViewTransitionProvider({ children }: { children: ReactNode }) {
+  const { animationsEnabled } = useMotionPreferences();
   const [style, setStyleState] = useState<ViewTransitionStyle>(() => {
     const current = document.documentElement.dataset.style;
     return parseViewTransitionStyle(current ?? DEFAULT_VIEW_TRANSITION);
@@ -40,8 +42,12 @@ export function ViewTransitionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!animationsEnabled) {
+      applyViewTransitionStyle("default");
+      return;
+    }
     applyViewTransitionStyle(style);
-  }, [style]);
+  }, [animationsEnabled, style]);
 
   const setStyle = useCallback((next: ViewTransitionStyle) => {
     setStyleState(next);

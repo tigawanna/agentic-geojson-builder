@@ -8,6 +8,8 @@ import { queryClient } from "@renderer/lib/query-client";
 import { router } from "@renderer/router";
 import { i18n } from "@renderer/i18n";
 import { ThemeProvider } from "@renderer/features/theme/ThemeProvider";
+import { MotionPreferencesProvider } from "@renderer/features/motion/MotionPreferencesProvider";
+import { RouterPageTransitionSync } from "@renderer/features/motion/RouterPageTransitionSync";
 import { ViewTransitionProvider } from "@renderer/features/view-transition/ViewTransitionProvider";
 import "./styles/globals.css";
 
@@ -18,11 +20,14 @@ ReactDOM.createRoot(root).render(
   <React.StrictMode>
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <ViewTransitionProvider>
-            <RouterProvider router={router} />
-          </ViewTransitionProvider>
-        </ThemeProvider>
+        <MotionPreferencesProvider>
+          <ThemeProvider>
+            <ViewTransitionProvider>
+              <RouterPageTransitionSync />
+              <RouterProvider router={router} />
+            </ViewTransitionProvider>
+          </ThemeProvider>
+        </MotionPreferencesProvider>
         {import.meta.env.DEV && (
           <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
         )}

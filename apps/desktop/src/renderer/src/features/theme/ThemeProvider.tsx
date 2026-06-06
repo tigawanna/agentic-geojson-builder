@@ -1,6 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { ipcInvoke } from "@renderer/hooks/useIpc";
 import {
+  runWithOptionalViewTransition,
+  useMotionPreferences,
+} from "@renderer/features/motion/MotionPreferencesProvider";
+import {
   getThemeColorScheme,
   type ThemeColorScheme,
 } from "@renderer/features/theme/theme-metadata";
@@ -90,6 +94,7 @@ function parseStoredConfig(value: unknown): ThemeConfig {
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [config, setConfigState] = useState<ThemeConfig>({ name: "system" });
   const [colorScheme, setColorScheme] = useState<ThemeColorScheme>(() => resolveSystemScheme());
+  const { animationsEnabled } = useMotionPreferences();
 
   useEffect(() => {
     (async () => {
@@ -126,19 +131,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => mq.removeEventListener("change", onChange);
   }, [config]);
 
-  const setThemeConfig = useCallback((next: ThemeConfig) => {
-    const apply = () => {
-      setConfigState(next);
-      void ipcInvoke("store:set", { key: STORAGE_KEY, value: next });
-    };
+  const setThemeConfig = useCallback(
+    (next: ThemeConfig) => {
+      const apply = () => {
+        setConfigState(next);
+        void ipcInvoke("store:set", { key: STORAGE_KEY, value: next });
+      };
 
-    if (document.startViewTransition) {
-      document.startViewTransition(apply);
-      return;
-    }
-
-    apply();
-  }, []);
+      runWithOptionalViewTransition(apply, animationsEnabled);
+    },
+    [animationsEnabled],
+  );
 
   return (
     <ThemeContext.Provider value={{ config, colorScheme, setThemeConfig }}>

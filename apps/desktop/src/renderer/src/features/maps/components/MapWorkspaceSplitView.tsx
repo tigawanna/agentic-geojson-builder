@@ -4,7 +4,6 @@ import { LocateFixed } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { getElevationAtLatLng } from "@repo/isomorphic/elevation-at-point";
 import type { GeoCoordinate } from "@repo/isomorphic/elevation-at-point";
-import { mergeReferenceGeoJsonCollections } from "@repo/isomorphic/reference-geojson";
 import {
   ResizableHandle,
   ResizablePanel,
@@ -76,6 +75,7 @@ import {
 } from "@renderer/features/maps/lib/resolve-inspect-elevation";
 import { MapTileCacheBoundsModal } from "@renderer/features/maps/components/MapTileCacheBoundsModal";
 import { MapWorkspaceControlsModal } from "@renderer/features/maps/components/MapWorkspaceControlsModal";
+import { MapWorkspaceLayersPanel } from "@renderer/features/maps/components/MapWorkspaceLayersPanel";
 import { MapWorkspaceHeader } from "@renderer/features/maps/components/MapWorkspaceHeader";
 import { MapWorkspaceMenuSyncBridge } from "@renderer/features/maps/components/MapWorkspaceMenuSyncBridge";
 import { MapWorkspaceToolsPanel } from "@renderer/features/maps/components/MapWorkspaceToolsPanel";
@@ -93,6 +93,12 @@ import { usePersistedNeighborCoveragePreference } from "@renderer/features/maps/
 import { MapNeighborCoverageLegend } from "@renderer/features/maps/components/MapNeighborCoverageLegend";
 import { buildMarkerIdsWithNeighborLinks } from "@shared/marker-neighbor-coverage";
 import { usePersistedMapWorkspaceLayout } from "@renderer/features/maps/hooks/usePersistedMapWorkspaceLayout";
+import { useMapReferenceLayerHiddenFeatures } from "@renderer/features/maps/hooks/useMapReferenceLayerHiddenFeatures";
+import {
+  buildReferenceOverlay,
+  countVisibleReferenceFeatures,
+} from "@renderer/features/maps/lib/build-reference-overlay";
+import { getReferenceGeoJsonFeatureKey } from "@renderer/features/maps/lib/reference-geojson-feature-key";
 import { ControlPointDetailPanel } from "@renderer/features/maps/components/ControlPointDetailPanel";
 import { cn } from "@renderer/lib/utils";
 
@@ -200,6 +206,7 @@ export function MapWorkspaceSplitView() {
     stopAddMarkerPlacementMode,
     openGraphPreview,
     closeGraphPreview,
+    setShowReferenceOverlay,
   } = useMapWorkspaceUiActions();
   const homeViewport = useMapWorkspaceUiState((state) => state.homeViewport);
   const referenceMode = useMapWorkspaceUiState((state) => state.referenceMode);
@@ -244,6 +251,13 @@ export function MapWorkspaceSplitView() {
   const createMapPoint = useIpcMutation("mapPoints:create");
   const mapLinksQuery = useMapLinksQuery(workspace?.id ?? null);
   const referenceGeoJsonQuery = useReferenceGeoJsonQuery(workspace?.id ?? null);
+  const setReferenceLayerVisibility = useIpcMutation("referenceGeoJson:setVisibility");
+  const {
+    hiddenFeaturesByLayerId,
+    setFeatureVisible,
+    setLayerFeaturesVisible: setLayerHiddenFeatures,
+    clearAllHiddenFeatures,
+  } = useMapReferenceLayerHiddenFeatures(workspace?.id ?? null);
   const updateControlPoint = useIpcMutation("controlPoints:update");
   const deleteGeoSegment = useIpcMutation("geoSegments:delete");
   const createGeoSegment = useIpcMutation("geoSegments:create");
@@ -476,16 +490,17 @@ export function MapWorkspaceSplitView() {
     openControls();
   }, [dismissOnboarding, openControls]);
 
-  const referenceOverlay = useMemo(() => {
-    const layers = referenceGeoJsonQuery.data?.layers ?? [];
-    const visibleCollections = layers
-      .filter((layer) => layer.visible)
-      .map((layer) => layer.collection);
-    if (visibleCollections.length === 0) {
-      return null;
-    }
-    return mergeReferenceGeoJsonCollections(visibleCollections);
-  }, [referenceGeoJsonQuery.data?.layers]);
+  const referenceLayers = referenceGeoJsonQuery.data?.layers ?? [];
+
+  const referenceOverlay = useMemo(
+    () => buildReferenceOverlay(referenceLayers, hiddenFeaturesByLayerId),
+    [hiddenFeaturesByLayerId, referenceLayers],
+  );
+
+  const visibleReferenceFeatureCount = useMemo(
+    () => countVisibleReferenceFeatures(referenceLayers, hiddenFeaturesByLayerId),
+    [hiddenFeaturesByLayerId, referenceLayers],
+  );
 
   const referenceOverlayFeatureCount = referenceOverlay?.features.length ?? 0;
 
@@ -533,6 +548,59 @@ export function MapWorkspaceSplitView() {
     }
     openGraphPreview(pathSlugs);
   }, [closeGraphPreview, graphPreviewOpen, openGraphPreview, pathSlugs]);
+
+  const handleSetReferenceLayerVisible = useCallback(
+    (layerId: string, visible: boolean) => {
+      if (!workspace) {
+        return;
+      }
+      void setReferenceLayerVisibility.mutateAsync({ mapId: workspace.id, layerId, visible });
+    },
+    [setReferenceLayerVisibility, workspace],
+  );
+
+  const handleSetReferenceLayerFeaturesVisible = useCallback(
+    (layerId: string, visible: boolean) => {
+      const layer = referenceLayers.find((entry) => entry.id === layerId);
+      if (!layer) {
+        return;
+      }
+      const featureKeys = layer.collection.features.map((feature, index) =>
+        getReferenceGeoJsonFeatureKey(layerId, feature, index),
+      );
+      setLayerHiddenFeatures(layerId, featureKeys, visible);
+    },
+    [referenceLayers, setLayerHiddenFeatures],
+  );
+
+  const handleSetAllReferenceLayersVisible = useCallback(
+    (visible: boolean) => {
+      if (!workspace) {
+        return;
+      }
+      setShowReferenceOverlay(visible);
+      if (visible) {
+        clearAllHiddenFeatures();
+      }
+      for (const layer of referenceLayers) {
+        if (layer.visible === visible) {
+          continue;
+        }
+        void setReferenceLayerVisibility.mutateAsync({
+          mapId: workspace.id,
+          layerId: layer.id,
+          visible,
+        });
+      }
+    },
+    [
+      clearAllHiddenFeatures,
+      referenceLayers,
+      setReferenceLayerVisibility,
+      setShowReferenceOverlay,
+      workspace,
+    ],
+  );
 
   const captureOverlays = useMemo(
     () => ({
@@ -1346,6 +1414,19 @@ export function MapWorkspaceSplitView() {
               >
                 <LocateFixed className="size-4" />
               </button>
+              <div className="pointer-events-auto absolute top-3 right-3 z-1000">
+                <MapWorkspaceLayersPanel
+                  layers={referenceLayers}
+                  hiddenFeaturesByLayerId={hiddenFeaturesByLayerId}
+                  showReferenceOverlay={showReferenceOverlay}
+                  visibleFeatureCount={visibleReferenceFeatureCount}
+                  onSetShowReferenceOverlay={setShowReferenceOverlay}
+                  onSetLayerVisible={handleSetReferenceLayerVisible}
+                  onSetFeatureVisible={setFeatureVisible}
+                  onSetLayerFeaturesVisible={handleSetReferenceLayerFeaturesVisible}
+                  onSetAllLayersVisible={handleSetAllReferenceLayersVisible}
+                />
+              </div>
               <div className="relative h-full min-h-0">
                 <Activity mode={mapboxGlActive ? "hidden" : "visible"}>
                   <LeafletMapPane
